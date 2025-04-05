@@ -1,0 +1,1156 @@
+@extends('tenant.layouts.app')
+
+@section('title', 'Requirements')
+
+@push('styles')
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+@endpush
+
+@section('content')
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Requirements</h5>
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createFolderModal">
+                        <i class="fas fa-folder-plus"></i> Add New Requirements
+                    </button>
+                </div>
+
+                <div class="card-body">
+                    <div class="mb-4">
+                        <div class="btn-group" role="group" aria-label="Category filters">
+                            <button type="button" class="btn btn-outline-primary active" data-category="Regular">Regular</button>
+                            <button type="button" class="btn btn-outline-primary" data-category="Irregular">Irregular</button>
+                            <button type="button" class="btn btn-outline-primary" data-category="Probation">Probation</button>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12 mb-4">
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="folderContentsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th class="text-center">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="3" class="text-center">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Folder Modal -->
+<div class="modal fade" id="createFolderModal" tabindex="-1" aria-labelledby="createFolderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createFolderModalLabel">Create New Folder</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createFolderForm">
+                    <div class="mb-3">
+                        <label for="folderName" class="form-label">Folder Name</label>
+                        <input type="text" class="form-control" id="folderName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="folderType" class="form-label">Student Category</label>
+                        <select class="form-select" id="folderType" required>
+                            <option value="Regular">Regular</option>
+                            <option value="Probation">Probation</option>
+                            <option value="Irregular">Irregular</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="parent-id-input" value="">
+                    <input type="hidden" id="folder-type-prefix" value="">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="createFolderBtn">Create Folder</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rename Modal -->
+<div class="modal fade" id="renameFolderModal" tabindex="-1" aria-labelledby="renameFolderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="renameFolderModalLabel">Rename Folder</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="renameFolderForm">
+                    <div class="mb-3">
+                        <label for="newFolderName" class="form-label">New Name</label>
+                        <input type="text" class="form-control" id="newFolderName" required>
+                    </div>
+                    <input type="hidden" id="folder-id-to-rename" value="">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="renameFolderBtn">Rename</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Folder Contents Modal -->
+<div class="modal fade" id="folderContentsModal" tabindex="-1" aria-labelledby="folderContentsModalLabel">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="folderContentsModalLabel">Files</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <span class="visually-hidden">Close modal</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb" id="modalFolderPath">
+                        <li class="breadcrumb-item"><a href="#" onclick="loadFolderInModal(null); return false;">Root</a></li>
+                    </ol>
+                </nav>
+                <div class="mb-3">
+                    <form id="uploadFileFormModal" class="d-flex gap-2 align-items-start">
+                        <div class="flex-grow-1">
+                            <label for="modalFileUpload" class="visually-hidden">Choose file to upload</label>
+                            <input type="file" class="form-control" id="modalFileUpload" name="file">
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="modalUploadBtn">
+                            <i class="fas fa-upload" aria-hidden="true"></i> Upload
+                        </button>
+                        <input type="hidden" id="modalCurrentFolderId" name="folderId">
+                    </form>
+                </div>
+                <div id="modalFileContents" class="row g-3">
+                    <div class="col-12 text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+
+@push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.all.min.js"></script>
+<script>
+    let currentFolderId = null;
+    let folderContentsModal = null;
+    let currentCategory = 'Regular';
+
+    // Add the root folder constant at the top of your script
+    const ROOT_FOLDER_URL = 'https://drive.google.com/drive/folders/1ODyX_npnV8qy99_S1OyVdlHiCewMRhtJ';
+
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize category filter buttons
+        const categoryButtons = document.querySelectorAll('[data-category]');
+        categoryButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Update active state
+                categoryButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                // Update current category and reload folders
+                currentCategory = button.dataset.category;
+                loadFolder(currentFolderId);
+            });
+        });
+
+        // Initialize the folder contents modal
+        const folderContentsModalEl = document.getElementById('folderContentsModal');
+        folderContentsModal = new bootstrap.Modal(folderContentsModalEl);
+        
+        // Handle modal events for accessibility
+        folderContentsModalEl.addEventListener('hidden.bs.modal', function () {
+            // Reset modal content
+            document.getElementById('modalFileContents').innerHTML = `
+                <div class="col-12 text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            `;
+            
+            // Reset file input
+            const fileInput = document.getElementById('modalFileUpload');
+            if (fileInput) {
+                fileInput.value = '';
+            }
+        });
+
+        folderContentsModalEl.addEventListener('shown.bs.modal', function () {
+            // Set focus to the file input when modal opens
+            const fileInput = document.getElementById('modalFileUpload');
+            if (fileInput) {
+                fileInput.focus();
+            }
+        });
+        
+        // Load initial contents
+        loadFolder();
+        
+        // Set up event listeners
+        setupCreateFolderHandler();
+        setupRenameFolderHandler();
+        setupGoogleDriveStatus();
+        setupModalFileUploadHandler();
+    });
+
+    function updateDebugTimestamp() {
+        const timestamp = document.getElementById('debug-timestamp');
+        if (timestamp) {
+            timestamp.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+        }
+    }
+
+    function updateBreadcrumbs(path) {
+        const breadcrumbList = document.getElementById('modalFolderPath');
+        if (!breadcrumbList) {
+            console.warn('Breadcrumb list element not found');
+            return;
+        }
+
+        breadcrumbList.innerHTML = `
+            <li class="breadcrumb-item">
+                <a href="#" onclick="loadFolder(null); return false;">Root</a>
+            </li>
+        `;
+
+        if (path && Array.isArray(path) && path.length > 0) {
+            path.forEach((item, index) => {
+                if (!item || typeof item !== 'object') return;
+                
+                const li = document.createElement('li');
+                li.className = 'breadcrumb-item';
+                if (index === path.length - 1) {
+                    li.classList.add('active');
+                    li.textContent = item.name || 'Unnamed';
+                } else {
+                    li.innerHTML = `<a href="#" onclick="loadFolder('${item.id || ''}'); return false;">${item.name || 'Unnamed'}</a>`;
+                }
+                breadcrumbList.appendChild(li);
+            });
+        }
+    }
+
+    function setupCreateFolderHandler() {
+        const createFolderBtn = document.getElementById('createFolderBtn');
+        const createFolderModal = document.getElementById('createFolderModal');
+        const bsCreateFolderModal = new bootstrap.Modal(createFolderModal);
+
+        createFolderBtn.addEventListener('click', async function() {
+            const folderNameInput = document.getElementById('folderName');
+            const folderTypeInput = document.getElementById('folderType');
+            const folderName = folderNameInput.value.trim();
+            const folderType = folderTypeInput.value;
+
+            if (!folderName || !folderType) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Input',
+                    text: 'Please enter a folder name and select a folder type'
+                });
+                return;
+            }
+
+            // Disable the button and show loading state
+            createFolderBtn.disabled = true;
+            createFolderBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Creating...';
+
+            try {
+                const response = await fetch('{{ route("tenant.admin.requirements.folder.create", ["tenant" => tenant("id")]) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: folderName,
+                        category: folderType,
+                        parent_id: currentFolderId
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Properly hide the modal and remove backdrop
+                    bsCreateFolderModal.hide();
+                    // Remove modal backdrop and any modal-open classes
+                    document.body.classList.remove('modal-open');
+                    const modalBackdrops = document.getElementsByClassName('modal-backdrop');
+                    while (modalBackdrops.length > 0) {
+                        modalBackdrops[0].parentNode.removeChild(modalBackdrops[0]);
+                    }
+                    
+                    // Show success message
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Folder Created',
+                        text: 'The folder has been created successfully',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+
+                    // Clear the inputs
+                    folderNameInput.value = '';
+                    
+                    // Update current category to match the created folder's category
+                    currentCategory = folderType;
+                    
+                    // Update category button UI
+                    const categoryButtons = document.querySelectorAll('[data-category]');
+                    categoryButtons.forEach(btn => {
+                        btn.classList.remove('active');
+                        if (btn.dataset.category === folderType) {
+                            btn.classList.add('active');
+                        }
+                    });
+                    
+                    // Reload the current folder contents
+                    loadFolder(currentFolderId);
+                } else {
+                    throw new Error(result.message || 'Failed to create folder');
+                }
+            } catch (error) {
+                console.error('Create folder error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: error.message || 'Failed to create folder'
+                });
+            } finally {
+                // Reset the button state
+                createFolderBtn.disabled = false;
+                createFolderBtn.innerHTML = 'Create Folder';
+            }
+        });
+
+        // Add event listener for modal hidden event
+        createFolderModal.addEventListener('hidden.bs.modal', function () {
+            // Reset form and button state when modal is closed
+            const folderNameInput = document.getElementById('folderName');
+            if (folderNameInput) {
+                folderNameInput.value = '';
+            }
+            createFolderBtn.disabled = false;
+            createFolderBtn.innerHTML = 'Create Folder';
+            
+            // Ensure backdrop and modal-open class are removed
+            document.body.classList.remove('modal-open');
+            const modalBackdrops = document.getElementsByClassName('modal-backdrop');
+            while (modalBackdrops.length > 0) {
+                modalBackdrops[0].parentNode.removeChild(modalBackdrops[0]);
+            }
+        });
+    }
+
+    function setupRenameFolderHandler() {
+        const renameFolderModal = document.getElementById('renameFolderModal');
+        const bsRenameFolderModal = new bootstrap.Modal(renameFolderModal);
+        const renameFolderBtn = document.getElementById('renameFolderBtn');
+
+        // Event delegation for rename buttons
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.rename-folder')) {
+                const button = e.target.closest('.rename-folder');
+                const folderId = button.dataset.folderId;
+                const folderName = button.closest('tr').querySelector('a').textContent;
+                
+                document.getElementById('folder-id-to-rename').value = folderId;
+                document.getElementById('newFolderName').value = folderName;
+                bsRenameFolderModal.show();
+            }
+        });
+
+        renameFolderBtn.addEventListener('click', async function() {
+            const folderId = document.getElementById('folder-id-to-rename').value;
+            const newName = document.getElementById('newFolderName').value.trim();
+
+            if (!newName) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid Name',
+                    text: 'Please enter a valid folder name'
+                });
+                return;
+            }
+
+            // Disable the button and show loading state
+            renameFolderBtn.disabled = true;
+            renameFolderBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Renaming...';
+
+            try {
+                console.log('Renaming folder:', {
+                    folderId,
+                    newName
+                });
+
+                const response = await fetch('{{ route("tenant.admin.requirements.folder.rename", ["tenant" => tenant("id"), "folderId" => "__id__"]) }}'.replace('__id__', folderId), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: newName
+                    })
+                });
+
+                const result = await response.json();
+                console.log('Rename folder response:', result);
+
+                if (result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Folder Renamed',
+                        text: 'The folder has been renamed successfully',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+
+                    bsRenameFolderModal.hide();
+                    loadFolder(currentFolderId);
+                } else {
+                    throw new Error(result.message || 'Failed to rename folder');
+                }
+            } catch (error) {
+                console.error('Rename folder error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: error.message || 'Failed to rename folder'
+                });
+            } finally {
+                // Reset the button state
+                renameFolderBtn.disabled = false;
+                renameFolderBtn.innerHTML = 'Rename';
+            }
+        });
+    }
+
+
+    function setupGoogleDriveStatus() {
+        const checkStatusBtn = document.getElementById('checkGoogleStatus');
+        if (checkStatusBtn) {
+            checkStatusBtn.addEventListener('click', async function() {
+                try {
+                    const btn = this;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+                    
+                    const response = await fetch('/google/status', {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Server error: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('Google Drive status:', data);
+                    
+                    if (data.success) {
+                        // Create HTML for the detailed results
+                        let statusHtml = '<div class="mb-3 text-left">';
+                        
+                        // Config status
+                        statusHtml += '<h5>Configuration Status</h5>';
+                        statusHtml += '<ul class="list-group mb-3">';
+                        for (const [key, value] of Object.entries(data.config_status)) {
+                            if (key !== 'config_values') {
+                                const icon = value ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>';
+                                statusHtml += `<li class="list-group-item">${icon} ${key.replace(/_/g, ' ')}</li>`;
+                            }
+                        }
+                        statusHtml += '</ul>';
+                        
+                        // Client status
+                        statusHtml += '<h5>Client Status</h5>';
+                        statusHtml += '<ul class="list-group mb-3">';
+                        statusHtml += `<li class="list-group-item">${data.client_status.initialized ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>'} Client initialized</li>`;
+                        statusHtml += `<li class="list-group-item">${data.client_status.has_valid_token ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>'} Has valid token</li>`;
+                        if (data.client_status.token_error) {
+                            statusHtml += `<li class="list-group-item text-danger"><i class="fas fa-exclamation-triangle"></i> Token error: ${data.client_status.token_error}</li>`;
+                        }
+                        statusHtml += '</ul>';
+                        
+                        // Drive status
+                        statusHtml += '<h5>Drive Status</h5>';
+                        statusHtml += '<ul class="list-group mb-3">';
+                        statusHtml += `<li class="list-group-item">${data.drive_status.accessible ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>'} Drive accessible</li>`;
+                        if (data.drive_status.error) {
+                            statusHtml += `<li class="list-group-item text-danger"><i class="fas fa-exclamation-triangle"></i> Drive error: ${data.drive_status.error}</li>`;
+                        }
+                        
+                        // Sample files
+                        if (data.drive_status.files_sample && data.drive_status.files_sample.length > 0) {
+                            statusHtml += '<li class="list-group-item"><strong>Sample files:</strong><ul class="mt-2">';
+                            data.drive_status.files_sample.forEach(file => {
+                                statusHtml += `<li>${file.name} (ID: ${file.id.substring(0, 8)}...)</li>`;
+                            });
+                            statusHtml += '</ul></li>';
+                        } else {
+                            statusHtml += '<li class="list-group-item text-warning"><i class="fas fa-exclamation-triangle"></i> No files found in sample</li>';
+                        }
+                        statusHtml += '</ul>';
+                        
+                        // Environment info
+                        statusHtml += '<h5>Environment Info</h5>';
+                        statusHtml += '<ul class="list-group">';
+                        statusHtml += `<li class="list-group-item"><strong>PHP Version:</strong> ${data.php_version}</li>`;
+                        statusHtml += `<li class="list-group-item"><strong>Environment:</strong> ${data.environment}</li>`;
+                        statusHtml += `<li class="list-group-item"><strong>Time:</strong> ${data.time}</li>`;
+                        statusHtml += '</ul>';
+                        
+                        statusHtml += '</div>';
+                        
+                        Swal.fire({
+                            title: 'Google Drive Status',
+                            icon: data.drive_status.accessible ? 'success' : 'warning',
+                            html: statusHtml,
+                            width: '600px'
+                        });
+                    } else {
+                        throw new Error(data.message || 'Failed to check Google Drive status');
+                    }
+                } catch (error) {
+                    console.error('Google Drive status check error:', error);
+                    Swal.fire({
+                        title: 'Error Checking Status',
+                        icon: 'error',
+                        text: error.message || 'Failed to check Google Drive status',
+                        footer: 'Check browser console for more details'
+                    });
+                } finally {
+                    const btn = document.getElementById('checkGoogleStatus');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-sync"></i> Check Status';
+                }
+            });
+        }
+    }
+
+    function loadFolder(folderId = null) {
+        console.log('Loading folder:', folderId);
+        console.log('Current category:', currentCategory);
+        
+        currentFolderId = folderId;
+        
+        $('#folderContentsTable tbody').html('<tr><td colspan="3" class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
+        
+        let url = "{{ route('tenant.admin.requirements.folder.contents', ['tenant' => tenant('id')]) }}";
+        if (folderId) {
+            url += "/" + encodeURIComponent(folderId);
+        }
+        
+        // Add category parameter to the URL
+        url += (url.includes('?') ? '&' : '?') + 'category=' + encodeURIComponent(currentCategory);
+        
+        console.log('Requesting URL:', url);
+        
+        $.ajax({
+            url: url,
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                console.log('Folder contents response:', response);
+                
+                if (response.success) {
+                    if (response.files && response.files.length > 0) {
+                        displayFolderContents(response.files, response.path);
+                    } else {
+                        $('#folderContentsTable tbody').html('<tr><td colspan="3" class="text-center">No folders found in this category. Create a new folder to get started.</td></tr>');
+                    }
+                } else {
+                    $('#folderContentsTable tbody').html('<tr><td colspan="3" class="text-center text-danger">' + (response.message || 'Failed to load folder contents') + '</td></tr>');
+                    console.error('Error loading folder:', response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX error:', xhr.responseText);
+                $('#folderContentsTable tbody').html('<tr><td colspan="3" class="text-center text-danger">Failed to load folder contents. Please try again.</td></tr>');
+            }
+        });
+    }
+
+    function showFolderContentsInModal(folderId, folderName) {
+        console.log('Opening modal for folder:', { folderId, folderName });
+        
+        $('#folderContentsModalLabel').text('Files in: ' + folderName);
+        $('#modalCurrentFolderId').val(folderId);
+        
+        $('#modalFileUpload').val('');
+        
+        $('#modalFileContents').html(`
+            <div class="col-12 text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `);
+        
+        folderContentsModal.show();
+        
+        setTimeout(() => {
+            loadFolderContents(folderId);
+        }, 100);
+    }
+
+    function loadFolderContents(folderId) {
+        console.log('Loading folder contents for modal:', folderId);
+        let url = "{{ route('tenant.admin.requirements.folder.contents', ['tenant' => tenant('id')]) }}";
+        if (folderId) {
+            url += "/" + encodeURIComponent(folderId);
+        }
+        // Add category parameter to the URL
+        url += (url.includes('?') ? '&' : '?') + 'category=' + encodeURIComponent(currentCategory);
+
+        console.log('Requesting URL:', url);
+
+        $.ajax({
+            url: url,
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                console.log('Modal folder contents response:', response);
+                if (response.success) {
+                    console.log('Files to display:', response.files);
+                    displayModalContents(response.files);
+                } else {
+                    console.error('Error loading folder contents:', response.message);
+                    $('#modalFileContents').html('<div class="col-12 text-center text-danger">' + (response.message || 'Failed to load contents') + '</div>');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX error:', error, xhr.responseText);
+                $('#modalFileContents').html('<div class="col-12 text-center text-danger">Failed to load contents. Please try again.</div>');
+            }
+        });
+    }
+
+    function displayModalContents(files) {
+        console.log('Displaying modal contents, received files:', files);
+        
+        if (!Array.isArray(files)) {
+            console.error('Files is not an array:', files);
+            $('#modalFileContents').html('<div class="col-12 text-center text-danger">Invalid data format received</div>');
+            return;
+        }
+
+        const filesList = files.filter(file => {
+            console.log('Checking file:', file.name, 'Type:', file.mimeType);
+            return file.mimeType !== 'application/vnd.google-apps.folder';
+        });
+        
+        console.log('Filtered files list:', filesList);
+        
+        let container = $('#modalFileContents');
+        container.empty();
+
+        if (filesList.length === 0) {
+            console.log('No files found in folder');
+            container.html('<div class="col-12 text-center">No files in this folder</div>');
+            return;
+        }
+
+        filesList.sort((a, b) => a.name.localeCompare(b.name));
+
+        container.append(`
+            <div class="col-12">
+                <div class="list-group">
+                    ${filesList.map(file => {
+                        const icon = getFileIcon(file.mimeType);
+                        const name = escapeHtml(file.name);
+                        const modifiedDate = file.modifiedTime ? new Date(file.modifiedTime).toLocaleString() : 'N/A';
+                        const size = file.size ? formatFileSize(file.size) : 'N/A';
+                        
+                        return `
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas ${icon} text-primary me-2"></i>
+                                        <span class="fw-bold">${name}</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="text-muted me-3">Size: ${size}</small>
+                                        <small class="text-muted">Modified: ${modifiedDate}</small>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <a href="${file.webViewLink}" target="_blank" class="btn btn-sm btn-outline-primary me-2">
+                                        <i class="fas fa-external-link-alt"></i> Open
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-danger delete-file" data-file-id="${file.id}" data-file-name="${name}">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `);
+    }
+
+    function displayFolderContents(files, path) {
+        console.log('Displaying folder contents:', { files, path });
+        
+        updateBreadcrumbs(path);
+
+        files.sort((a, b) => {
+            const aIsFolder = a.mimeType === 'application/vnd.google-apps.folder';
+            const bIsFolder = b.mimeType === 'application/vnd.google-apps.folder';
+            
+            if (aIsFolder && !bIsFolder) return -1;
+            if (!aIsFolder && bIsFolder) return 1;
+            return a.name.localeCompare(b.name);
+        });
+
+        let foldersBody = $('#folderContentsTable tbody');
+        foldersBody.empty();
+
+        // Filter folders only and by category
+        const folders = files.filter(file => {
+            if (file.mimeType !== 'application/vnd.google-apps.folder') return false;
+            
+            // Extract category from folder name
+            const categoryMatch = file.name.match(/\[(Regular|Irregular|Probation)\]/);
+            const folderCategory = categoryMatch ? categoryMatch[1] : 'Regular';
+            
+            // Only show folders matching current category
+            return folderCategory === currentCategory;
+        });
+
+        if (!folders || folders.length === 0) {
+            foldersBody.html('<tr><td colspan="3" class="text-center">No folders found</td></tr>');
+            return;
+        }
+
+        folders.forEach(folder => {
+            // Remove tenant prefix, category, and timestamp from display name
+            const displayName = folder.name
+                .replace(/^\[[^\]]+\]\s*/, '') // Remove tenant prefix
+                .replace(/\[(Regular|Irregular|Probation)\]\s*/, '') // Remove category
+                .replace(/,\s*\d{1,2}\/\d{1,2}\/\d{4},\s*\d{1,2}:\d{2}:\d{2}\s*(?:AM|PM)/i, ''); // Remove timestamp
+            
+            const driveUrl = folder.webViewLink || `https://drive.google.com/drive/folders/${folder.id}`;
+            
+            let row = '<tr>';
+            row += '<td class="align-middle">';
+            row += '<span class="text-dark" data-folder-id="' + folder.id + '">';
+            row += '<i class="fas fa-folder text-warning me-2"></i>' + escapeHtml(displayName);
+            row += '</span>';
+            row += '</td>';
+            row += '<td class="align-middle text-center">';
+            row += `<button class="btn btn-sm btn-outline-success me-2" onclick="showFolderContentsInModal('${folder.id}', '${escapeHtml(displayName)}')">`;
+            row += '<i class="fas fa-upload"></i> Upload File';
+            row += '</button>';
+            row += `<a href="${driveUrl}" target="_blank" class="btn btn-sm btn-outline-info">`;
+            row += '<i class="fas fa-folder-open"></i> Open Folder';
+            row += '</a>';
+            row += '</td>';
+            row += '</tr>';
+            
+            foldersBody.append(row);
+        });
+    }
+
+    function getFileType(mimeType) {
+        if (mimeType.includes('spreadsheet')) return 'Spreadsheet';
+        if (mimeType.includes('document')) return 'Document';
+        if (mimeType.includes('presentation')) return 'Presentation';
+        if (mimeType.includes('pdf')) return 'PDF';
+        if (mimeType.includes('image')) return 'Image';
+        return 'File';
+    }
+
+    function getFileIcon(mimeType) {
+        if (mimeType.includes('spreadsheet')) return 'fa-file-excel';
+        if (mimeType.includes('document')) return 'fa-file-word';
+        if (mimeType.includes('presentation')) return 'fa-file-powerpoint';
+        if (mimeType.includes('pdf')) return 'fa-file-pdf';
+        if (mimeType.includes('image')) return 'fa-file-image';
+        return 'fa-file';
+    }
+
+    function escapeHtml(unsafe) {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function getTenantDomain() {
+        const fullDomain = '{{ tenant("domains")->first()->domain }}';
+        return fullDomain.replace('.localhost', '');
+    }
+
+    function formatFileSize(bytes) {
+        if (!bytes) return '0 B';
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
+    }
+
+    function displayFirstFolderFiles(files) {
+        const filesTable = $('#firstFolderFilesTable tbody');
+        filesTable.empty();
+
+        const filesList = files.filter(file => file.mimeType !== 'application/vnd.google-apps.folder');
+
+        if (filesList.length === 0) {
+            filesTable.html('<tr><td colspan="5" class="text-center">No files found in this folder</td></tr>');
+            return;
+        }
+
+        filesList.sort((a, b) => a.name.localeCompare(b.name));
+
+        filesList.forEach(file => {
+            const name = escapeHtml(file.name);
+            const type = getFileType(file.mimeType);
+            const size = file.size ? formatFileSize(file.size) : 'N/A';
+            const modifiedDate = file.modifiedTime ? new Date(file.modifiedTime).toLocaleString() : 'N/A';
+            const icon = getFileIcon(file.mimeType);
+
+            const row = `
+                <tr>
+                    <td class="align-middle">
+                        <i class="fas ${icon} text-primary me-2"></i>
+                        <span>${name}</span>
+                    </td>
+                    <td class="align-middle">${type}</td>
+                    <td class="align-middle">${size}</td>
+                    <td class="align-middle">${modifiedDate}</td>
+                    <td class="align-middle text-center">
+                        <a href="${file.webViewLink}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-external-link-alt"></i> Open
+                        </a>
+                    </td>
+                </tr>
+            `;
+            filesTable.append(row);
+        });
+    }
+
+    function loadFirstFolderContents(folderId) {
+        if (!folderId) return;
+
+        $('#firstFolderFilesTable tbody').html('<tr><td colspan="5" class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
+
+        let url = "{{ route('tenant.admin.requirements.folder.contents', ['tenant' => tenant('id')]) }}/" + encodeURIComponent(folderId);
+        
+        $.ajax({
+            url: url,
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                console.log('First folder contents response:', response);
+                
+                if (response.success) {
+                    displayFirstFolderFiles(response.files);
+                } else {
+                    $('#firstFolderFilesTable tbody').html('<tr><td colspan="5" class="text-center text-danger">' + (response.message || 'Failed to load files') + '</td></tr>');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX error loading first folder:', xhr.responseText);
+                $('#firstFolderFilesTable tbody').html('<tr><td colspan="5" class="text-center text-danger">Failed to load files. Please try again.</td></tr>');
+            }
+        });
+    }
+
+    function loadFirstFolderFiles() {
+    const table = document.getElementById('firstFolderFilesTable').getElementsByTagName('tbody')[0];
+    table.innerHTML = `
+        <tr>
+            <td colspan="5" class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </td>
+        </tr>
+    `;
+
+    // Load files for the current folder
+    const folderId = currentFolderId || 'root';
+    fetch(`{{ route('tenant.admin.requirements.folder.contents', ['tenant' => tenant('id')]) }}/${folderId}`)
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                displayFirstFolderFiles(result.contents.filter(item => item.mimeType !== 'application/vnd.google-apps.folder'));
+            } else {
+                throw new Error(result.message || 'Failed to load files');
+            }
+        })
+        .catch(error => {
+            console.error('Load files error:', error);
+            table.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center text-danger">
+                        <i class="fas fa-exclamation-circle"></i> Failed to load files
+                    </td>
+                </tr>
+            `;
+        });
+}
+
+function displayFirstFolderFiles(files) {
+    const table = document.getElementById('firstFolderFilesTable');
+    if (!table) {
+        console.warn('First folder files table not found');
+        return;
+    }
+    
+    const tbody = table.querySelector('tbody');
+    if (!tbody) {
+        console.warn('Table body not found in first folder files table');
+        return;
+    }
+
+    if (!files || !Array.isArray(files) || files.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-muted">
+                    <i class="fas fa-folder-open"></i> No files found
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    table.innerHTML = files.map(file => `
+        <tr>
+            <td>
+                <i class="fas fa-file"></i> <a href="${file.webViewLink}" target="_blank">${file.name}</a>
+            </td>
+            <td>${file.mimeType || 'Unknown'}</td>
+            <td>${formatFileSize(file.size)}</td>
+            <td>${new Date(file.lastModified).toLocaleString()}</td>
+            <td class="text-center">
+
+                <button class="btn btn-sm btn-danger" onclick="deleteFile('${file.id}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function deleteFile(fileId) {
+    Swal.fire({
+        title: 'Delete File',
+        text: 'Are you sure you want to delete this file?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#dc3545'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const url = '{{ route("tenant.admin.requirements.files.delete", ["tenant" => tenant("id"), "fileId" => "__id__"]) }}'.replace('__id__', fileId);
+            fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'File Deleted',
+                        text: 'The file has been deleted successfully',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+                    loadFolderContents(currentFolderId);
+                } else {
+                    throw new Error(result.message || 'Failed to delete file');
+                }
+            })
+            .catch(error => {
+                console.error('Delete file error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: error.message || 'Failed to delete file'
+                });
+            });
+        }
+    });
+}
+
+function setupModalFileUploadHandler() {
+    const uploadForm = document.getElementById('uploadFileFormModal');
+    
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('modalFileUpload');
+            const folderId = document.getElementById('modalCurrentFolderId').value;
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'No File Selected',
+                    text: 'Please select a file to upload'
+                });
+                return;
+            }
+
+            // Validate file size (e.g., 10MB limit)
+            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+            if (fileInput.files[0].size > maxSize) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'File Too Large',
+                    text: 'Please select a file smaller than 10MB'
+                });
+                return;
+            }
+    
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('folderId', folderId);
+            
+            // Get CSRF token from meta tag
+            const token = document.querySelector('meta[name="csrf-token"]');
+            if (!token) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'CSRF token not found. Please refresh the page.'
+                });
+                return;
+            }
+            formData.append('_token', token.getAttribute('content'));
+
+            try {
+                const uploadBtn = document.getElementById('modalUploadBtn');
+                uploadBtn.disabled = true;
+                uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+    
+                const response = await fetch('{{ route("tenant.admin.requirements.file.upload", ["tenant" => tenant("id")]) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': token.getAttribute('content')
+                    },
+                    credentials: 'same-origin',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        throw new Error('Please log in to continue.');
+                    } else if (response.status === 422) {
+                        // Validation errors
+                        const errors = result.message || {};
+                        const errorMessage = Object.values(errors).flat().join('\n');
+                        throw new Error(errorMessage || 'Invalid file or upload data.');
+                    } else if (response.status === 400) {
+                        throw new Error(result.message || 'File upload failed. Please try again.');
+                    } else {
+                        throw new Error('Server error occurred. Please try again later.');
+                    }
+                }
+    
+                if (result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'File Uploaded',
+                        text: 'The file has been uploaded successfully',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+    
+                    // Reload the folder contents
+                    loadFolderContents(folderId);
+                    fileInput.value = '';
+                } else {
+                    throw new Error(result.message || 'Failed to upload file');
+                }
+            } catch (error) {
+                console.error('File upload error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Upload Failed',
+                    text: error.message || 'Failed to upload file'
+                });
+            } finally {
+                const uploadBtn = document.getElementById('modalUploadBtn');
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload';
+            }
+        });
+    }
+}
+</script>
+@endpush

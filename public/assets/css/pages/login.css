@@ -1,0 +1,312 @@
+body {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+.split-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.form-side {
+    flex: 45;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background:
+    #f0f7ff;
+}
+
+.image-side {
+    flex: 55;
+    background-image: url('/assets/images/buksu2.jpg');
+    background-size: cover;
+    background-position: center right;
+    position: relative;
+}
+
+.auth-form-light {
+    width: 100%;
+    max-width: 450px;
+    margin: 0 auto;
+    padding: 3rem 2.5rem !important;
+}
+
+.form-header-logo {
+    text-align: center;
+    margin-bottom: 0.75rem; 
+}
+
+.form-header-logo img {
+    height: 60px;
+    width: auto;
+    object-fit: contain;
+}
+
+h4.mb-2 {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+    font-size: 1.8rem;
+    color: #001c38;
+    margin-bottom: 0.5rem !important;
+}
+
+.form-control {
+    height: 50px;
+    font-size: 1rem;
+    border-radius: px;
+    padding: 0.94rem 1.375rem;
+    padding-left: 3rem;
+    background-color: #f8f9fa;
+    border: 1px solid #d0d7de;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.input-group .form-control {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+}
+
+.input-group-text {
+    height: 50px;
+    padding: 0.94rem 1.375rem;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.form-control:focus {
+    border-color: #001c38;
+    box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.08);
+    background-color: #ffffff;
+}
+
+.input-icon-wrapper {
+    position: absolute;
+    left: 1.375rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 4;
+}
+
+.input-icon {
+    color: #495057;
+    font-size: 1.25rem;
+}
+
+.auth-form-btn {
+    padding: 1rem 3rem;
+    font-size: 1rem;
+    font-weight: 500;
+    height: 50px;
+    border-radius: 6px;
+    background: #001c38;
+    border: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 28, 56, 0.2);
+    color: white;
+    width: 100%;
+}
+
+.auth-form-btn:hover {
+    background: #002b57;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 28, 56, 0.3);
+}
+
+.image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(0, 28, 56, 0.95),
+        rgba(0, 44, 82, 0.92)
+    );
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 4rem;
+    color: white;
+    text-align: center;
+}
+
+.image-overlay h2 {
+    font-size: 3.2rem;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.image-overlay p.lead {
+    font-size: 1.25rem;
+    max-width: 600px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.6;
+}
+
+.feature-list {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+.feature-list li {
+    margin-bottom: 1.5rem;
+    font-size: 1.15rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+* {
+    font-family: 'Work Sans', sans-serif;
+}
+
+.remember-me input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    margin-right: 0.5rem;
+}
+
+p.text-muted.mb-4 {
+    margin-bottom: 2rem !important;
+}
+
+@media (max-width: 991.98px) {
+    .split-layout {
+        flex-direction: column;
+    }
+    .form-side, .image-side {
+        flex: 100;
+    }
+    .image-side {
+        min-height: 400px;
+    }
+    .image-overlay {
+        padding: 3rem 2rem;
+    }
+    .image-overlay h2 {
+        font-size: 2.5rem;
+    }
+    .image-overlay p.lead {
+        font-size: 1.15rem;
+    }
+}
+
+/* Add these styles to your existing login.css file */
+
+/* Divider with text */
+.divider-with-text {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #6c757d;
+}
+
+.divider-with-text::before,
+.divider-with-text::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.divider-with-text span {
+    padding: 0 10px;
+    font-size: 14px;
+}
+
+/* Social login button */
+.btn-social-login {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    background-color: #ffffff;
+    border: 1px solid #d1d3e2;
+    color: #333;
+    height: 50px;
+}
+
+.btn-social-login:hover {
+    background-color: #f8f9fa;
+    border-color: #001c38;
+    color: #001c38;
+    box-shadow: 0 2px 5px rgba(0, 28, 56, 0.1);
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+.social-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 12px;
+    object-fit: contain;
+}
+
+/* Google Logim */
+.divider-with-text {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: #6c757d;
+}
+
+.divider-with-text::before,
+.divider-with-text::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.divider-with-text span {
+    padding: 0 10px;
+    font-size: 14px;
+}
+
+/* Social login button */
+.btn-social-login {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    background-color: #ffffff;
+    border: 1px solid #d1d3e2;
+    color: #333;
+    height: 50px;
+}
+
+.btn-social-login:hover {
+    background-color: #f8f9fa;
+    border-color: #001c38;
+    color: #001c38;
+    box-shadow: 0 2px 5px rgba(0, 28, 56, 0.1);
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+.social-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 12px;
+    object-fit: contain;
+}
+    width: 18px;
+    height: 18px;
+    margin-right: 10px;
+}
