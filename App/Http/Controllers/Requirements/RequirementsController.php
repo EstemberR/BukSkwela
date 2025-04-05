@@ -92,22 +92,27 @@ class RequirementsController extends Controller
             $category = $request->query('category', 'Regular');
             $tenantId = tenant('id');
 
-            // Filter contents by category
+            // Filter contents by tenant and category
             $filteredContents = collect($contents['files'])->filter(function ($item) use ($category, $tenantId) {
-                // Check if it's a folder
+                // Get the name and mime type
+                $name = is_array($item) ? $item['name'] : $item->getName();
                 $mimeType = is_array($item) ? $item['mimeType'] : $item->getMimeType();
+                
+                // Only process folders
                 if ($mimeType !== 'application/vnd.google-apps.folder') {
                     return false;
                 }
 
-                // Get the name without tenant prefix
-                $name = is_array($item) ? $item['name'] : $item->getName();
-                if (str_starts_with($name, "[{$tenantId}]")) {
-                    $name = str_replace("[{$tenantId}] ", "", $name);
+                // Check if folder belongs to this tenant
+                if (!str_starts_with($name, "[{$tenantId}]")) {
+                    return false;
                 }
 
+                // Remove tenant prefix for category checking
+                $nameWithoutTenant = str_replace("[{$tenantId}] ", "", $name);
+                
                 // Extract category from folder name
-                $categoryMatch = preg_match('/\[(Regular|Irregular|Probation)\]/', $name, $matches);
+                $categoryMatch = preg_match('/\[(Regular|Irregular|Probation)\]/', $nameWithoutTenant, $matches);
                 $itemCategory = $categoryMatch ? $matches[1] : 'Regular';
 
                 // Return true only if the category matches
@@ -115,26 +120,24 @@ class RequirementsController extends Controller
             })->map(function ($item) use ($tenantId) {
                 // Clean up the display name
                 $name = is_array($item) ? $item['name'] : $item->getName();
+                $displayName = $name;
+                
+                // Remove tenant prefix and clean up display name
                 if (str_starts_with($name, "[{$tenantId}]")) {
-                    $name = str_replace("[{$tenantId}] ", "", $name);
+                    $displayName = str_replace("[{$tenantId}] ", "", $name);
                 }
                 
                 // Convert DriveFile object to array with necessary properties
-                $fileData = [];
-                if (is_array($item)) {
-                    $fileData = $item;
-                } else {
-                    $fileData = [
-                        'id' => $item->getId(),
-                        'name' => $item->getName(),
-                        'mimeType' => $item->getMimeType(),
-                        'modifiedTime' => $item->getModifiedTime(),
-                        'webViewLink' => $item->getWebViewLink(),
-                    ];
-                }
+                $fileData = is_array($item) ? $item : [
+                    'id' => $item->getId(),
+                    'name' => $item->getName(),
+                    'mimeType' => $item->getMimeType(),
+                    'modifiedTime' => $item->getModifiedTime(),
+                    'webViewLink' => $item->getWebViewLink(),
+                ];
                 
-                $fileData['display_name'] = $name;
-                $fileData['original_name'] = is_array($item) ? $item['name'] : $item->getName();
+                $fileData['display_name'] = $displayName;
+                $fileData['original_name'] = $name;
                 
                 return $fileData;
             })->values()->all();
@@ -217,14 +220,26 @@ class RequirementsController extends Controller
                 ], 422);
             }
 
+            // Validate category
+            if (!in_array($category, ['Regular', 'Irregular', 'Probation'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid category'
+                ], 422);
+            }
+
             $tenantId = tenant('id');
+            
+            // Clean the folder name first
+            $cleanFolderName = trim(str_replace(['[', ']'], '', $folderName));
+            
             // Format: [TenantID] [Category] FolderName
-            $formattedName = "[{$tenantId}] [{$category}] {$folderName}";
+            $formattedName = "[{$tenantId}] [{$category}] {$cleanFolderName}";
             
             $folder = $this->driveService->createFolder($formattedName, $parentId);
             
             // Add display information to the response
-            $folder['display_name'] = "[{$category}] {$folderName}";
+            $folder['display_name'] = "[{$category}] {$cleanFolderName}";
             $folder['category'] = $category;
             
             return response()->json([
