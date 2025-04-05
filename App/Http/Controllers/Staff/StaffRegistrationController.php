@@ -15,7 +15,7 @@ class StaffRegistrationController extends Controller
         return view('staff.auth.register');
     }
 
-    public function register(Request $request)
+    public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',

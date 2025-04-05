@@ -9,6 +9,7 @@ use App\Providers\RouteServiceProvider;
 use App\Models\Tenant;
 use App\Models\TenantAdmin;
 use Illuminate\Support\Facades\Hash;
+use App\Http\Requests\Auth\LoginRequest;
 
 class LoginController extends Controller
 {
@@ -37,6 +38,21 @@ class LoginController extends Controller
             'password' => ['required'],
         ]);
 
+        // First try to authenticate as superadmin using the web guard
+        if (Auth::attempt([
+            'email' => $request->email,
+            'password' => $request->password
+        ])) {
+            // Check if the authenticated user is a superadmin
+            if (Auth::user()->role === 'superadmin') {
+                $request->session()->regenerate();
+                return redirect()->route('superadmin.dashboard');
+            }
+            // If not superadmin, logout
+            Auth::logout();
+        }
+
+        // If not superadmin, proceed with tenant admin authentication
         if (tenant()) {
             // For tenant domains
             $admin = TenantAdmin::where('email', $request->email)
@@ -49,7 +65,7 @@ class LoginController extends Controller
         
         if (!$admin) {
             return back()->withErrors([
-                'email' => 'No tenant admin found with this email.',
+                'email' => 'No admin found with this email.',
             ])->withInput($request->except('password'));
         }
 
@@ -86,4 +102,17 @@ class LoginController extends Controller
         }
         return redirect()->route('login');
     }
+
+    // public function store(LoginRequest $request)
+    // {
+    //     $request->authenticate();
+
+    //     $request->session()->regenerate();
+
+    //     if (auth()->user()->role === 'superadmin') {
+    //         return redirect()->intended(route('superadmin.dashboard'));
+    //     }
+
+    //     return redirect()->intended(RouteServiceProvider::HOME);
+    // }
 }

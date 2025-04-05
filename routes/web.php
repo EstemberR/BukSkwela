@@ -42,3 +42,8 @@ Route::middleware(['web'])
             ->name('student.requirements')
             ->middleware(['auth', 'role:student']);
     });
+
+    Route::prefix('superadmin')->middleware(['auth', 'superadmin'])->group(function () {
+    Route::get('/dashboard', [App\Http\Controllers\SuperAdmin\DashboardController::class, 'index'])->name('superadmin.dashboard');
+    Route::post('/logout', [LoginController::class, 'logout'])->name('superadmin.logout');
+});
