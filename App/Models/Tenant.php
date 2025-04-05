@@ -6,7 +6,6 @@ use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDomains;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
-use Illuminate\Database\Eloquent\Model;
 
 class Tenant extends BaseTenant implements TenantWithDatabase
 {
@@ -16,7 +15,6 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 
     protected $fillable = [
         'id',
-        'name',
         'data'
     ];
 

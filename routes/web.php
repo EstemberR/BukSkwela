@@ -16,6 +16,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\TenantRegistrationController;
 use App\Http\Controllers\Requirements\RequirementsController;
 use Illuminate\Support\Facades\Route;
+use Google\Client;
 
 // Central domain routes
 Route::middleware(['web'])
@@ -38,58 +39,66 @@ Route::middleware(['web'])
         Route::post('/register', [Controller::class, 'registerSave'])->name('register.save');
 
         // Student Requirements Route
-        Route::prefix('admin')->middleware(['auth:admin'])->group(function () {
-            Route::get('/dashboard', function () {
-                return view('tenant.admin.dashboard');
-            })->name('tenant.admin.dashboard');
-            
-            // Add other admin routes here
-        });
+        Route::get('/requirements', [RequirementController::class, 'showStudentRequirements'])
+            ->name('student.requirements')
+            ->middleware(['auth', 'role:student']);
 
-        // Test Google Drive Connection
-        Route::get('/test-drive', function(\Google\Service\Drive $driveService) {
-            try {
-                // Try to list files in the root of Google Drive
-                $files = $driveService->files->listFiles([
-                    'pageSize' => 10,
-                    'fields' => 'files(id, name, mimeType)'
-                ]);
-                
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Successfully connected to Google Drive',
-                    'files' => $files->getFiles()
-                ]);
-            } catch (\Exception $e) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to connect to Google Drive: ' . $e->getMessage()
-                ], 500);
+        // Google OAuth routes
+        Route::get('/auth/google', function () {
+            $client = new Client();
+            $client->setClientId(config('services.google.client_id'));
+            $client->setClientSecret(config('services.google.client_secret'));
+            $client->setRedirectUri(config('services.google.redirect_uri'));
+            $client->setAccessType('offline');
+            $client->setPrompt('consent');
+            $client->setScopes([
+                'https://www.googleapis.com/auth/drive',
+                'https://www.googleapis.com/auth/drive.file',
+                'https://www.googleapis.com/auth/drive.metadata'
+            ]);
+            
+            return redirect($client->createAuthUrl());
+        })->name('google.auth');
+
+        Route::get('/auth/google/callback', function () {
+            $client = new Client();
+            $client->setClientId(config('services.google.client_id'));
+            $client->setClientSecret(config('services.google.client_secret'));
+            $client->setRedirectUri(config('services.google.redirect_uri'));
+            
+            $token = $client->fetchAccessTokenWithAuthCode(request('code'));
+            
+            if (isset($token['refresh_token'])) {
+                return 'Your refresh token is: ' . $token['refresh_token'] . 
+                       '<br>Add this to your .env file as GOOGLE_DRIVE_REFRESH_TOKEN';
             }
-        });
-    });
-
-// Tenant Routes
-Route::middleware(['web', 'tenant'])
-    ->prefix('admin')
-    ->name('tenant.admin.')
-    ->group(function () {
-        // Dashboard
-        Route::get('/dashboard', function () {
-            return view('tenant.admin.dashboard');
-        })->name('dashboard');
-
-        // Requirements
-        Route::prefix('requirements')->name('requirements.')->group(function () {
-            Route::get('/', [RequirementsController::class, 'index'])->name('index');
-            Route::get('/folder/{folderId?}', [App\Http\Controllers\Requirements\RequirementsController::class, 'listFolderContents'])->name('folder.contents');
-            Route::post('/folder/create', [RequirementsController::class, 'createFolder'])->name('folder.create');
-            Route::post('/folder/rename', [RequirementsController::class, 'renameFolder'])->name('folder.rename');
-            Route::delete('/folder/{folderId}', [RequirementsController::class, 'deleteFolder'])->name('folder.delete');
             
-            // File management routes
-            Route::post('/file/upload', [RequirementsController::class, 'uploadFile'])->name('file.upload');
-            Route::delete('/file/{fileId}', [RequirementsController::class, 'deleteFile'])->name('files.delete');
-            Route::get('/file/{fileId}', [RequirementsController::class, 'downloadFile'])->name('file.download');
-        });
+            return 'No refresh token was received. Please try again and make sure you revoke the application access in your Google Account settings first.';
+        })->name('google.callback');
     });
+
+    Route::prefix('superadmin')->middleware(['auth', 'superadmin'])->group(function () {
+        Route::get('/dashboard', [App\Http\Controllers\SuperAdmin\DashboardController::class, 'index'])->name('superadmin.dashboard');
+        Route::post('/logout', [LoginController::class, 'logout'])->name('superadmin.logout');
+    });
+
+    // Tenant Routes
+    Route::middleware(['web', 'tenant'])
+        ->group(function () {
+            // Requirements Routes
+            Route::prefix('admin/requirements')->name('tenant.admin.requirements.')->group(function () {
+                Route::get('/', [App\Http\Controllers\Requirements\RequirementsController::class, 'index'])->name('index');
+                Route::get('/folder/{folderId?}', [App\Http\Controllers\Requirements\RequirementsController::class, 'listFolderContents'])->name('folder.contents');
+                Route::post('/folder/create', [App\Http\Controllers\Requirements\RequirementsController::class, 'createFolder'])->name('folder.create');
+                Route::post('/file/upload', [App\Http\Controllers\Requirements\RequirementsController::class, 'uploadFile'])->name('file.upload');
+                Route::delete('/file/{fileId}', [App\Http\Controllers\Requirements\RequirementsController::class, 'deleteFile'])->name('files.delete');
+            });
+
+            // Reports Routes
+            Route::prefix('reports')->name('tenant.reports.')->group(function () {
+                Route::get('/students', [App\Http\Controllers\Reports\ReportsController::class, 'students'])->name('students');
+                Route::get('/staff', [App\Http\Controllers\Reports\ReportsController::class, 'staff'])->name('staff');
+                Route::get('/courses', [App\Http\Controllers\Reports\ReportsController::class, 'courses'])->name('courses');
+                Route::get('/requirements', [App\Http\Controllers\Reports\ReportsController::class, 'requirements'])->name('requirements');
+            });
+        });

@@ -180,6 +180,29 @@ class RequirementsController extends Controller
             ], 500);
         }
     }
+
+    public function deleteFile($fileId)
+    {
+        try {
+            $this->driveService->deleteFile($fileId);
+            return response()->json([
+                'success' => true,
+                'message' => 'File deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Delete file error', [
+                'error' => $e->getMessage(),
+                'file_id' => $fileId,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete file: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function createFolder(Request $request)
     {
         try {

@@ -576,12 +576,13 @@ class GoogleDriveService
                 }
             }
         } catch (Exception $e) {
-            Log::error('Upload file error', [
+            Log::error('File upload error', [
                 'error' => $e->getMessage(),
-                'file' => $file ? $file->getClientOriginalName() : 'unknown',
-                'folder_id' => $folderId
+                'file' => $file->getClientOriginalName(),
+                'folder_id' => $folderId,
+                'trace' => $e->getTraceAsString()
             ]);
-            throw new Exception('File upload error: ' . $e->getMessage());
+            throw $e;
         }
     }
     public function renameFile($fileId, $newName)
@@ -605,11 +606,22 @@ class GoogleDriveService
     public function deleteFile($fileId)
     {
         try {
-            $this->service->files->delete($fileId);
+            Log::info('Attempting to delete file', ['file_id' => $fileId]);
+            
+            // Try to delete the file
+            $this->service->files->delete($fileId, [
+                'supportsAllDrives' => true
+            ]);
+            
+            Log::info('File deleted successfully', ['file_id' => $fileId]);
             return true;
         } catch (Exception $e) {
-            Log::error('Delete file error: ' . $e->getMessage());
-            throw new Exception($e->getMessage());
+            Log::error('Failed to delete file', [
+                'error' => $e->getMessage(),
+                'file_id' => $fileId,
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
         }
     }
 

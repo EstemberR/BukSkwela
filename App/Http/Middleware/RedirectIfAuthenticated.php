@@ -22,7 +22,10 @@ class RedirectIfAuthenticated
             if (tenant()) {
                 return redirect()->route('tenant.admin.dashboard');
             }
-            return redirect(RouteServiceProvider::HOME);
+            if (Auth::user()->role === 'superadmin') {
+                return redirect()->route('superadmin.dashboard');
+            }
+            return redirect('/');
         }
 
         return $next($request);

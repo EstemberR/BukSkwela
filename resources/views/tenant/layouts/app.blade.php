@@ -1,142 +1,131 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-
-    <title>@yield('title') - {{ config('app.name') }}</title>
-
-    <!-- Styles -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <title>@yield('title') - {{ tenant('id') }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        :root {
-            --maroon: #800000;
-            --maroon-dark: #600000;
-            --maroon-light: #aa0000;
+        .sidebar {
+            min-height: 100vh;
+            background: #343a40;
+            padding-top: 20px;
         }
-
-        .bg-maroon {
-            background-color: var(--maroon) !important;
+        .sidebar .nav-link {
+            color: #fff;
+            padding: 15px 20px;
+            margin: 5px 0;
         }
-
-        .text-maroon {
-            color: var(--maroon) !important;
+        .sidebar .nav-link:hover {
+            background: #495057;
         }
-
-        .btn-maroon {
-            background-color: var(--maroon);
-            border-color: var(--maroon);
-            color: white;
+        .sidebar .nav-link.active {
+            background: #495057;
         }
-
-        .btn-maroon:hover {
-            background-color: var(--maroon-dark);
-            border-color: var(--maroon-dark);
-            color: white;
+        .sidebar .nav-link i {
+            margin-right: 10px;
         }
-
-        .navbar-dark.bg-maroon {
-            background-color: var(--maroon) !important;
+        .main-content {
+            min-height: 100vh;
+            padding: 20px;
+            margin-left: 250px;
         }
-
-        .card {
-            border: none;
-            border-radius: 8px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
-        }
-
-        .card-header {
-            border-bottom: none;
-            border-radius: 8px 8px 0 0 !important;
+        .top-navbar {
+            margin-left: 250px;
+            background: #343a40;
         }
     </style>
-    @stack('styles')
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    @if($errors->any())
-        <div class="alert alert-danger">
-            <ul class="mb-0">
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
+    <!-- Sidebar -->
+    <div class="sidebar position-fixed" style="width: 250px;">
+        <div class="px-3 mb-4">
+            <h4 class="text-white">{{ tenant('id') }}</h4>
         </div>
-    @endif
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('tenant.admin.dashboard') ? 'active' : '' }}" 
+                   href="{{ route('tenant.admin.dashboard', ['tenant' => tenant('id')]) }}">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('tenant.students.*') ? 'active' : '' }}" 
+                   href="{{ route('tenant.students.index', ['tenant' => tenant('id')]) }}">
+                    <i class="fas fa-users"></i> Students
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('tenant.staff.*') ? 'active' : '' }}" 
+                   href="{{ route('tenant.staff.index', ['tenant' => tenant('id')]) }}">
+                    <i class="fas fa-chalkboard-teacher"></i> Staff
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('tenant.courses.*') ? 'active' : '' }}" 
+                   href="{{ route('tenant.courses.index', ['tenant' => tenant('id')]) }}">
+                    <i class="fas fa-book"></i> Courses
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('tenant.admin.requirements.*') ? 'active' : '' }}" 
+                   href="{{ route('tenant.admin.requirements.index', ['tenant' => tenant('id')]) }}">
+                    <i class="fas fa-clipboard-list"></i> Requirements
+                </a>
+            </li>
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle {{ request()->routeIs('tenant.reports.*') ? 'active' : '' }}" 
+                   href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-chart-bar"></i> Reports
+                </a>
+                <ul class="dropdown-menu dropdown-menu-dark">
+                    <li>
+                        <a class="dropdown-item" href="{{ route('tenant.reports.students', ['tenant' => tenant('id')]) }}">
+                            Student Reports
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ route('tenant.reports.staff', ['tenant' => tenant('id')]) }}">
+                            Staff Reports
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ route('tenant.reports.courses', ['tenant' => tenant('id')]) }}">
+                            Course Reports
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ route('tenant.reports.requirements', ['tenant' => tenant('id')]) }}">
+                            Requirements Reports
+                        </a>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </div>
 
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-maroon">
-        <div class="container">
-            <a class="navbar-brand" href="{{ route('tenant.admin.dashboard', ['tenant' => tenant('id')]) }}">
-                {{ config('app.name') }}
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('tenant.admin.dashboard') ? 'active' : '' }}" 
-                           href="{{ route('tenant.admin.dashboard', ['tenant' => tenant('id')]) }}">
-                            <i class="fas fa-tachometer-alt"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('tenant.admin.requirements.*') ? 'active' : '' }}" 
-                           href="{{ route('tenant.admin.requirements.index', ['tenant' => tenant('id')]) }}">
-                            <i class="fas fa-folder"></i> Requirements
-                        </a>
-                    </li>
-                    <!-- Add more navigation items as needed -->
-                </ul>
-                
-                <!-- Right Side Navigation -->
-                <ul class="navbar-nav ms-auto">
-                    @auth
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user"></i> {{ Auth::user()->name }}
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <a class="dropdown-item" href="{{ route('profile.edit', ['tenant' => tenant('id')]) }}">
-                                        <i class="fas fa-user-cog"></i> Profile
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <form method="POST" action="{{ route('logout', ['tenant' => tenant('id')]) }}">
-                                        @csrf
-                                        <button type="submit" class="dropdown-item">
-                                            <i class="fas fa-sign-out-alt"></i> Logout
-                                        </button>
-                                    </form>
-                                </li>
-                            </ul>
-                        </li>
-                    @else
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ route('login', ['tenant' => tenant('id')]) }}">Login</a>
-                        </li>
-                        @if (Route::has('register'))
-                            <li class="nav-item">
-                                <a class="nav-link" href="{{ route('register') }}">Register</a>
-                            </li>
-                        @endif
-                    @endauth
-                </ul>
+    <!-- Top Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark top-navbar">
+        <div class="container-fluid">
+            <div class="ms-auto">
+                <form action="{{ route('logout') }}" method="POST" class="d-flex">
+                    @csrf
+                    <button class="btn btn-outline-light" type="submit">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </form>
             </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="py-4">
+    <div class="main-content">
         @yield('content')
-    </main>
+    </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     @stack('scripts')
 </body>
 </html>

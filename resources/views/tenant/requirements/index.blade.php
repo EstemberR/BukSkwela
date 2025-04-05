@@ -136,18 +136,48 @@
                     </ol>
                 </nav>
                 <div class="mb-3">
-                    <form id="uploadFileFormModal" class="d-flex gap-2 align-items-start">
-                        <div class="flex-grow-1">
-                            <label for="modalFileUpload" class="visually-hidden">Choose file to upload</label>
-                            <input type="file" class="form-control" id="modalFileUpload" name="file">
+                    <form id="uploadFileFormModal" class="d-flex flex-column gap-2">
+                        <div id="dragDropZone" class="drag-drop-zone p-4 border border-2 border-dashed rounded text-center">
+                            <i class="fas fa-cloud-upload-alt fa-2x mb-2"></i>
+                            <p class="mb-0">Drag and drop files here or</p>
+                            <div class="mt-2">
+                                <label for="modalFileUpload" class="btn btn-outline-primary mb-0">
+                                    <i class="fas fa-folder-open"></i> Browse Files
+                                </label>
+                                <input type="file" class="d-none" id="modalFileUpload" name="file">
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-primary" id="modalUploadBtn">
-                            <i class="fas fa-upload" aria-hidden="true"></i> Upload
-                        </button>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary" id="modalUploadBtn">
+                                <i class="fas fa-upload" aria-hidden="true"></i> Upload
+                            </button>
+                        </div>
                         <input type="hidden" id="modalCurrentFolderId" name="folderId">
                     </form>
                 </div>
-                <div id="modalFileContents" class="row g-3">
+                <style>
+                    .drag-drop-zone {
+                        transition: all 0.3s ease;
+                        background-color: #f8f9fa;
+                        min-height: 150px;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        cursor: pointer;
+                    }
+                    .drag-drop-zone.dragover {
+                        background-color: #e9ecef;
+                        border-color: #0d6efd !important;
+                    }
+                    .drag-drop-zone i {
+                        color: #6c757d;
+                    }
+                    .drag-drop-zone:hover {
+                        background-color: #e9ecef;
+                    }
+                </style>
+                <div id="modalFileContents" class="row g-3 d-none">
                     <div class="col-12 text-center">
                         <div class="spinner-border" role="status">
                             <span class="visually-hidden">Loading...</span>
@@ -697,6 +727,7 @@
         console.log('Filtered files list:', filesList);
         
         let container = $('#modalFileContents');
+        container.removeClass('d-none'); // Show the container when we have content to display
         container.empty();
 
         if (filesList.length === 0) {
@@ -1044,112 +1075,165 @@ function deleteFile(fileId) {
 
 function setupModalFileUploadHandler() {
     const uploadForm = document.getElementById('uploadFileFormModal');
+    const dragDropZone = document.getElementById('dragDropZone');
+    const fileInput = document.getElementById('modalFileUpload');
+    
+    if (dragDropZone) {
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dragDropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        // Highlight drop zone when dragging over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dragDropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dragDropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        // Handle dropped files
+        dragDropZone.addEventListener('drop', handleDrop, false);
+
+        // Handle click to upload
+        dragDropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+    }
     
     if (uploadForm) {
-        uploadForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const fileInput = document.getElementById('modalFileUpload');
-            const folderId = document.getElementById('modalCurrentFolderId').value;
-            
-            if (!fileInput.files || fileInput.files.length === 0) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'No File Selected',
-                    text: 'Please select a file to upload'
-                });
-                return;
-            }
+        uploadForm.addEventListener('submit', handleUpload);
+    }
 
-            // Validate file size (e.g., 10MB limit)
-            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
-            if (fileInput.files[0].size > maxSize) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'File Too Large',
-                    text: 'Please select a file smaller than 10MB'
-                });
-                return;
-            }
-    
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-            formData.append('folderId', folderId);
-            
-            // Get CSRF token from meta tag
-            const token = document.querySelector('meta[name="csrf-token"]');
-            if (!token) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'CSRF token not found. Please refresh the page.'
-                });
-                return;
-            }
-            formData.append('_token', token.getAttribute('content'));
+    function preventDefaults (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
 
-            try {
-                const uploadBtn = document.getElementById('modalUploadBtn');
-                uploadBtn.disabled = true;
-                uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
-    
-                const response = await fetch('{{ route("tenant.admin.requirements.file.upload", ["tenant" => tenant("id")]) }}', {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': token.getAttribute('content')
-                    },
-                    credentials: 'same-origin',
-                    body: formData
-                });
+    function highlight(e) {
+        dragDropZone.classList.add('dragover');
+    }
 
-                const result = await response.json();
+    function unhighlight(e) {
+        dragDropZone.classList.remove('dragover');
+    }
 
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        throw new Error('Please log in to continue.');
-                    } else if (response.status === 422) {
-                        // Validation errors
-                        const errors = result.message || {};
-                        const errorMessage = Object.values(errors).flat().join('\n');
-                        throw new Error(errorMessage || 'Invalid file or upload data.');
-                    } else if (response.status === 400) {
-                        throw new Error(result.message || 'File upload failed. Please try again.');
-                    } else {
-                        throw new Error('Server error occurred. Please try again later.');
-                    }
-                }
-    
-                if (result.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'File Uploaded',
-                        text: 'The file has been uploaded successfully',
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 3000
-                    });
-    
-                    // Reload the folder contents
-                    loadFolderContents(folderId);
-                    fileInput.value = '';
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        fileInput.files = files;
+        
+        // If a file was dropped, trigger the upload
+        if (files.length > 0) {
+            handleUpload(e);
+        }
+    }
+
+    async function handleUpload(e) {
+        e.preventDefault();
+        
+        const fileInput = document.getElementById('modalFileUpload');
+        const folderId = document.getElementById('modalCurrentFolderId').value;
+        
+        if (!fileInput.files || fileInput.files.length === 0) {
+            Swal.fire({
+                icon: 'error',
+                title: 'No File Selected',
+                text: 'Please select a file to upload'
+            });
+            return;
+        }
+
+        // Validate file size (e.g., 10MB limit)
+        const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+        if (fileInput.files[0].size > maxSize) {
+            Swal.fire({
+                icon: 'error',
+                title: 'File Too Large',
+                text: 'Please select a file smaller than 10MB'
+            });
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('folderId', folderId);
+        
+        // Get CSRF token from meta tag
+        const token = document.querySelector('meta[name="csrf-token"]');
+        if (!token) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'CSRF token not found. Please refresh the page.'
+            });
+            return;
+        }
+        formData.append('_token', token.getAttribute('content'));
+
+        try {
+            const uploadBtn = document.getElementById('modalUploadBtn');
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+
+            const response = await fetch('{{ route("tenant.admin.requirements.file.upload", ["tenant" => tenant("id")]) }}', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': token.getAttribute('content')
+                },
+                credentials: 'same-origin',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    throw new Error('Please log in to continue.');
+                } else if (response.status === 422) {
+                    // Validation errors
+                    const errors = result.message || {};
+                    const errorMessage = Object.values(errors).flat().join('\n');
+                    throw new Error(errorMessage || 'Invalid file or upload data.');
+                } else if (response.status === 400) {
+                    throw new Error(result.message || 'File upload failed. Please try again.');
                 } else {
-                    throw new Error(result.message || 'Failed to upload file');
+                    throw new Error('Server error occurred. Please try again later.');
                 }
-            } catch (error) {
-                console.error('File upload error:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Upload Failed',
-                    text: error.message || 'Failed to upload file'
-                });
-            } finally {
-                const uploadBtn = document.getElementById('modalUploadBtn');
-                uploadBtn.disabled = false;
-                uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload';
             }
-        });
+
+            if (result.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'File Uploaded',
+                    text: 'The file has been uploaded successfully',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+
+                // Reload the folder contents
+                loadFolderContents(folderId);
+                fileInput.value = '';
+            } else {
+                throw new Error(result.message || 'Failed to upload file');
+            }
+        } catch (error) {
+            console.error('File upload error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Upload Failed',
+                text: error.message || 'Failed to upload file'
+            });
+        } finally {
+            const uploadBtn = document.getElementById('modalUploadBtn');
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload';
+        }
     }
 }
 </script>
