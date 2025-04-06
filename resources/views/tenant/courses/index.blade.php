@@ -51,13 +51,13 @@
             <!-- Courses Table -->
             <div class="table-responsive">
                 <table class="table table-hover">
-                    <thead>
+                    <thead class="bg-primary text-white">
                         <tr>
-                            <th>Title</th>
-                            <th>Description</th>
-                            <th>Instructor</th>
-                            <th>Status</th>
-                            <th>Actions</th>
+                            <th class="fw-bold">Title</th>
+                            <th class="fw-bold">Description</th>
+                            <th class="fw-bold">Instructor</th>
+                            <th class="fw-bold">Status</th>
+                            <th class="fw-bold">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -90,8 +90,13 @@
             </div>
 
             <!-- Pagination -->
-            <div class="d-flex justify-content-end">
-                {{ $courses->links() }}
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <div class="text-muted">
+                    Showing {{ $courses->firstItem() ?? 0 }} to {{ $courses->lastItem() ?? 0 }} of {{ $courses->total() }} entries
+                </div>
+                <div>
+                    {{ $courses->links() }}
+                </div>
             </div>
         </div>
     </div>

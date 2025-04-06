@@ -35,14 +35,14 @@
                     <!-- Students Table -->
                     <div class="table-responsive">
                         <table class="table table-hover">
-                            <thead>
+                            <thead class="bg-primary text-white">
                                 <tr>
-                                    <th>ID Number</th>
-                                    <th>Name</th>
-                                    <th>Course</th>
-                                    <th>Email</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
+                                    <th class="fw-bold">ID Number</th>
+                                    <th class="fw-bold">Name</th>
+                                    <th class="fw-bold">Course</th>
+                                    <th class="fw-bold">Email</th>
+                                    <th class="fw-bold">Status</th>
+                                    <th class="fw-bold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -76,8 +76,13 @@
                     </div>
 
                     <!-- Pagination -->
-                    <div class="d-flex justify-content-end">
-                        {{ $students->links() }}
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div class="text-muted">
+                            Showing {{ $students->firstItem() ?? 0 }} to {{ $students->lastItem() ?? 0 }} of {{ $students->total() }} entries
+                        </div>
+                        <div>
+                            {{ $students->links() }}
+                        </div>
                     </div>
                 </div>
             </div>

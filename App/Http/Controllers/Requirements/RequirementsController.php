@@ -85,79 +85,57 @@ class RequirementsController extends Controller
         }
     }
 
-    public function listFolderContents(Request $request, $folderId = null)
+    public function listFolderContents(Request $request)
     {
         try {
-            $contents = $this->driveService->listFolderContents($folderId);
+            $folderId = $request->query('folderId', null);
             $category = $request->query('category', 'Regular');
-            $tenantId = tenant('id');
+            $perPage = 10; // Number of items per page
 
-            // Filter contents by tenant and category
-            $filteredContents = collect($contents['files'])->filter(function ($item) use ($category, $tenantId) {
-                // Get the name and mime type
-                $name = is_array($item) ? $item['name'] : $item->getName();
-                $mimeType = is_array($item) ? $item['mimeType'] : $item->getMimeType();
-                
-                // Only process folders
-                if ($mimeType !== 'application/vnd.google-apps.folder') {
+            // Get folder contents from Google Drive
+            $contents = $this->driveService->listFolderContents($folderId);
+
+            // Filter contents by category
+            $filteredContents = collect($contents['files'])->filter(function ($item) use ($category) {
+                if ($item['mimeType'] !== 'application/vnd.google-apps.folder') {
                     return false;
                 }
 
-                // Check if folder belongs to this tenant
-                if (!str_starts_with($name, "[{$tenantId}]")) {
-                    return false;
-                }
-
-                // Remove tenant prefix for category checking
-                $nameWithoutTenant = str_replace("[{$tenantId}] ", "", $name);
-                
                 // Extract category from folder name
-                $categoryMatch = preg_match('/\[(Regular|Irregular|Probation)\]/', $nameWithoutTenant, $matches);
+                $categoryMatch = preg_match('/\[(Regular|Irregular|Probation)\]/', $item['name'], $matches);
                 $itemCategory = $categoryMatch ? $matches[1] : 'Regular';
 
                 // Return true only if the category matches
                 return $itemCategory === $category;
-            })->map(function ($item) use ($tenantId) {
-                // Clean up the display name
-                $name = is_array($item) ? $item['name'] : $item->getName();
-                $displayName = $name;
-                
-                // Remove tenant prefix and clean up display name
-                if (str_starts_with($name, "[{$tenantId}]")) {
-                    $displayName = str_replace("[{$tenantId}] ", "", $name);
-                }
-                
-                // Convert DriveFile object to array with necessary properties
-                $fileData = is_array($item) ? $item : [
-                    'id' => $item->getId(),
-                    'name' => $item->getName(),
-                    'mimeType' => $item->getMimeType(),
-                    'modifiedTime' => $item->getModifiedTime(),
-                    'webViewLink' => $item->getWebViewLink(),
-                ];
-                
-                $fileData['display_name'] = $displayName;
-                $fileData['original_name'] = $name;
-                
-                return $fileData;
-            })->values()->all();
+            })->values();
+
+            // Paginate the filtered contents
+            $page = $request->query('page', 1);
+            $paginatedContents = new \Illuminate\Pagination\LengthAwarePaginator(
+                $filteredContents->forPage($page, $perPage),
+                $filteredContents->count(),
+                $perPage,
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
 
             return response()->json([
                 'success' => true,
-                'files' => $filteredContents,
+                'files' => $paginatedContents->items(),
+                'pagination' => [
+                    'total' => $paginatedContents->total(),
+                    'per_page' => $paginatedContents->perPage(),
+                    'current_page' => $paginatedContents->currentPage(),
+                    'last_page' => $paginatedContents->lastPage(),
+                    'from' => $paginatedContents->firstItem(),
+                    'to' => $paginatedContents->lastItem()
+                ],
                 'path' => $contents['path'] ?? [],
                 'currentFolder' => [
                     'id' => $folderId ?? 'root'
                 ]
             ]);
         } catch (\Exception $e) {
-            \Log::error('List folder contents error', [
-                'error' => $e->getMessage(),
-                'folder_id' => $folderId,
-                'category' => $category,
-                'trace' => $e->getTraceAsString()
-            ]);
-            
             return response()->json([
                 'success' => false,
                 'message' => 'Error listing folder contents: ' . $e->getMessage()
