@@ -14,12 +14,27 @@ use App\Helpers\PasswordGenerator;
 
 class StaffController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $staffMembers = Staff::with('department')
-            ->where('tenant_id', tenant('id'))
-            ->paginate(10);
-            
+        // Start with a query scoped to the current tenant
+        $query = Staff::where('tenant_id', tenant('id'));
+
+        // Apply search filter
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('staff_id', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Apply role filter
+        if ($request->has('role') && $request->get('role') !== '') {
+            $query->where('role', $request->get('role'));
+        }
+
+        $staffMembers = $query->paginate(10);
         $departments = Department::where('tenant_id', tenant('id'))->get();
 
         return view('tenant.staff.index', compact('staffMembers', 'departments'));
@@ -98,6 +113,12 @@ class StaffController extends Controller
 
     public function update(Request $request, Staff $staff)
     {
+        // Ensure the staff member belongs to the current tenant
+        if ($staff->tenant_id != tenant('id')) {
+            return redirect()->route('tenant.staff.index', ['tenant' => tenant('id')])
+                ->with('error', 'Unauthorized access to staff member from another tenant');
+        }
+
         $request->validate([
             'staff_id' => 'required|unique:staff,staff_id,' . $staff->id,
             'name' => 'required|string|max:255',
@@ -105,6 +126,13 @@ class StaffController extends Controller
             'role' => 'required|in:instructor,admin,staff',
             'department_id' => 'required|exists:departments,id',
         ]);
+
+        // Verify the department belongs to this tenant
+        $department = Department::find($request->department_id);
+        if (!$department || $department->tenant_id != tenant('id')) {
+            return redirect()->route('tenant.staff.index', ['tenant' => tenant('id')])
+                ->with('error', 'The selected department is invalid');
+        }
 
         $staff->update([
             'staff_id' => $request->staff_id,
@@ -126,6 +154,14 @@ class StaffController extends Controller
 
     public function destroy(Staff $staff)
     {
+        // Ensure the staff member belongs to the current tenant
+        if ($staff->tenant_id != tenant('id')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized access to staff member from another tenant'
+            ], 403);
+        }
+
         $staff->delete();
         return response()->json(['success' => true]);
     }

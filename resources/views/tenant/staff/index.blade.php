@@ -37,12 +37,18 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <div class="input-group">
-                                <input type="text" class="form-control" placeholder="Search staff..." id="searchStaff">
-                                <button class="btn btn-outline-secondary" type="button">Search</button>
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       placeholder="Search staff..." 
+                                       id="searchStaff" 
+                                       autocomplete="off">
                             </div>
                         </div>
                         <div class="col-md-6 text-end">
-                            <select class="form-select d-inline-block w-auto">
+                            <select class="form-select d-inline-block w-auto" id="roleFilter">
                                 <option value="">All Roles</option>
                                 <option value="instructor">Instructor</option>
                                 <option value="admin">Admin</option>
@@ -244,4 +250,64 @@
         }
     }
 </script>
-@endsection 
+@endsection
+
+@push('scripts')
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Live search functionality
+    $("#searchStaff").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $(".table tbody tr").filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+        });
+        
+        // Show no results message if needed
+        if ($('.table tbody tr:visible').length === 0) {
+            if ($('.no-results').length === 0) {
+                $('.table tbody').append('<tr class="no-results"><td colspan="7" class="text-center">No matching results found</td></tr>');
+            }
+        } else {
+            $('.no-results').remove();
+        }
+    });
+    
+    // Role filter
+    $("#roleFilter").on("change", function() {
+        var selectedRole = $(this).val().toLowerCase();
+        
+        if (selectedRole === "") {
+            // Show all rows if no role is selected
+            $(".table tbody tr").show();
+        } else {
+            // Hide all rows first
+            $(".table tbody tr").hide();
+            
+            // Show only rows matching the selected role
+            $(".table tbody tr").filter(function() {
+                var roleText = $(this).find("td:eq(3)").text().toLowerCase();
+                return roleText.indexOf(selectedRole) > -1;
+            }).show();
+        }
+        
+        // Combine with text search
+        var searchText = $("#searchStaff").val().toLowerCase();
+        if (searchText !== "") {
+            $(".table tbody tr:visible").filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(searchText) > -1);
+            });
+        }
+        
+        // Show no results message if needed
+        if ($('.table tbody tr:visible').length === 0) {
+            if ($('.no-results').length === 0) {
+                $('.table tbody').append('<tr class="no-results"><td colspan="7" class="text-center">No matching results found</td></tr>');
+            }
+        } else {
+            $('.no-results').remove();
+        }
+    });
+});
+</script>
+@endpush 

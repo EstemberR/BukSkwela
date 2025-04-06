@@ -153,10 +153,20 @@
                         </div>
                         <div class="col-md-6">
                             <div class="search-wrapper">
-                                <div class="input-group">
-                                    <input type="text" class="form-control" placeholder="Search folders..." id="searchInput">
-                                    <button class="btn btn-outline-secondary" type="button">Search</button>
-                                </div>
+                                <form id="searchForm" method="GET">
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-search"></i>
+                                        </span>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               placeholder="Search folders..." 
+                                               id="searchInput" 
+                                               name="search"
+                                               value="{{ request('search') }}"
+                                               autocomplete="off">
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -403,55 +413,47 @@
         setupGoogleDriveStatus();
         setupModalFileUploadHandler();
 
+        // Search functionality
+        const searchForm = document.getElementById('searchForm');
         const searchInput = document.getElementById('searchInput');
-        const searchButton = searchInput.nextElementSibling;
-        
-        // Function to perform search
-        function performSearch() {
-            const searchTerm = searchInput.value.toLowerCase();
-            const folderRows = document.querySelectorAll('#folderContentsTable tbody tr');
-            
-            folderRows.forEach(row => {
-                const folderName = row.querySelector('td:first-child')?.textContent.toLowerCase() || '';
+        let searchTimeout;
+
+        // Handle search input with debounce
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const searchTerm = this.value.toLowerCase();
+                const folderRows = document.querySelectorAll('#folderContentsTable tbody tr');
                 
-                if (searchTerm === '') {
-                    row.style.display = ''; // Show all when search is empty
-                } else if (folderName.includes(searchTerm)) {
-                    row.style.display = ''; // Show matching rows
-                } else {
-                    row.style.display = 'none'; // Hide non-matching rows
+                folderRows.forEach(row => {
+                    const folderName = row.querySelector('td:first-child')?.textContent.toLowerCase() || '';
+                    
+                    if (searchTerm === '') {
+                        row.style.display = ''; // Show all when search is empty
+                    } else if (folderName.includes(searchTerm)) {
+                        row.style.display = ''; // Show matching rows
+                    } else {
+                        row.style.display = 'none'; // Hide non-matching rows
+                    }
+                });
+
+                // Show "no results" message if all rows are hidden
+                const visibleRows = Array.from(folderRows).filter(row => row.style.display !== 'none');
+                const tbody = document.querySelector('#folderContentsTable tbody');
+                const noResultsRow = tbody.querySelector('.no-results-row');
+
+                if (visibleRows.length === 0 && searchTerm !== '') {
+                    if (!noResultsRow) {
+                        const tr = document.createElement('tr');
+                        tr.className = 'no-results-row';
+                        tr.innerHTML = '<td colspan="2" class="text-center">No folders found matching your search</td>';
+                        tbody.appendChild(tr);
+                    }
+                } else if (noResultsRow) {
+                    noResultsRow.remove();
                 }
-            });
-
-            // Show "no results" message if all rows are hidden
-            const visibleRows = Array.from(folderRows).filter(row => row.style.display !== 'none');
-            const tbody = document.querySelector('#folderContentsTable tbody');
-            const noResultsRow = tbody.querySelector('.no-results-row');
-
-            if (visibleRows.length === 0 && searchTerm !== '') {
-                if (!noResultsRow) {
-                    const tr = document.createElement('tr');
-                    tr.className = 'no-results-row';
-                    tr.innerHTML = '<td colspan="3" class="text-center">No folders found matching your search</td>';
-                    tbody.appendChild(tr);
-                }
-            } else if (noResultsRow) {
-                noResultsRow.remove();
-            }
-        }
-
-        // Search on button click
-        searchButton.addEventListener('click', performSearch);
-
-        // Search on enter key
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                performSearch();
-            }
+            }, 300); // 300ms debounce
         });
-
-        // Real-time search as typing (optional, can be removed if not wanted)
-        searchInput.addEventListener('input', performSearch);
     });
 
     function updateDebugTimestamp() {

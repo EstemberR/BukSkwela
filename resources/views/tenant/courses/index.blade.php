@@ -35,8 +35,14 @@
             <div class="row mb-3">
                 <div class="col-md-6">
                     <div class="input-group">
-                        <input type="text" class="form-control" placeholder="Search courses..." id="searchCourse">
-                        <button class="btn btn-outline-secondary" type="button">Search</button>
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" 
+                               class="form-control" 
+                               placeholder="Search courses..." 
+                               id="searchCourse" 
+                               autocomplete="off">
                     </div>
                 </div>
                 <div class="col-md-6 text-end">
@@ -198,6 +204,78 @@ function deleteCourse(courseId) {
         });
     }
 }
+
+// Search and filter functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchCourse');
+    const statusFilter = document.getElementById('statusFilter');
+    let searchTimeout;
+
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedStatus = statusFilter.value.toLowerCase();
+        const tableRows = document.querySelectorAll('#folderContentsTable tbody tr, .table tbody tr');
+        let hasVisibleRows = false;
+
+        tableRows.forEach(row => {
+            if (row.classList.contains('no-results-row')) {
+                return; // Skip the no results message row
+            }
+
+            const cells = row.getElementsByTagName('td');
+            if (!cells.length) return; // Skip if no cells
+
+            const title = cells[0].textContent.toLowerCase();
+            const description = cells[1].textContent.toLowerCase();
+            const statusCell = cells[2].querySelector('.badge');
+            const status = statusCell ? statusCell.textContent.toLowerCase() : '';
+
+            const matchesSearch = !searchTerm || 
+                title.includes(searchTerm) || 
+                description.includes(searchTerm);
+
+            const matchesStatus = !selectedStatus || 
+                status.includes(selectedStatus);
+
+            if (matchesSearch && matchesStatus) {
+                row.style.display = '';
+                hasVisibleRows = true;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Handle no results message
+        const tbody = document.querySelector('.table tbody');
+        let noResultsRow = tbody.querySelector('.no-results-row');
+
+        if (!hasVisibleRows) {
+            if (!noResultsRow) {
+                noResultsRow = document.createElement('tr');
+                noResultsRow.className = 'no-results-row';
+                noResultsRow.innerHTML = `<td colspan="4" class="text-center">
+                    No courses found ${searchTerm ? 'matching "' + searchTerm + '"' : ''} 
+                    ${selectedStatus ? 'with status "' + selectedStatus + '"' : ''}
+                </td>`;
+                tbody.appendChild(noResultsRow);
+            }
+        } else if (noResultsRow) {
+            noResultsRow.remove();
+        }
+    }
+
+    // Handle search input with debounce
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(filterTable, 300);
+    });
+
+    // Handle status filter change
+    statusFilter.addEventListener('change', filterTable);
+
+    // Initial filter (in case there are pre-selected values)
+    filterTable();
+});
 </script>
 @endpush
 @endsection 
