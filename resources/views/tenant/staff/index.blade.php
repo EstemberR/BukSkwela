@@ -134,14 +134,21 @@
                         <label class="form-label">Email</label>
                         <input type="email" class="form-control" name="email" required>
                     </div>
-                    <input type="hidden" name="role" value="instructor">
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <select class="form-select" name="role" required>
+                            <option value="">Select Role</option>
+                            <option value="instructor">Instructor</option>
+                            <option value="admin">Admin</option>
+                            <option value="staff">Staff</option>
+                        </select>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label">Department</label>
                         <input type="text" class="form-control" name="department" required>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Password</label>
-                        <input type="password" class="form-control" name="password" required>
+                    <div class="alert alert-info">
+                        <small><i class="fas fa-info-circle"></i> A secure password will be automatically generated and sent to the staff member's email.</small>
                     </div>
                 </div>
                 <div class="modal-footer">

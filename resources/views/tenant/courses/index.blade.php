@@ -55,7 +55,6 @@
                         <tr>
                             <th class="fw-bold">Title</th>
                             <th class="fw-bold">Description</th>
-                            <th class="fw-bold">Instructor</th>
                             <th class="fw-bold">Status</th>
                             <th class="fw-bold">Actions</th>
                         </tr>
@@ -65,7 +64,6 @@
                         <tr>
                             <td>{{ $course->title }}</td>
                             <td>{{ Str::limit($course->description, 50) }}</td>
-                            <td>{{ $course->staff->name ?? 'N/A' }}</td>
                             <td>
                                 <span class="badge bg-{{ $course->status === 'active' ? 'success' : 'warning' }}">
                                     {{ ucfirst($course->status) }}
@@ -82,7 +80,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="5" class="text-center">No courses found</td>
+                            <td colspan="4" class="text-center">No courses found</td>
                         </tr>
                         @endforelse
                     </tbody>
@@ -120,15 +118,6 @@
                     <div class="mb-3">
                         <label class="form-label">Description</label>
                         <textarea class="form-control" name="description" rows="3"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Instructor</label>
-                        <select class="form-select" name="staff_id" required>
-                            <option value="">Select Instructor</option>
-                            @foreach($instructors as $instructor)
-                                <option value="{{ $instructor->id }}">{{ $instructor->name }}</option>
-                            @endforeach
-                        </select>
                     </div>
                 </div>
                 <div class="modal-footer">

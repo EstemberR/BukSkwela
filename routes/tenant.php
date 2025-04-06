@@ -30,37 +30,21 @@ Route::middleware(['web'])
             ->name('tenant.login');
         Route::post('/login', [LoginController::class, 'login'])
             ->name('tenant.login.post');
+        
+        // Main dashboard route
+        Route::get('/dashboard', [DashboardController::class, 'index'])
+            ->name('tenant.dashboard')
+            ->middleware('auth:admin');
     });
 
 Route::middleware(['web', 'tenant', 'auth:admin'])
     ->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'adminDashboard'])
-            ->name('tenant.admin.dashboard');
-        Route::prefix('admin')->group(function () {
-            // Add this temporary route for debugging
-            Route::get('/debug/student/{student}', function($student) {
-                try {
-                    $studentModel = \App\Models\Student\Student::where('id', $student)
-                        ->where('tenant_id', tenant('id'))
-                        ->first();
-                    
-                    return response()->json([
-                        'exists' => !is_null($studentModel),
-                        'student_id' => $student,
-                        'tenant_id' => tenant('id'),
-                        'data' => $studentModel
-                    ]);
-                } catch (\Exception $e) {
-                    return response()->json([
-                        'error' => $e->getMessage(),
-                        'student_id' => $student,
-                        'tenant_id' => tenant('id')
-                    ], 500);
-                }
-            })->name('debug.student');
+        // Main dashboard route
+        Route::get('/dashboard', [DashboardController::class, 'index'])
+            ->name('tenant.dashboard');
 
-            Route::get('/dashboard', [DashboardController::class, 'adminDashboard'])
-                ->name('tenant.admin.dashboard');
+        Route::prefix('admin')->group(function () {
+            // Remove the admin dashboard route since we're using the main one
             Route::get('/staff/register', [StaffRegistrationController::class, 'showRegistrationForm'])
                 ->name('staff.register');
             Route::post('/staff/register', [StaffRegistrationController::class, 'register'])

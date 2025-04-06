@@ -11,7 +11,7 @@ use App\Models\Course\Course;
 
 class DashboardController extends Controller
 {
-    public function adminDashboard()
+    public function index()
     {
         $data = [
             'instructorCount' => Staff::where('tenant_id', tenant('id'))->count(),

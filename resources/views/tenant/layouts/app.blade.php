@@ -1097,8 +1097,8 @@
         </div>
                 <ul class="nav flex-column px-3 flex-grow-1">
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('tenant.admin.dashboard') ? 'active' : '' }}" 
-                   href="{{ route('tenant.admin.dashboard', ['tenant' => tenant('id')]) }}">
+                <a class="nav-link {{ request()->routeIs('tenant.dashboard') ? 'active' : '' }}" 
+                   href="{{ route('tenant.dashboard', ['tenant' => tenant('id')]) }}">
                     <i class="fas fa-home"></i> Dashboard
                 </a>
             </li>

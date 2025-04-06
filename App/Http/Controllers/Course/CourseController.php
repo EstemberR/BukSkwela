@@ -27,13 +27,12 @@ class CourseController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'staff_id' => 'required|exists:staff,id'
         ]);
 
         Course::create([
             'title' => $request->title,
             'description' => $request->description,
-            'staff_id' => $request->staff_id,
+            'staff_id' => null,
             'status' => 'active',
             'tenant_id' => tenant('id')
         ]);

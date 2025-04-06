@@ -25,38 +25,18 @@ class RequirementsController extends Controller
         try {
             $contents = $this->driveService->listFolderContents($folderId);
             $category = $request->query('category', 'Regular');
+            $tenantId = tenant('id');
             
             if (isset($contents['files'])) {
-                $filteredFiles = array_filter($contents['files'], function($file) use ($category) {
-                    $tenantId = tenant('id');
+                $filteredFiles = array_filter($contents['files'], function($file) use ($tenantId) {
                     $name = is_array($file) ? $file['name'] : $file->getName();
                     $mimeType = is_array($file) ? $file['mimeType'] : $file->getMimeType();
                     $isFolder = strpos($mimeType, 'folder') !== false;
+                    
+                    // Check if file/folder belongs to current tenant
                     $hasPrefix = str_starts_with($name, "[{$tenantId}]");
                     
-                    // Always process folders, and files with tenant prefix
-                    if ($isFolder || $hasPrefix) {
-                        if (is_array($file)) {
-                            $file['formatted_name'] = $hasPrefix ? str_replace("[{$tenantId}]", '', $name) : $name;
-                            $file['is_folder'] = $isFolder;
-                            $file['type'] = $isFolder ? 'folder' : 'file';
-                            $file['last_modified'] = isset($file['modifiedTime']) ? 
-                                date('Y-m-d H:i:s', strtotime($file['modifiedTime'])) : '';
-                            $file['size'] = isset($file['size']) ? $file['size'] : 0;
-                            $file['web_view_link'] = isset($file['webViewLink']) ? $file['webViewLink'] : '';
-                        } else {
-                            $file->formatted_name = $hasPrefix ? str_replace("[{$tenantId}]", '', $name) : $name;
-                            $file->is_folder = $isFolder;
-                            $file->type = $isFolder ? 'folder' : 'file';
-                            $file->last_modified = $file->getModifiedTime() ? 
-                                date('Y-m-d H:i:s', strtotime($file->getModifiedTime())) : '';
-                            $file->size = $file->getSize() ?? 0;
-                            $file->web_view_link = $file->getWebViewLink() ?? '';
-                        }
-                        return true;
-                    }
-                    
-                    return false;
+                    return $hasPrefix;
                 });
                 
                 $contents['files'] = array_values($filteredFiles);
@@ -67,8 +47,7 @@ class RequirementsController extends Controller
                 'files' => $contents['files'] ?? [],
                 'path' => $contents['path'] ?? [],
                 'notice' => $contents['notice'] ?? null,
-                'current_folder' => $folderId ?? 'root',
-                'total_items' => count($contents['files'] ?? [])
+                'current_folder' => $folderId ?? 'root'
             ]);
         } catch (\Exception $e) {
             \Log::error('Folder contents error', [
@@ -90,14 +69,21 @@ class RequirementsController extends Controller
         try {
             $folderId = $request->query('folderId', null);
             $category = $request->query('category', 'Regular');
-            $perPage = 10; // Number of items per page
+            $tenantId = tenant('id');
+            $perPage = 10;
 
             // Get folder contents from Google Drive
             $contents = $this->driveService->listFolderContents($folderId);
 
-            // Filter contents by category
-            $filteredContents = collect($contents['files'])->filter(function ($item) use ($category) {
+            // Filter contents by tenant and category
+            $filteredContents = collect($contents['files'])->filter(function ($item) use ($category, $tenantId) {
                 if ($item['mimeType'] !== 'application/vnd.google-apps.folder') {
+                    return false;
+                }
+
+                // Check if folder belongs to current tenant
+                $tenantMatch = preg_match('/\[' . preg_quote($tenantId, '/') . '\]/', $item['name']);
+                if (!$tenantMatch) {
                     return false;
                 }
 
