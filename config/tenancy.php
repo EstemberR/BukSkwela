@@ -36,7 +36,7 @@ return [
              * Note: It's recommended to create a designated central connection,
              * to let you easily use it in your app, e.g. via the DB facade.
              */
-            'connection' => null,
+            'connection' => 'central',
 
             'table_names' => [
                 'tenants' => 'tenants',
@@ -101,14 +101,22 @@ return [
          * The connection that will be used as a template for the dynamically created tenant connection.
          * Set to null to use the default connection.
          */
-        'based_on' => null,
+        'based_on' => 'central',
 
         /**
          * Tenant database names are created like this:
          * prefix + tenant_id + suffix.
          */
-        'prefix' => 'tenant',
+        'prefix' => 'tenant_',
         'suffix' => '',
+
+        /**
+         * Connection name used for the tenant connection.
+         * If null, tenant connections will have an auto-generated connection name. 
+         * If not null, all tenant connections will use the same connection name,
+         * and tenant connection configuration will be updated dynamically at runtime.
+         */
+        'tenant_connection_name' => 'tenant',
 
         'separate_by' => 'database', // database or schema (only supported by pgsql)
     ],
@@ -194,7 +202,7 @@ return [
      */
     'database_managers' => [
         'sqlite' => Stancl\Tenancy\TenantDatabaseManagers\SQLiteDatabaseManager::class,
-        'mysql' => Stancl\Tenancy\TenantDatabaseManagers\MySQLDatabaseManager::class,
+        'mysql' => App\TenantDatabaseManagers\CustomMySQLDatabaseManager::class,
         'pgsql' => Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLDatabaseManager::class,
 
         /**
@@ -251,19 +259,19 @@ return [
     /**
      * Should tenant migrations be ran after the tenant's database is created.
      */
-    'migrate_after_creation' => false,
+    'migrate_after_creation' => true,
     'migration_parameters' => [
-        // '--force' => true, // Set this to true to be able to run migrations in production
-        // '--path' => [], // If you need to customize paths to tenant migrations
+        '--force' => true, // Set this to true to be able to run migrations in production
+        '--path' => [database_path('migrations/tenant')], // Customize path to tenant migrations
     ],
 
     /**
      * Should tenant databases be automatically seeded after they're created & migrated.
      */
-    'seed_after_migration' => false, // should the seeder run after automatic migration
+    'seed_after_migration' => true, // should the seeder run after automatic migration
     'seeder_parameters' => [
-        '--class' => 'DatabaseSeeder', // root seeder class, e.g.: 'DatabaseSeeder'
-        // '--force' => true,
+        '--class' => 'TenantDatabaseSeeder', // root seeder class, e.g.: 'DatabaseSeeder'
+        '--force' => true,
     ],
 
     /**
@@ -271,7 +279,7 @@ return [
      *
      * This will save space but permanently delete data which you might want to keep.
      */
-    'delete_database_after_tenant_deletion' => false,
+    'delete_database_after_tenant_deletion' => true,
 
     /**
      * Should tenant databases be deleted asynchronously in a queued job.

@@ -30,6 +30,8 @@ Route::middleware(['web'])
             ->name('tenant.login');
         Route::post('/login', [LoginController::class, 'login'])
             ->name('tenant.login.post');
+        Route::get('/status', [\App\Http\Controllers\Auth\TenantStatusController::class, 'checkStatus'])
+            ->name('tenant.status');
     });
 
 Route::middleware(['web', 'tenant', 'auth:admin'])

@@ -49,6 +49,12 @@
                 </div>
             </div>
         </form>
+        
+        <div class="mt-3 text-center">
+            <a href="{{ route('tenant.status') }}" class="text-primary">
+                <i class="fas fa-info-circle"></i> Check Account Status
+            </a>
+        </div>
     </div>
 </div>
 @endsection

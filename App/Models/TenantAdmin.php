@@ -27,4 +27,18 @@ class TenantAdmin extends Authenticatable
         // TenantAdmin always has 'admin' role
         return $role === 'admin';
     }
+
+    /**
+     * Check if the tenant associated with this admin is approved
+     * 
+     * @return bool
+     */
+    public function isTenantApproved()
+    {
+        if (!$this->tenant) {
+            return false;
+        }
+        
+        return $this->tenant->status === 'approved';
+    }
 }

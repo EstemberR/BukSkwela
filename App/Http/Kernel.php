@@ -48,6 +48,8 @@ class Kernel extends HttpKernel
             InitializeTenancyByDomain::class,
             PreventAccessFromCentralDomains::class,
             \App\Http\Middleware\TenantAuthentication::class,
+            \App\Http\Middleware\CheckTenantStatus::class,
+            \App\Http\Middleware\EnsureTenantIsApproved::class,
         ],
     ];
 
@@ -70,6 +72,7 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'superadmin' => \App\Http\Middleware\SuperAdminMiddleware::class,
+        'tenant.approved' => \App\Http\Middleware\EnsureTenantIsApproved::class,
     ];
 
     /**
