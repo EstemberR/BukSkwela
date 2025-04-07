@@ -30,13 +30,9 @@ Route::middleware(['web'])
             ->name('tenant.login');
         Route::post('/login', [LoginController::class, 'login'])
             ->name('tenant.login.post');
-        
-        // Main dashboard route
-        Route::get('/dashboard', [DashboardController::class, 'index'])
-            ->name('tenant.dashboard')
-            ->middleware('auth:admin');
     });
 
+// Protected tenant routes
 Route::middleware(['web', 'tenant', 'auth:admin'])
     ->group(function () {
         // Main dashboard route
@@ -53,6 +49,10 @@ Route::middleware(['web', 'tenant', 'auth:admin'])
                 ->name('tenant.instructor.store');
             Route::get('/students', [StudentController::class, 'index'])
                 ->name('tenant.students.index');
+            // Modify the delete route to explicitly separate the ID parameter from URL segments
+            Route::get('/students/delete/{student}', [StudentController::class, 'deleteStudent'])
+                ->name('tenant.students.delete')
+                ->where('student', '[0-9]+'); // Use 'student' as parameter name for consistency
             Route::post('/students', [StudentController::class, 'store'])
                 ->name('tenant.students.store');
             Route::put('/students/{student}', [StudentController::class, 'update'])

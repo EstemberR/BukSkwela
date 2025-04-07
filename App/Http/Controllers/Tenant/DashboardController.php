@@ -61,7 +61,7 @@ class DashboardController extends Controller
                 ->groupBy('status')
         ];
 
-        return view('tenant.dashboard', $data);
+        return view('tenant.dashboard')->with($data);
     }
 
     public function staffDashboard()

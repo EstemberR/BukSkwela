@@ -85,6 +85,11 @@ Route::middleware(['web'])
     // Tenant Routes
     Route::middleware(['web', 'tenant'])
         ->group(function () {
+            // Main dashboard route
+            Route::get('/dashboard', [App\Http\Controllers\Tenant\DashboardController::class, 'index'])
+                ->name('tenant.dashboard')
+                ->middleware('auth:admin');
+
             // Requirements Routes
             Route::prefix('admin/requirements')->name('tenant.admin.requirements.')->group(function () {
                 Route::get('/', [App\Http\Controllers\Requirements\RequirementsController::class, 'index'])->name('index');
