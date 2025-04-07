@@ -101,6 +101,9 @@
                         <a href="{{ route('super-admin.tenant-data.auto-setup') }}" class="btn btn-primary btn-lg btn-block w-100 mt-2">
                             <i class="fas fa-magic"></i> Auto Setup Tenant Databases
                         </a>
+                        <a href="{{ route('super-admin.tenant-data.auto-migrate') }}" class="btn btn-warning btn-lg btn-block w-100 mt-2">
+                            <i class="fas fa-sync"></i> Auto Migrate All Tenant Databases
+                        </a>
                     </div>
                 </div>
             </div>

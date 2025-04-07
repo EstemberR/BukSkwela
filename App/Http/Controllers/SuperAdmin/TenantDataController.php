@@ -392,121 +392,83 @@ class TenantDataController extends Controller
      */
     public function runDatabaseAction(Request $request, $tenantId)
     {
-        $tenant = Tenant::findOrFail($tenantId);
-        $action = $request->input('action');
+        $tenant = Tenant::with('tenantDatabase')->findOrFail($tenantId);
+        $action = $request->action;
         
-        $validActions = ['create', 'migrate', 'fresh', 'seed', 'backup', 'drop'];
-        
-        if (!in_array($action, $validActions)) {
-            return redirect()
-                ->route('super-admin.tenant-data.manage-database', $tenant->id)
-                ->with('error', 'Invalid database action');
+        if (!in_array($action, ['create', 'drop', 'recreate', 'migrate', 'auto-migrate'])) {
+            return redirect()->back()->with('error', 'Invalid database action requested');
         }
         
         try {
-            // Build the artisan command
-            $options = [];
+            $databaseName = $tenant->tenantDatabase->database_name ?? 'tenant_' . $tenant->id;
             
             switch ($action) {
                 case 'create':
-                    // Use our new setup command instead
+                    // Create a new database for this tenant
+                    \Log::info("Creating database for tenant: {$tenant->id}");
+                    
                     \Artisan::call('db:setup-tenant', [
                         'tenant' => $tenant->id
                     ]);
-                    break;
                     
-                case 'migrate':
-                    try {
-                        // First try standard migration
-                        \Artisan::call('tenant:db', [
-                            'tenant' => $tenant->id,
-                            '--migrate' => true
-                        ]);
-                        
-                        // Then use direct migration to ensure all tables exist
-                        $tenantDb = $tenant->tenantDatabase;
-                        if ($tenantDb) {
-                            \Artisan::call('tenant:direct-migrate', [
-                                'database' => $tenantDb->database_name
-                            ]);
-                        }
-                    } catch (\Exception $e) {
-                        \Log::error("Error in migration: " . $e->getMessage());
-                    }
-                    break;
+                    $output = \Artisan::output();
+                    \Log::info("Database creation output: " . $output);
                     
-                case 'fresh':
-                    // Confirm before running destructive action
-                    if (!$request->has('confirmed')) {
-                        return view('super-admin.tenant-data.confirm-action', [
-                            'tenant' => $tenant,
-                            'action' => $action,
-                            'message' => 'This will wipe the database and run fresh migrations. All data will be lost.',
-                            'actionText' => 'Run Fresh Migrations'
-                        ]);
-                    }
-                    
-                    // Run fresh migrations
-                    try {
-                        // Standard migration first
-                        \Artisan::call('tenant:db', [
-                            'tenant' => $tenant->id,
-                            '--fresh' => true
-                        ]);
-                        
-                        // Then use direct migration to ensure all tables exist
-                        $tenantDb = $tenant->tenantDatabase;
-                        if ($tenantDb) {
-                            \Artisan::call('tenant:direct-migrate', [
-                                'database' => $tenantDb->database_name
-                            ]);
-                        }
-                    } catch (\Exception $e) {
-                        \Log::error("Error in fresh migration: " . $e->getMessage());
-                    }
-                    break;
-                    
-                case 'seed':
-                    \Artisan::call('tenant:seed', [
-                        'tenant' => $tenant->id
-                    ]);
-                    break;
-                    
-                case 'backup':
-                    \Artisan::call('tenant:db', [
-                        'tenant' => $tenant->id,
-                        '--backup' => true
-                    ]);
-                    break;
+                    return redirect()->back()->with('success', 'Database created successfully.');
                     
                 case 'drop':
-                    // Confirm before running destructive action
-                    if (!$request->has('confirmed')) {
-                        return view('super-admin.tenant-data.confirm-action', [
-                            'tenant' => $tenant,
-                            'action' => $action,
-                            'message' => 'This will completely delete the tenant database. All data will be lost.',
-                            'actionText' => 'Drop Database'
-                        ]);
-                    }
+                    // Prompt for confirmation before actually dropping
+                    return view('super-admin.tenant-data.confirm-action', compact('tenant', 'action'));
                     
-                    \Artisan::call('tenant:db', [
-                        'tenant' => $tenant->id,
-                        '--drop' => true
+                case 'recreate':
+                    // Drop and recreate the database
+                    \Log::info("Recreating database for tenant: {$tenant->id}");
+                    
+                    // First drop the database
+                    DB::statement("DROP DATABASE IF EXISTS `{$databaseName}`");
+                    
+                    // Then recreate it
+                    \Artisan::call('db:setup-tenant', [
+                        'tenant' => $tenant->id
                     ]);
-                    break;
+                    
+                    $output = \Artisan::output();
+                    \Log::info("Database recreation output: " . $output);
+                    
+                    return redirect()->back()->with('success', 'Database recreated successfully.');
+                    
+                case 'migrate':
+                    // Run migrations on the tenant database
+                    \Log::info("Running migrations for tenant: {$tenant->id}");
+                    
+                    \Artisan::call('tenant:direct-migrate', [
+                        'database' => $databaseName
+                    ]);
+                    
+                    $output = \Artisan::output();
+                    \Log::info("Migration output: " . $output);
+                    
+                    return redirect()->back()->with('success', 'Database migrations completed successfully.');
+                    
+                case 'auto-migrate':
+                    // Use the auto-migrate command on this specific tenant
+                    \Log::info("Running auto-migrate for tenant: {$tenant->id}");
+                    
+                    \Artisan::call('tenants:auto-migrate', [
+                        '--force' => true,
+                        'tenant' => $tenant->id
+                    ]);
+                    
+                    $output = \Artisan::output();
+                    \Log::info("Auto-migrate output: " . $output);
+                    
+                    return redirect()->back()->with('success', 'Auto-migration completed successfully.<br>Output: ' . nl2br(htmlspecialchars($output)));
             }
             
-            $output = \Artisan::output();
-            
-            return redirect()
-                ->route('super-admin.tenant-data.manage-database', $tenant->id)
-                ->with('success', "Database action '{$action}' completed: " . nl2br(htmlspecialchars($output)));
-                
+            return redirect()->back()->with('error', 'Unknown action requested');
         } catch (\Exception $e) {
-            return redirect()
-                ->route('super-admin.tenant-data.manage-database', $tenant->id)
-                ->with('error', "Error executing database action: " . $e->getMessage());
+            \Log::error("Error performing database action '{$action}': " . $e->getMessage());
+            return redirect()->back()->with('error', "Error: " . $e->getMessage());
         }
     }
     
@@ -580,27 +542,47 @@ class TenantDataController extends Controller
     public function autoSetupDatabases()
     {
         try {
-            // Call our custom artisan command to auto-setup tenant databases
+            // Run the command to auto-setup tenant databases
             \Artisan::call('tenants:auto-setup', [
                 '--new-only' => true,
-                '--batch-size' => 3,
-                '--delay' => 3
             ]);
             
-            // Get the output
             $output = \Artisan::output();
+            \Log::info("Auto setup tenant databases: " . $output);
             
-            // Log the full output for debugging
-            \Log::info("Auto setup output: " . $output);
-            
-            return redirect()
-                ->route('super-admin.tenant-data.index')
-                ->with('success', 'Auto setup of tenant databases completed. ' . nl2br(htmlspecialchars($output)));
+            return redirect()->route('super-admin.tenant-data.index')
+                ->with('success', 'Automatic database setup process started. Check logs for details.');
         } catch (\Exception $e) {
-            \Log::error("Exception in autoSetupDatabases: " . $e->getMessage());
-            return redirect()
-                ->route('super-admin.tenant-data.index')
-                ->with('error', 'Error auto-setting up tenant databases: ' . $e->getMessage());
+            \Log::error("Error running auto setup: " . $e->getMessage());
+            return redirect()->route('super-admin.tenant-data.index')
+                ->with('error', 'Error starting automatic setup: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Auto migrate all tenant databases
+     */
+    public function autoMigrateAllDatabases()
+    {
+        try {
+            // Run the command to auto-migrate tenant databases
+            \Artisan::call('tenants:auto-migrate');
+            
+            $output = \Artisan::output();
+            \Log::info("Auto migrate tenant databases: " . $output);
+            
+            // Extract summary from the output
+            $summary = "";
+            if (preg_match('/==== MIGRATION SUMMARY ====(.+?)(?=PS|$)/s', $output, $matches)) {
+                $summary = trim($matches[1]);
+            }
+            
+            return redirect()->route('super-admin.tenant-data.index')
+                ->with('success', 'Automatic database migration completed.' . ($summary ? "<br>Summary:<br>" . nl2br($summary) : ""));
+        } catch (\Exception $e) {
+            \Log::error("Error running auto migration: " . $e->getMessage());
+            return redirect()->route('super-admin.tenant-data.index')
+                ->with('error', 'Error running automatic migration: ' . $e->getMessage());
         }
     }
 } 

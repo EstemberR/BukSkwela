@@ -152,6 +152,7 @@ Route::middleware(['web'])
         Route::get('/tenant-data/run-migration', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'runMigration'])->name('tenant-data.run-migration');
         Route::get('/tenant-data/run-batched-migration', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'runBatchedMigration'])->name('tenant-data.run-batched-migration');
         Route::get('/tenant-data/auto-setup', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'autoSetupDatabases'])->name('tenant-data.auto-setup');
+        Route::get('/tenant-data/auto-migrate', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'autoMigrateAllDatabases'])->name('tenant-data.auto-migrate');
         Route::get('/tenant-data/{tenant}/check-database', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'checkDatabase'])->name('tenant-data.check-database');
         Route::get('/tenant-data/{tenant}/manage-database', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'manageTenantDatabase'])->name('tenant-data.manage-database');
         Route::post('/tenant-data/{tenant}/database-action', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'runDatabaseAction'])->name('tenant-data.database-action');

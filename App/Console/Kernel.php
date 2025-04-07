@@ -23,6 +23,11 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\CheckMySQLConnections::class,
         \App\Console\Commands\SetupTenantDatabase::class,
         \App\Console\Commands\AutoSetupTenantDatabases::class,
+        \App\Console\Commands\DirectTenantMigration::class,
+        \App\Console\Commands\CheckTenantTables::class,
+        \App\Console\Commands\VerifyTenantDatabase::class,
+        \App\Console\Commands\VerifyAllTenantDatabases::class,
+        \App\Console\Commands\AutoMigrateTenantDatabases::class,
     ];
 
     /**
@@ -41,6 +46,18 @@ class Kernel extends ConsoleKernel
             ->daily()
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/tenant-auto-setup.log'));
+            
+        // Automatically migrate all tenant databases to ensure tables are created
+        $schedule->command('tenants:auto-migrate')
+            ->dailyAt('01:30')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/tenant-auto-migrate.log'));
+            
+        // Verify all tenant databases are properly configured
+        $schedule->command('tenant:verify-all')
+            ->dailyAt('02:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/tenant-verify.log'));
     }
 
     /**

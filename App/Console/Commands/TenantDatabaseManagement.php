@@ -112,9 +112,9 @@ class TenantDatabaseManagement extends Command
                 $databaseExists = DB::select("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?", [$tenantDb->database_name]);
                 
                 if (count($databaseExists) > 0) {
-                    $this->info('✅ Database exists on the server');
+                    $this->info('Database exists on the server');
                 } else {
-                    $this->error('❌ Database does not exist on the server');
+                    $this->error('Database does not exist on the server');
                 }
             } catch (\Exception $e) {
                 $this->error('Error checking database existence: ' . $e->getMessage());

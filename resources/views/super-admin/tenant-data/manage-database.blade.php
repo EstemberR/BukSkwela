@@ -96,13 +96,20 @@
                         <div class="col-md-6 mb-3">
                             <div class="card h-100">
                                 <div class="card-body">
-                                    <h5 class="card-title">Run Migrations</h5>
-                                    <p class="card-text">Run migrations to set up database tables.</p>
+                                    <h5 class="card-title">Create Tables</h5>
+                                    <p class="card-text">Create tables in the tenant database using direct migrations.</p>
                                     <form action="{{ route('super-admin.tenant-data.database-action', $tenant->id) }}" method="POST">
                                         @csrf
                                         <input type="hidden" name="action" value="migrate">
-                                        <button type="submit" class="btn btn-info" {{ !$tenant->tenantDatabase || !$databaseExists ? 'disabled' : '' }}>
-                                            <i class="fas fa-arrow-up mr-1"></i> Run Migrations
+                                        <button type="submit" class="btn btn-success" {{ !$databaseExists ? 'disabled' : '' }}>
+                                            <i class="fas fa-table mr-1"></i> Create Tables
+                                        </button>
+                                    </form>
+                                    <form action="{{ route('super-admin.tenant-data.database-action', $tenant->id) }}" method="POST" class="mt-2">
+                                        @csrf
+                                        <input type="hidden" name="action" value="auto-migrate">
+                                        <button type="submit" class="btn btn-info" {{ !$databaseExists ? 'disabled' : '' }}>
+                                            <i class="fas fa-sync mr-1"></i> Auto Migrate Database
                                         </button>
                                     </form>
                                 </div>
