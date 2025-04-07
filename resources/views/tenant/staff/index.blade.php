@@ -214,6 +214,10 @@
                     <div class="mb-3">
                         <label class="form-label">Password (leave blank to keep current)</label>
                         <input type="password" class="form-control" name="password">
+                        <div class="form-text">Enter a new password only if you want to change it.</div>
+                    </div>
+                    <div class="alert alert-info">
+                        <small><i class="fas fa-info-circle"></i> Changing the password will send an email notification to the staff member.</small>
                     </div>
                 </div>
                 <div class="modal-footer">

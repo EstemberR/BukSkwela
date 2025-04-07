@@ -110,7 +110,7 @@
                 <h5 class="modal-title">Add New Student</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('tenant.students.store', ['tenant' => tenant('id')]) }}" method="POST">
+            <form id="addStudentForm" method="POST">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
@@ -156,7 +156,7 @@
                 <h5 class="modal-title">Edit Student</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('tenant.students.update', ['tenant' => tenant('id'), 'student' => $student->id]) }}" method="POST">
+            <form id="editStudentForm{{ $student->id }}" method="POST" data-student-id="{{ $student->id }}">
                 @csrf
                 @method('PUT')
                 <div class="modal-body">
@@ -183,8 +183,13 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password (leave blank to keep current)</label>
+                        <input type="password" class="form-control" name="password">
+                        <div class="form-text">Enter a new password only if you want to change it.</div>
+                    </div>
                     <div class="alert alert-info">
-                        <small><i class="fas fa-info-circle"></i> Student passwords can only be reset by the system administrator.</small>
+                        <small><i class="fas fa-info-circle"></i> Changing the password will send an email notification to the student.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -203,6 +208,166 @@
 <!-- Add SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Debug: Log current tenant info
+        const currentTenant = '{{ tenant("id") }}';
+        const currentDomain = window.location.hostname;
+        console.log('Current tenant:', currentTenant);
+        console.log('Current domain:', currentDomain);
+
+        // Handle form submissions
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', async function(e) {
+                // Let search form submit normally
+                if (this.id === 'searchForm') {
+                    return true;
+                }
+
+                // Prevent default form submission
+                e.preventDefault();
+
+                try {
+                    let url;
+                    const method = this.id.startsWith('editStudentForm') ? 'PUT' : 'POST';
+                    
+                    if (this.id.startsWith('editStudentForm')) {
+                        const studentId = this.getAttribute('data-student-id');
+                        // Use Laravel's route helper to generate the correct URL
+                        url = '{{ route("tenant.students.update", ["tenant" => "__TENANT__", "student" => "__ID__"]) }}'
+                            .replace('__TENANT__', currentTenant)
+                            .replace('__ID__', studentId);
+                        
+                        // Debug log for student update
+                        console.log('Updating student:', {
+                            studentId,
+                            formData: Object.fromEntries(new FormData(this)),
+                            tenant: currentTenant,
+                            url
+                        });
+                    } else if (this.id === 'addStudentForm') {
+                        url = '{{ route("tenant.students.store", ["tenant" => "__TENANT__"]) }}'
+                            .replace('__TENANT__', currentTenant);
+                    } else {
+                        url = this.action;
+                    }
+
+                    console.log('Form submission details:', {
+                        url,
+                        method,
+                        tenant: currentTenant,
+                        formId: this.id
+                    });
+
+                    const formData = new FormData(this);
+                    if (method === 'PUT') {
+                        formData.append('_method', 'PUT');
+                    }
+
+                    const response = await fetch(url, {
+                        method: 'POST', // Always POST, Laravel will handle method spoofing
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const contentType = response.headers.get('content-type');
+                        let errorMessage;
+                        if (contentType && contentType.includes('application/json')) {
+                            const errorData = await response.json();
+                            console.error('Server error response:', errorData);
+                            errorMessage = errorData.message || 'Unknown error occurred';
+                        } else {
+                            errorMessage = await response.text();
+                            console.error('Server error (non-JSON):', errorMessage);
+                        }
+                        throw new Error(`HTTP error! status: ${response.status}, message: ${errorMessage}`);
+                    }
+
+                    const result = await response.json();
+                    console.log('Server response:', result);
+
+                    Swal.fire({
+                        title: 'Success!',
+                        text: result.message || 'Operation completed successfully',
+                        icon: 'success'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } catch (error) {
+                    console.error('Form submission error:', error);
+                    Swal.fire({
+                        title: 'Error!',
+                        text: error.message || 'Something went wrong',
+                        icon: 'error'
+                    });
+                }
+            });
+        });
+
+        // Update delete function
+        window.deleteStudent = async function(studentId) {
+            try {
+                const url = '{{ route("tenant.students.destroy", ["tenant" => "__TENANT__", "student" => "__ID__"]) }}'
+                    .replace('__TENANT__', currentTenant)
+                    .replace('__ID__', studentId);
+
+                console.log('Deleting student:', {
+                    studentId,
+                    url,
+                    tenant: currentTenant
+                });
+
+                const formData = new FormData();
+                formData.append('_token', '{{ csrf_token() }}');
+                formData.append('_method', 'DELETE');
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    let errorMessage;
+                    if (contentType && contentType.includes('application/json')) {
+                        const errorData = await response.json();
+                        console.error('Server error response:', errorData);
+                        errorMessage = errorData.message || 'Unknown error occurred';
+                    } else {
+                        errorMessage = await response.text();
+                        console.error('Server error (non-JSON):', errorMessage);
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorMessage}`);
+                }
+
+                const result = await response.json();
+                console.log('Server response:', result);
+
+                Swal.fire({
+                    title: 'Deleted!',
+                    text: result.message || 'Student has been deleted.',
+                    icon: 'success'
+                }).then(() => {
+                    window.location.reload();
+                });
+            } catch (error) {
+                console.error('Delete error:', error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: error.message || 'Failed to delete student',
+                    icon: 'error'
+                });
+            }
+        };
+    });
+
     function showDeleteConfirmation(studentId) {
         Swal.fire({
             title: 'Are you sure?',
@@ -218,110 +383,5 @@
             }
         });
     }
-
-    async function deleteStudent(studentId) {
-        try {
-            const tenant = '{{ tenant("id") }}';
-            const deleteUrl = `/admin/students/${studentId}`;
-            
-            console.log('Attempting to delete student:', {
-                studentId,
-                deleteUrl,
-                tenant
-            });
-
-            const csrfToken = document.querySelector('meta[name="csrf-token"]');
-            if (!csrfToken) {
-                throw new Error('CSRF token not found. Please refresh the page and try again.');
-            }
-
-            // Show loading state
-            Swal.fire({
-                title: 'Deleting...',
-                text: 'Please wait',
-                allowOutsideClick: false,
-                showConfirmButton: false,
-                willOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-
-            const response = await fetch(deleteUrl, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken.content,
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            let result;
-            try {
-                result = await response.json();
-            } catch (e) {
-                console.error('Failed to parse response:', e);
-                const text = await response.text();
-                console.error('Raw response:', text);
-                throw new Error('Invalid response from server');
-            }
-
-            if (!response.ok) {
-                console.error('Delete response:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    result
-                });
-                throw new Error(result?.message || `Failed to delete student (${response.status})`);
-            }
-
-            if (result.success) {
-                Swal.fire({
-                    title: 'Success!',
-                    text: 'Student deleted successfully',
-                    icon: 'success'
-                }).then(() => {
-                    // Remove the row from the table
-                    const row = document.querySelector(`tr[data-student-id="${studentId}"]`);
-                    if (row) {
-                        row.remove();
-                    } else {
-                        window.location.reload();
-                    }
-                });
-            } else {
-                throw new Error(result.message || 'Failed to delete student');
-            }
-        } catch (error) {
-            console.error('Delete error:', error);
-            Swal.fire({
-                title: 'Error!',
-                text: error.message || 'An error occurred while deleting the student',
-                icon: 'error'
-            });
-        }
-    }
-
-    // Search and filter functionality
-    document.addEventListener('DOMContentLoaded', function() {
-        const searchForm = document.getElementById('searchForm');
-        const searchInput = document.getElementById('searchStudent');
-        const courseFilter = document.getElementById('courseFilter');
-        let searchTimeout;
-
-        // Handle search input with shorter debounce
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                searchForm.submit();
-            }, 300); // Reduced to 300ms for faster response
-        });
-
-        // Handle course filter change
-        courseFilter.addEventListener('change', function() {
-            const url = new URL(window.location.href);
-            url.searchParams.set('course_id', this.value);
-            window.location.href = url.toString();
-        });
-    });
 </script>
 @endpush 

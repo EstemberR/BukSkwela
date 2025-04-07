@@ -11,6 +11,7 @@ use App\Mail\StaffRegistered;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Helpers\PasswordGenerator;
+use App\Mail\StaffCredentialsUpdated;
 
 class StaffController extends Controller
 {
@@ -134,6 +135,30 @@ class StaffController extends Controller
                 ->with('error', 'The selected department is invalid');
         }
 
+        // Track what fields were updated
+        $updatedFields = [];
+        
+        if ($staff->staff_id != $request->staff_id) {
+            $updatedFields['staff_id'] = $request->staff_id;
+        }
+        
+        if ($staff->name != $request->name) {
+            $updatedFields['name'] = $request->name;
+        }
+        
+        if ($staff->email != $request->email) {
+            $updatedFields['email'] = $request->email;
+        }
+        
+        if ($staff->role != $request->role) {
+            $updatedFields['role'] = ucfirst($request->role);
+        }
+        
+        if ($staff->department_id != $request->department_id) {
+            $updatedFields['department'] = $department->name;
+        }
+
+        // Update staff information
         $staff->update([
             'staff_id' => $request->staff_id,
             'name' => $request->name,
@@ -142,10 +167,43 @@ class StaffController extends Controller
             'department_id' => $request->department_id,
         ]);
 
+        // Password update
         if ($request->filled('password')) {
             $staff->update([
                 'password' => Hash::make($request->password),
             ]);
+            $updatedFields['password'] = 'Password has been updated';
+        }
+
+        // Send email notification if anything was updated
+        try {
+            if (!empty($updatedFields)) {
+                Log::info('Sending staff credential update email', [
+                    'staff_id' => $staff->id,
+                    'email' => $staff->email,
+                    'updated_fields' => array_keys($updatedFields)
+                ]);
+                
+                Mail::to($staff->email)->send(new StaffCredentialsUpdated($staff, $updatedFields));
+                
+                Log::info('Staff credential update email sent successfully', [
+                    'staff_id' => $staff->id,
+                    'email' => $staff->email
+                ]);
+                
+                return redirect()->route('tenant.staff.index', ['tenant' => tenant('id')])
+                    ->with('success', 'Staff member updated successfully and notification email sent');
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send staff credential update email', [
+                'staff_id' => $staff->id,
+                'email' => $staff->email,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('tenant.staff.index', ['tenant' => tenant('id')])
+                ->with('warning', 'Staff member updated successfully but failed to send notification email');
         }
 
         return redirect()->route('tenant.staff.index', ['tenant' => tenant('id')])
