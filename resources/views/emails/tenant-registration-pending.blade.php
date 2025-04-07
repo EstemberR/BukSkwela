@@ -2,99 +2,50 @@
 <html>
 <head>
     <title>Registration Pending</title>
-    <style>
-        :root {
-            --navy-blue: #003366;
-            --gold: #FFD700;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f8f9fa;
-        }
-        .header {
-            background-color: var(--navy-blue);
-            color: var(--gold);
-            padding: 20px;
-            text-align: center;
-            border-radius: 5px 5px 0 0;
-            border-bottom: 3px solid var(--gold);
-        }
-        .content {
-            background-color: white;
-            padding: 20px;
-            border-radius: 0 0 5px 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .credentials {
-            background-color: #f8f9fa;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 5px;
-            border: 2px solid var(--navy-blue);
-        }
-        .button {
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: var(--navy-blue);
-            color: var(--gold);
-            text-decoration: none;
-            border-radius: 5px;
-            margin-top: 20px;
-            font-weight: bold;
-            border: 2px solid var(--gold);
-        }
-        .button:hover {
-            background-color: var(--gold);
-            color: var(--navy-blue);
-            border-color: var(--navy-blue);
-        }
-        h3 {
-            color: var(--navy-blue);
-            border-bottom: 2px solid var(--gold);
-            padding-bottom: 5px;
-        }
-        strong {
-            color: var(--navy-blue);
-        }
-    </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body>
-    <div class="header">
-        <h1>Registration Pending Approval</h1>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+    <div style="background-color: #003366; color: #FFD700; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; border-bottom: 3px solid #FFD700;">
+        <h1 style="margin: 0; font-size: 24px;">Registration Pending Approval</h1>
     </div>
     
-    <div class="content">
-        <p>Dear {{ $tenant->tenant_name }},</p>
+    <div style="background-color: white; padding: 20px; border-radius: 0 0 5px 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <p style="font-size: 16px; margin-bottom: 20px;">Dear {{ $tenant->tenant_name }},</p>
         
-        <p>Thank you for registering your department with BukSkwela. Your registration is currently pending approval from our administrators.</p>
+        <p style="font-size: 16px; margin-bottom: 20px;">Thank you for registering your department with BukSkwela. Your registration is currently pending approval from our administrators.</p>
         
-        <div class="credentials">
-            <h3>Your Department Details:</h3>
-            <p><strong>Department Name:</strong> {{ $tenant->tenant_name }}</p>
-            <p><strong>Subdomain:</strong> {{ $tenant->id }}.{{ env('CENTRAL_DOMAIN') }}</p>
-            <p><strong>Admin Email:</strong> {{ $tenant->tenant_email }}</p>
-            <p><strong>Temporary Password:</strong> {{ $password }}</p>
+        <div style="background-color: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 5px; border: 2px solid #003366;">
+            <h3 style="color: #003366; border-bottom: 2px solid #FFD700; padding-bottom: 10px; margin-top: 0;">Your Department Details:</h3>
+            <p style="margin: 10px 0;"><strong style="color: #003366;">Department Name:</strong> {{ $tenant->tenant_name }}</p>
+            <p style="margin: 10px 0;"><strong style="color: #003366;">Subdomain:</strong> {{ $tenant->id }}.{{ env('CENTRAL_DOMAIN') }}</p>
+            <p style="margin: 10px 0;"><strong style="color: #003366;">Admin Email:</strong> {{ $tenant->tenant_email }}</p>
+            <p style="margin: 10px 0;"><strong style="color: #003366;">Temporary Password:</strong> {{ $password }}</p>
         </div>
         
-        <p><strong>Important Notes:</strong></p>
-        <ul>
-            <li>Your registration is being reviewed by our administrators</li>
-            <li>This process typically takes 24-48 hours</li>
-            <li>You will receive another email once your registration is approved</li>
-            <li>Please save your login credentials securely</li>
+        <p style="font-size: 16px; margin-top: 25px;"><strong style="color: #003366;">Important Notes:</strong></p>
+        <ul style="padding-left: 20px; margin: 15px 0;">
+            <li style="margin-bottom: 10px;">Your registration is being reviewed by our administrators</li>
+            <li style="margin-bottom: 10px;">This process typically takes 24-48 hours</li>
+            <li style="margin-bottom: 10px;">You will receive another email once your registration is approved</li>
+            <li style="margin-bottom: 10px;">Please save your login credentials securely</li>
         </ul>
         
-        <p>You can check your registration status by visiting:</p>
-        <a href="{{ $loginUrl }}" class="button">Check Status</a>
+        <p style="font-size: 16px; margin-top: 25px;">You can check your registration status by visiting:</p>
+        <table cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
+            <tr>
+                <td>
+                    <a href="{{ $loginUrl }}" style="display: inline-block; padding: 12px 24px; background-color: #003366; color: #FFD700; text-decoration: none; border-radius: 5px; font-weight: bold; border: 2px solid #FFD700;">Check Status</a>
+                </td>
+            </tr>
+        </table>
         
-        <p style="margin-top: 30px;">If you have any questions or concerns, please don't hesitate to contact our support team at support@bukskwela.com</p>
+        <p style="margin-top: 30px; color: #666666;">If you have any questions or concerns, please don't hesitate to contact our support team at <a href="mailto:support@bukskwela.com" style="color: #003366; text-decoration: underline;">support@bukskwela.com</a></p>
         
-        <p>Best regards,<br>The BukSkwela Team</p>
+        <p style="margin-top: 30px; color: #666666;">
+            Best regards,<br>
+            <strong style="color: #003366;">The BukSkwela Team</strong>
+        </p>
     </div>
 </body>
 </html> 

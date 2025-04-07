@@ -271,10 +271,99 @@
             .pricing-card .text-muted {
                 font-size: 12px;
             }
+
+            /* Loader overlay styles */
+            .loader-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(255, 255, 255, 0.9);
+                display: none;
+                justify-content: center;
+                align-items: center;
+                z-index: 9999;
+            }
+
+            /* Import loader styles */
+            .loader {
+                position: relative;
+                width: 5em;  /* Increased from 2.5em */
+                height: 5em; /* Increased from 2.5em */
+                transform: rotate(165deg);
+            }
+
+            .loader:before, .loader:after {
+                content: "";
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                display: block;
+                width: 1em;   /* Increased from 0.5em */
+                height: 1em;  /* Increased from 0.5em */
+                border-radius: 0.5em; /* Increased from 0.25em */
+                transform: translate(-50%, -50%);
+            }
+
+            .loader:before {
+                animation: before8 2s infinite;
+            }
+
+            .loader:after {
+                animation: after6 2s infinite;
+            }
+
+            @keyframes before8 {
+                0% {
+                    width: 1em; /* Increased from 0.5em */
+                    box-shadow: 2em -1em rgba(225, 20, 98, 0.75), -2em 1em rgba(111, 202, 220, 0.75); /* Increased shadow spread */
+                }
+
+                35% {
+                    width: 5em; /* Increased from 2.5em */
+                    box-shadow: 0 -1em rgba(225, 20, 98, 0.75), 0 1em rgba(111, 202, 220, 0.75); /* Increased shadow spread */
+                }
+
+                70% {
+                    width: 1em; /* Increased from 0.5em */
+                    box-shadow: -2em -1em rgba(225, 20, 98, 0.75), 2em 1em rgba(111, 202, 220, 0.75); /* Increased shadow spread */
+                }
+
+                100% {
+                    box-shadow: 2em -1em rgba(225, 20, 98, 0.75), -2em 1em rgba(111, 202, 220, 0.75); /* Increased shadow spread */
+                }
+            }
+
+            @keyframes after6 {
+                0% {
+                    height: 1em; /* Increased from 0.5em */
+                    box-shadow: 1em 2em rgba(61, 184, 143, 0.75), -1em -2em rgba(233, 169, 32, 0.75); /* Increased shadow spread */
+                }
+
+                35% {
+                    height: 5em; /* Increased from 2.5em */
+                    box-shadow: 1em 0 rgba(61, 184, 143, 0.75), -1em 0 rgba(233, 169, 32, 0.75); /* Increased shadow spread */
+                }
+
+                70% {
+                    height: 1em; /* Increased from 0.5em */
+                    box-shadow: 1em -2em rgba(61, 184, 143, 0.75), -1em 2em rgba(233, 169, 32, 0.75); /* Increased shadow spread */
+                }
+
+                100% {
+                    box-shadow: 1em 2em rgba(61, 184, 143, 0.75), -1em -2em rgba(233, 169, 32, 0.75); /* Increased shadow spread */
+                }
+            }
         </style>
     </head>
 
     <body>
+        <!-- Add loader overlay -->
+        <div class="loader-overlay">
+            <div class="loader"></div>
+        </div>
+
         <div class="split-layout">
             <!-- Form Side -->
             <div class="form-side">
@@ -298,7 +387,7 @@
                         </div>
                     @endif
 
-                    <form method="post" action="{{ route('register.save') }}">
+                    <form method="post" action="{{ route('register.save') }}" id="registrationForm">
                         @csrf
 
                         <div class="form-group">
@@ -372,7 +461,7 @@
                         </div>
 
                         <div class="mt-4">
-                            <button type="submit" class="btn btn-block btn-primary btn-lg auth-form-btn">
+                            <button type="submit" class="btn btn-block btn-primary btn-lg auth-form-btn" id="submitBtn">
                                 Create My Department
                             </button>
 
@@ -479,9 +568,6 @@
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    </div>
                 </div>
             </div>
         </div>
@@ -507,6 +593,18 @@
                     $(`#${plan}-card`).addClass('border-primary');
                     
                     $('#planModal').modal('hide');
+                });
+
+                // Form submission with loader
+                $('#registrationForm').on('submit', function() {
+                    // Show loader
+                    $('.loader-overlay').css('display', 'flex');
+                    
+                    // Disable submit button
+                    $('#submitBtn').prop('disabled', true);
+                    
+                    // Form will submit normally
+                    return true;
                 });
             });
         </script>
