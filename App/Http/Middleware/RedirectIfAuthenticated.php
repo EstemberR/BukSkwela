@@ -20,7 +20,7 @@ class RedirectIfAuthenticated
     {
         if (Auth::guard($guard)->check()) {
             if (tenant()) {
-                return redirect()->route('tenant.admin.dashboard');
+                return redirect()->route('tenant.dashboard', ['tenant' => tenant('id')]);
             }
             if (Auth::user()->role === 'superadmin') {
                 return redirect()->route('superadmin.dashboard');

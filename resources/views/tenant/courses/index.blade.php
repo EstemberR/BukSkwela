@@ -35,8 +35,14 @@
             <div class="row mb-3">
                 <div class="col-md-6">
                     <div class="input-group">
-                        <input type="text" class="form-control" placeholder="Search courses..." id="searchCourse">
-                        <button class="btn btn-outline-secondary" type="button">Search</button>
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" 
+                               class="form-control" 
+                               placeholder="Search courses..." 
+                               id="searchCourse" 
+                               autocomplete="off">
                     </div>
                 </div>
                 <div class="col-md-6 text-end">
@@ -51,13 +57,12 @@
             <!-- Courses Table -->
             <div class="table-responsive">
                 <table class="table table-hover">
-                    <thead>
+                    <thead class="bg-primary text-white">
                         <tr>
-                            <th>Title</th>
-                            <th>Description</th>
-                            <th>Instructor</th>
-                            <th>Status</th>
-                            <th>Actions</th>
+                            <th class="fw-bold">Title</th>
+                            <th class="fw-bold">Description</th>
+                            <th class="fw-bold">Status</th>
+                            <th class="fw-bold">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -65,7 +70,6 @@
                         <tr>
                             <td>{{ $course->title }}</td>
                             <td>{{ Str::limit($course->description, 50) }}</td>
-                            <td>{{ $course->staff->name ?? 'N/A' }}</td>
                             <td>
                                 <span class="badge bg-{{ $course->status === 'active' ? 'success' : 'warning' }}">
                                     {{ ucfirst($course->status) }}
@@ -82,7 +86,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="5" class="text-center">No courses found</td>
+                            <td colspan="4" class="text-center">No courses found</td>
                         </tr>
                         @endforelse
                     </tbody>
@@ -90,8 +94,13 @@
             </div>
 
             <!-- Pagination -->
-            <div class="d-flex justify-content-end">
-                {{ $courses->links() }}
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <div class="text-muted">
+                    Showing {{ $courses->firstItem() ?? 0 }} to {{ $courses->lastItem() ?? 0 }} of {{ $courses->total() }} entries
+                </div>
+                <div>
+                    {{ $courses->links() }}
+                </div>
             </div>
         </div>
     </div>
@@ -115,15 +124,6 @@
                     <div class="mb-3">
                         <label class="form-label">Description</label>
                         <textarea class="form-control" name="description" rows="3"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Instructor</label>
-                        <select class="form-select" name="staff_id" required>
-                            <option value="">Select Instructor</option>
-                            @foreach($instructors as $instructor)
-                                <option value="{{ $instructor->id }}">{{ $instructor->name }}</option>
-                            @endforeach
-                        </select>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -204,6 +204,78 @@ function deleteCourse(courseId) {
         });
     }
 }
+
+// Search and filter functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchCourse');
+    const statusFilter = document.getElementById('statusFilter');
+    let searchTimeout;
+
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedStatus = statusFilter.value.toLowerCase();
+        const tableRows = document.querySelectorAll('#folderContentsTable tbody tr, .table tbody tr');
+        let hasVisibleRows = false;
+
+        tableRows.forEach(row => {
+            if (row.classList.contains('no-results-row')) {
+                return; // Skip the no results message row
+            }
+
+            const cells = row.getElementsByTagName('td');
+            if (!cells.length) return; // Skip if no cells
+
+            const title = cells[0].textContent.toLowerCase();
+            const description = cells[1].textContent.toLowerCase();
+            const statusCell = cells[2].querySelector('.badge');
+            const status = statusCell ? statusCell.textContent.toLowerCase() : '';
+
+            const matchesSearch = !searchTerm || 
+                title.includes(searchTerm) || 
+                description.includes(searchTerm);
+
+            const matchesStatus = !selectedStatus || 
+                status.includes(selectedStatus);
+
+            if (matchesSearch && matchesStatus) {
+                row.style.display = '';
+                hasVisibleRows = true;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Handle no results message
+        const tbody = document.querySelector('.table tbody');
+        let noResultsRow = tbody.querySelector('.no-results-row');
+
+        if (!hasVisibleRows) {
+            if (!noResultsRow) {
+                noResultsRow = document.createElement('tr');
+                noResultsRow.className = 'no-results-row';
+                noResultsRow.innerHTML = `<td colspan="4" class="text-center">
+                    No courses found ${searchTerm ? 'matching "' + searchTerm + '"' : ''} 
+                    ${selectedStatus ? 'with status "' + selectedStatus + '"' : ''}
+                </td>`;
+                tbody.appendChild(noResultsRow);
+            }
+        } else if (noResultsRow) {
+            noResultsRow.remove();
+        }
+    }
+
+    // Handle search input with debounce
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(filterTable, 300);
+    });
+
+    // Handle status filter change
+    statusFilter.addEventListener('change', filterTable);
+
+    // Initial filter (in case there are pre-selected values)
+    filterTable();
+});
 </script>
 @endpush
 @endsection 

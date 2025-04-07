@@ -96,6 +96,7 @@ Route::middleware(['web'])
             Route::post('/{id}/approve', [App\Http\Controllers\SuperAdmin\TenantsController::class, 'approve'])->name('approve');
             Route::post('/{id}/reject', [App\Http\Controllers\SuperAdmin\TenantsController::class, 'reject'])->name('reject');
             Route::post('/{id}/disable', [App\Http\Controllers\SuperAdmin\TenantsController::class, 'disable'])->name('disable');
+            Route::post('/{id}/deny', [App\Http\Controllers\SuperAdmin\TenantsController::class, 'deny'])->name('deny');
             Route::post('/{id}/enable', [App\Http\Controllers\SuperAdmin\TenantsController::class, 'enable'])->name('enable');
             Route::post('/{id}/downgrade', [App\Http\Controllers\SuperAdmin\TenantsController::class, 'downgradePlan'])->name('downgrade');
             Route::post('/{id}/update-subscription', [App\Http\Controllers\SuperAdmin\TenantsController::class, 'updateSubscription'])->name('update-subscription');
@@ -144,3 +145,22 @@ Route::middleware(['web'])
                 Route::get('/requirements', [App\Http\Controllers\Reports\ReportsController::class, 'requirements'])->name('requirements');
             });
         });
+
+    // Super Admin - Tenant Data Management
+    Route::middleware(['auth', 'superadmin'])->prefix('super-admin')->name('super-admin.')->group(function () {
+        Route::get('/tenant-data', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'index'])->name('tenant-data.index');
+        Route::get('/tenant-data/run-migration', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'runMigration'])->name('tenant-data.run-migration');
+        Route::get('/tenant-data/run-batched-migration', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'runBatchedMigration'])->name('tenant-data.run-batched-migration');
+        Route::get('/tenant-data/auto-setup', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'autoSetupDatabases'])->name('tenant-data.auto-setup');
+        Route::get('/tenant-data/{tenant}/check-database', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'checkDatabase'])->name('tenant-data.check-database');
+        Route::get('/tenant-data/{tenant}/manage-database', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'manageTenantDatabase'])->name('tenant-data.manage-database');
+        Route::post('/tenant-data/{tenant}/database-action', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'runDatabaseAction'])->name('tenant-data.database-action');
+        Route::get('/tenant-data/{tenant}', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'viewTenantData'])->name('tenant-data.view');
+        Route::get('/tenant-data/{tenant}/{table}', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'viewTableData'])->name('tenant-data.table');
+        Route::get('/tenant-data/{tenant}/{table}/{id}/edit', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'editRecord'])->name('tenant-data.edit');
+        Route::put('/tenant-data/{tenant}/{table}/{id}', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'updateRecord'])->name('tenant-data.update');
+        
+        // System Check Routes
+        Route::get('/system-check/mysql', [App\Http\Controllers\SuperAdmin\SystemCheckController::class, 'checkMySQLConnections'])->name('system-check.mysql');
+        Route::get('/system-check/mysql-ajax', [App\Http\Controllers\SuperAdmin\SystemCheckController::class, 'ajaxCheckMySQLStatus'])->name('system-check.mysql-ajax');
+    });

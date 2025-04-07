@@ -17,16 +17,28 @@
                     <!-- Search and filters -->
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <div class="input-group">
-                                <input type="text" class="form-control" placeholder="Search students..." id="searchStudent">
-                                <button class="btn btn-outline-secondary" type="button">Search</button>
-                            </div>
+                            <form id="searchForm" action="{{ route('tenant.students.index', ['tenant' => tenant('id')]) }}" method="GET">
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           placeholder="Search students..." 
+                                           id="searchStudent" 
+                                           name="search"
+                                           value="{{ request('search') }}"
+                                           autocomplete="off">
+                                </div>
+                            </form>
                         </div>
                         <div class="col-md-6 text-end">
-                            <select class="form-select d-inline-block w-auto">
+                            <select class="form-select d-inline-block w-auto" id="courseFilter" name="course_id">
                                 <option value="">All Courses</option>
                                 @foreach($courses ?? [] as $course)
-                                    <option value="{{ $course->id }}">{{ $course->title }}</option>
+                                    <option value="{{ $course->id }}" {{ request('course_id') == $course->id ? 'selected' : '' }}>
+                                        {{ $course->title }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
@@ -35,14 +47,14 @@
                     <!-- Students Table -->
                     <div class="table-responsive">
                         <table class="table table-hover">
-                            <thead>
+                            <thead class="bg-primary text-white">
                                 <tr>
-                                    <th>ID Number</th>
-                                    <th>Name</th>
-                                    <th>Course</th>
-                                    <th>Email</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
+                                    <th class="fw-bold">ID Number</th>
+                                    <th class="fw-bold">Name</th>
+                                    <th class="fw-bold">Course</th>
+                                    <th class="fw-bold">Email</th>
+                                    <th class="fw-bold">Status</th>
+                                    <th class="fw-bold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -76,8 +88,13 @@
                     </div>
 
                     <!-- Pagination -->
-                    <div class="d-flex justify-content-end">
-                        {{ $students->links() }}
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div class="text-muted">
+                            Showing {{ $students->firstItem() ?? 0 }} to {{ $students->lastItem() ?? 0 }} of {{ $students->total() }} entries
+                        </div>
+                        <div>
+                            {{ $students->links() }}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -284,9 +301,27 @@
         }
     }
 
-    // Wait for the document to be fully loaded
+    // Search and filter functionality
     document.addEventListener('DOMContentLoaded', function() {
-        // Any additional initialization code can go here
+        const searchForm = document.getElementById('searchForm');
+        const searchInput = document.getElementById('searchStudent');
+        const courseFilter = document.getElementById('courseFilter');
+        let searchTimeout;
+
+        // Handle search input with shorter debounce
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                searchForm.submit();
+            }, 300); // Reduced to 300ms for faster response
+        });
+
+        // Handle course filter change
+        courseFilter.addEventListener('change', function() {
+            const url = new URL(window.location.href);
+            url.searchParams.set('course_id', this.value);
+            window.location.href = url.toString();
+        });
     });
 </script>
 @endpush 

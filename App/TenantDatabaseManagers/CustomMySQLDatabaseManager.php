@@ -8,6 +8,7 @@ use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Exceptions\TenantDatabaseAlreadyExistsException;
 use Illuminate\Support\Facades\Config;
 use App\Models\TenantDatabase;
+use Illuminate\Support\Str;
 
 class CustomMySQLDatabaseManager implements TenantDatabaseManager
 {
@@ -28,28 +29,56 @@ class CustomMySQLDatabaseManager implements TenantDatabaseManager
     public function createDatabase(TenantWithDatabase $tenant): bool
     {
         $name = $tenant->getTenantKey();
-        $database = 'tenant_' . $name;
+        
+        // Generate names for database
+        $databaseName = 'tenant_' . $name;
         $username = 'tenant_' . $name;
-        $password = $this->generateStrongPassword();
-
-        // Database name with tenant prefix
-        $databaseName = $database;
-
+        $password = Str::random(16); // Generate a secure random password
+        
         try {
             // Check if database exists
-            if ($this->databaseExists($databaseName)) {
-                throw new TenantDatabaseAlreadyExistsException($databaseName);
+            $databaseExists = DB::select("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?", [$databaseName]);
+            
+            if ($databaseExists) {
+                // Log the database already exists
+                \Log::info("Database {$databaseName} already exists");
+                
+                // Update the database record if it doesn't exist
+                $tenantDB = TenantDatabase::updateOrCreate(
+                    ['tenant_id' => $name],
+                    [
+                        'database_name' => $databaseName,
+                        'database_username' => $username,
+                        'database_password' => $password,
+                        'database_host' => Config::get('database.connections.mysql.host'),
+                        'database_port' => Config::get('database.connections.mysql.port'),
+                    ]
+                );
+                
+                return true;
             }
-
+            
             // Create the database
-            DB::connection($this->connection)->statement("CREATE DATABASE `{$databaseName}`");
+            DB::connection($this->connection)->statement("CREATE DATABASE IF NOT EXISTS `{$databaseName}`");
+            \Log::info("Created database {$databaseName}");
             
-            // Create a user for this tenant
-            DB::connection($this->connection)->statement("CREATE USER '{$username}'@'%' IDENTIFIED BY '{$password}'");
-            
-            // Grant privileges
-            DB::connection($this->connection)->statement("GRANT ALL PRIVILEGES ON `{$databaseName}`.* TO '{$username}'@'%'");
-            DB::connection($this->connection)->statement("FLUSH PRIVILEGES");
+            // Create a user for this tenant with proper privileges
+            try {
+                // Drop user if exists to avoid errors
+                DB::connection($this->connection)->statement("DROP USER IF EXISTS '{$username}'@'%'");
+                
+                // Create user
+                DB::connection($this->connection)->statement("CREATE USER '{$username}'@'%' IDENTIFIED BY '{$password}'");
+                \Log::info("Created user {$username}");
+                
+                // Grant privileges
+                DB::connection($this->connection)->statement("GRANT ALL PRIVILEGES ON `{$databaseName}`.* TO '{$username}'@'%'");
+                DB::connection($this->connection)->statement("FLUSH PRIVILEGES");
+                \Log::info("Granted privileges to user {$username} on database {$databaseName}");
+            } catch (\Exception $e) {
+                \Log::error("Error creating database user: " . $e->getMessage());
+                // Continue even if user creation fails - the database is still created
+            }
             
             // Store database credentials in the central database
             if ($tenant instanceof \App\Models\Tenant) {
@@ -63,6 +92,7 @@ class CustomMySQLDatabaseManager implements TenantDatabaseManager
                         'database_port' => Config::get('database.connections.mysql.port'),
                     ]
                 );
+                \Log::info("Updated tenant database record for tenant {$name}");
             }
             
             return true;
@@ -83,14 +113,19 @@ class CustomMySQLDatabaseManager implements TenantDatabaseManager
         $name = $tenant->getTenantKey();
         $database = 'tenant_' . $name;
         $username = 'tenant_' . $name;
-
+        
         try {
             // Drop the database
-            DB::connection($this->connection)->statement("DROP DATABASE IF EXISTS `{$database}`");
+            DB::statement("DROP DATABASE IF EXISTS `{$database}`");
             
             // Drop the user
-            DB::connection($this->connection)->statement("DROP USER IF EXISTS '{$username}'@'%'");
-            DB::connection($this->connection)->statement("FLUSH PRIVILEGES");
+            DB::statement("DROP USER IF EXISTS '{$username}'@'%'");
+            DB::statement("FLUSH PRIVILEGES");
+            
+            // Delete the database record
+            if ($tenant instanceof \App\Models\Tenant) {
+                TenantDatabase::where('tenant_id', $name)->delete();
+            }
             
             return true;
         } catch (\Exception $e) {

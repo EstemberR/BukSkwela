@@ -9,15 +9,26 @@ use Illuminate\Http\Request;
 
 class CourseController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $courses = Course::with(['staff'])
-            ->where('tenant_id', tenant('id'))
-            ->paginate(10);
-            
-        $instructors = Staff::where('role', 'instructor')
-            ->where('tenant_id', tenant('id'))
-            ->get();
+        $query = Course::query();
+
+        // Apply search filter
+        if ($request->has('search')) {
+            $search = $request->get('search');
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        // Apply status filter
+        if ($request->has('status') && $request->get('status') !== '') {
+            $query->where('status', $request->get('status'));
+        }
+
+        $courses = $query->paginate(10);
+        $instructors = Staff::where('role', 'instructor')->get();
 
         return view('tenant.courses.index', compact('courses', 'instructors'));
     }
@@ -27,13 +38,12 @@ class CourseController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'staff_id' => 'required|exists:staff,id'
         ]);
 
         Course::create([
             'title' => $request->title,
             'description' => $request->description,
-            'staff_id' => $request->staff_id,
+            'staff_id' => null,
             'status' => 'active',
             'tenant_id' => tenant('id')
         ]);

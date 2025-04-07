@@ -15,6 +15,14 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         \App\Console\Commands\CreateSuperAdmin::class,
         \App\Console\Commands\UpdateTenantMigrations::class,
+        \App\Console\Commands\MigrateTenants::class,
+        \App\Console\Commands\MigrateTenantsBatched::class,
+        \App\Console\Commands\MigrateTenantsByDomain::class,
+        \App\Console\Commands\CreateTenantDatabases::class,
+        \App\Console\Commands\TenantDatabaseManagement::class,
+        \App\Console\Commands\CheckMySQLConnections::class,
+        \App\Console\Commands\SetupTenantDatabase::class,
+        \App\Console\Commands\AutoSetupTenantDatabases::class,
     ];
 
     /**
@@ -27,6 +35,12 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')
         //          ->hourly();
+        
+        // Automatically set up databases for any new tenants that don't have them yet
+        $schedule->command('tenants:auto-setup --new-only')
+            ->daily()
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/tenant-auto-setup.log'));
     }
 
     /**

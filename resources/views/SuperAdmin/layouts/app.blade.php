@@ -56,6 +56,11 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('super-admin.tenant-data.*') ? 'active' : '' }}" href="{{ route('super-admin.tenant-data.index') }}">
+                                <i class="fas fa-database"></i> Tenant Databases
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('superadmin.account.*') ? 'active' : '' }}" href="{{ route('superadmin.account.settings') }}">
                                 <i class="fas fa-user-cog"></i> Account Settings
                             </a>

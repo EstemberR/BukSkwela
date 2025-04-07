@@ -38,7 +38,8 @@
     34 => 'App\\Providers\\EventServiceProvider',
     35 => 'App\\Providers\\RouteServiceProvider',
     36 => 'App\\Providers\\TenancyServiceProvider',
-    37 => 'Stancl\\Tenancy\\TenancyServiceProvider',
+    37 => 'App\\Providers\\TenancyHelperServiceProvider',
+    38 => 'Stancl\\Tenancy\\TenancyServiceProvider',
   ),
   'eager' => 
   array (
@@ -65,7 +66,8 @@
     20 => 'App\\Providers\\EventServiceProvider',
     21 => 'App\\Providers\\RouteServiceProvider',
     22 => 'App\\Providers\\TenancyServiceProvider',
-    23 => 'Stancl\\Tenancy\\TenancyServiceProvider',
+    23 => 'App\\Providers\\TenancyHelperServiceProvider',
+    24 => 'Stancl\\Tenancy\\TenancyServiceProvider',
   ),
   'deferred' => 
   array (

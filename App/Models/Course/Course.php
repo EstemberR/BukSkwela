@@ -20,12 +20,15 @@ class Course extends Model
     ];
 
     protected $casts = [
-        'status' => 'string'
+        'status' => 'string',
+        'staff_id' => 'integer'
     ];
 
     public function staff()
     {
-        return $this->belongsTo(Staff::class);
+        return $this->belongsTo(Staff::class)->withDefault([
+            'name' => 'No Instructor Assigned'
+        ]);
     }
 
     public function students()

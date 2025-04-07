@@ -6,6 +6,121 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+<style>
+    .category-button {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 5px;
+        background: rgb(6, 29, 62);
+        font-family: "Montserrat", sans-serif;
+        box-shadow: 0px 6px 24px 0px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+        cursor: pointer;
+        border: none;
+        margin: 0;
+        min-width: 120px;
+    }
+
+    .category-button:after {
+        content: " ";
+        width: 0%;
+        height: 100%;
+        background: #ffd401;
+        position: absolute;
+        transition: all 0.4s ease-in-out;
+        right: 0;
+    }
+
+    .category-button:hover::after {
+        right: auto;
+        left: 0;
+        width: 100%;
+    }
+
+    .category-button span {
+        text-align: center;
+        text-decoration: none;
+        width: 100%;
+        padding: 10px 15px;
+        color: #fff;
+        font-size: 0.9em;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        z-index: 20;
+        transition: all 0.3s ease-in-out;
+    }
+
+    .category-button:hover span {
+        color:rgb(11, 29, 54);
+        animation: scaleUp 0.3s ease-in-out;
+    }
+
+    .category-button.active {
+        background: #ffd401;
+    }
+
+    .category-button.active span {
+        color: #183153;
+    }
+
+    @keyframes scaleUp {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(0.95);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .category-buttons {
+        display: flex;
+        justify-content: flex-start;
+        gap: 3px;
+        margin-top: 8px;
+    }
+
+    .search-wrapper {
+        margin-top: 8px;
+    }
+
+    .search-container {
+        position: relative;
+        margin-top: 3px;
+        margin-left: auto;
+    }
+
+    .search-input {
+        padding: 8px 15px;
+        padding-left: 35px;
+        border: 2px solid rgb(6, 29, 62);
+        border-radius: 5px;
+        font-family: "Montserrat", sans-serif;
+        font-size: 0.9em;
+        width: 250px;
+        transition: all 0.3s ease;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #ffd401;
+        box-shadow: 0 0 5px rgba(255, 212, 1, 0.3);
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: rgb(6, 29, 62);
+    }
+</style>
 @endpush
 
 @section('content')
@@ -20,12 +135,39 @@
                     </button>
                 </div>
 
-                <div class="card-body">
-                    <div class="mb-4">
-                        <div class="btn-group" role="group" aria-label="Category filters">
-                            <button type="button" class="btn btn-outline-primary active" data-category="Regular">Regular</button>
-                            <button type="button" class="btn btn-outline-primary" data-category="Irregular">Irregular</button>
-                            <button type="button" class="btn btn-outline-primary" data-category="Probation">Probation</button>
+                <div class="card-body pt-0">
+                    <!-- Search and filters -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="category-buttons" role="group" aria-label="Category filters">
+                                <button type="button" class="category-button active" data-category="Regular">
+                                    <span>REGULAR</span>
+                                </button>
+                                <button type="button" class="category-button" data-category="Irregular">
+                                    <span>IRREGULAR</span>
+                                </button>
+                                <button type="button" class="category-button" data-category="Probation">
+                                    <span>PROBATION</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="search-wrapper">
+                                <form id="searchForm" method="GET">
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-search"></i>
+                                        </span>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               placeholder="Search folders..." 
+                                               id="searchInput" 
+                                               name="search"
+                                               value="{{ request('search') }}"
+                                               autocomplete="off">
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
 
@@ -33,10 +175,10 @@
                         <div class="col-12 mb-4">
                             <div class="table-responsive">
                                 <table class="table table-hover" id="folderContentsTable">
-                                    <thead>
+                                    <thead class="bg-primary text-white">
                                         <tr>
-                                            <th>Name</th>
-                                            <th class="text-center">Actions</th>
+                                            <th class="fw-bold">Name</th>
+                                            <th class="fw-bold text-center">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -49,6 +191,16 @@
                                         </tr>
                                     </tbody>
                                 </table>
+
+                                <!-- Pagination -->
+                                <div class="d-flex justify-content-between align-items-center mt-4">
+                                    <div class="text-muted pagination-info">
+                                        Showing 0 to 0 of 0 entries
+                                    </div>
+                                    <div class="pagination-container">
+                                        <!-- Pagination links will be inserted here -->
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -260,6 +412,48 @@
         setupRenameFolderHandler();
         setupGoogleDriveStatus();
         setupModalFileUploadHandler();
+
+        // Search functionality
+        const searchForm = document.getElementById('searchForm');
+        const searchInput = document.getElementById('searchInput');
+        let searchTimeout;
+
+        // Handle search input with debounce
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const searchTerm = this.value.toLowerCase();
+                const folderRows = document.querySelectorAll('#folderContentsTable tbody tr');
+                
+                folderRows.forEach(row => {
+                    const folderName = row.querySelector('td:first-child')?.textContent.toLowerCase() || '';
+                    
+                    if (searchTerm === '') {
+                        row.style.display = ''; // Show all when search is empty
+                    } else if (folderName.includes(searchTerm)) {
+                        row.style.display = ''; // Show matching rows
+                    } else {
+                        row.style.display = 'none'; // Hide non-matching rows
+                    }
+                });
+
+                // Show "no results" message if all rows are hidden
+                const visibleRows = Array.from(folderRows).filter(row => row.style.display !== 'none');
+                const tbody = document.querySelector('#folderContentsTable tbody');
+                const noResultsRow = tbody.querySelector('.no-results-row');
+
+                if (visibleRows.length === 0 && searchTerm !== '') {
+                    if (!noResultsRow) {
+                        const tr = document.createElement('tr');
+                        tr.className = 'no-results-row';
+                        tr.innerHTML = '<td colspan="2" class="text-center">No folders found matching your search</td>';
+                        tbody.appendChild(tr);
+                    }
+                } else if (noResultsRow) {
+                    noResultsRow.remove();
+                }
+            }, 300); // 300ms debounce
+        });
     });
 
     function updateDebugTimestamp() {
@@ -606,7 +800,7 @@
         }
     }
 
-    function loadFolder(folderId = null) {
+    function loadFolder(folderId = null, page = 1) {
         console.log('Loading folder:', folderId);
         console.log('Current category:', currentCategory);
         
@@ -621,6 +815,9 @@
         
         // Add category parameter to the URL
         url += (url.includes('?') ? '&' : '?') + 'category=' + encodeURIComponent(currentCategory);
+        
+        // Add page parameter
+        url += '&page=' + page;
         
         console.log('Requesting URL:', url);
         
@@ -637,8 +834,54 @@
                 if (response.success) {
                     if (response.files && response.files.length > 0) {
                         displayFolderContents(response.files, response.path);
+                        
+                        // Update pagination info
+                        const pagination = response.pagination;
+                        $('.pagination-info').html(`Showing ${pagination.from} to ${pagination.to} of ${pagination.total} entries`);
+                        
+                        // Generate pagination links
+                        let paginationHtml = '';
+                        if (pagination.last_page > 1) {
+                            paginationHtml = '<ul class="pagination">';
+                            
+                            // Previous button
+                            if (pagination.current_page > 1) {
+                                paginationHtml += `<li class="page-item">
+                                    <a class="page-link" href="#" onclick="loadFolder('${folderId}', ${pagination.current_page - 1}); return false;">Previous</a>
+                                </li>`;
+                            } else {
+                                paginationHtml += '<li class="page-item disabled"><span class="page-link">Previous</span></li>';
+                            }
+                            
+                            // Page numbers
+                            for (let i = 1; i <= pagination.last_page; i++) {
+                                if (i === pagination.current_page) {
+                                    paginationHtml += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
+                                } else {
+                                    paginationHtml += `<li class="page-item">
+                                        <a class="page-link" href="#" onclick="loadFolder('${folderId}', ${i}); return false;">${i}</a>
+                                    </li>`;
+                                }
+                            }
+                            
+                            // Next button
+                            if (pagination.current_page < pagination.last_page) {
+                                paginationHtml += `<li class="page-item">
+                                    <a class="page-link" href="#" onclick="loadFolder('${folderId}', ${pagination.current_page + 1}); return false;">Next</a>
+                                </li>`;
+                            } else {
+                                paginationHtml += '<li class="page-item disabled"><span class="page-link">Next</span></li>';
+                            }
+                            
+                            paginationHtml += '</ul>';
+                        }
+                        
+                        // Update pagination container
+                        $('.pagination-container').html(paginationHtml);
                     } else {
                         $('#folderContentsTable tbody').html('<tr><td colspan="3" class="text-center">No folders found in this category. Create a new folder to get started.</td></tr>');
+                        $('.pagination-info').html('Showing 0 to 0 of 0 entries');
+                        $('.pagination-container').empty();
                     }
                 } else {
                     $('#folderContentsTable tbody').html('<tr><td colspan="3" class="text-center text-danger">' + (response.message || 'Failed to load folder contents') + '</td></tr>');

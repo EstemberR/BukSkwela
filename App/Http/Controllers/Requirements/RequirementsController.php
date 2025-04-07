@@ -25,38 +25,18 @@ class RequirementsController extends Controller
         try {
             $contents = $this->driveService->listFolderContents($folderId);
             $category = $request->query('category', 'Regular');
+            $tenantId = tenant('id');
             
             if (isset($contents['files'])) {
-                $filteredFiles = array_filter($contents['files'], function($file) use ($category) {
-                    $tenantId = tenant('id');
+                $filteredFiles = array_filter($contents['files'], function($file) use ($tenantId) {
                     $name = is_array($file) ? $file['name'] : $file->getName();
                     $mimeType = is_array($file) ? $file['mimeType'] : $file->getMimeType();
                     $isFolder = strpos($mimeType, 'folder') !== false;
+                    
+                    // Check if file/folder belongs to current tenant
                     $hasPrefix = str_starts_with($name, "[{$tenantId}]");
                     
-                    // Always process folders, and files with tenant prefix
-                    if ($isFolder || $hasPrefix) {
-                        if (is_array($file)) {
-                            $file['formatted_name'] = $hasPrefix ? str_replace("[{$tenantId}]", '', $name) : $name;
-                            $file['is_folder'] = $isFolder;
-                            $file['type'] = $isFolder ? 'folder' : 'file';
-                            $file['last_modified'] = isset($file['modifiedTime']) ? 
-                                date('Y-m-d H:i:s', strtotime($file['modifiedTime'])) : '';
-                            $file['size'] = isset($file['size']) ? $file['size'] : 0;
-                            $file['web_view_link'] = isset($file['webViewLink']) ? $file['webViewLink'] : '';
-                        } else {
-                            $file->formatted_name = $hasPrefix ? str_replace("[{$tenantId}]", '', $name) : $name;
-                            $file->is_folder = $isFolder;
-                            $file->type = $isFolder ? 'folder' : 'file';
-                            $file->last_modified = $file->getModifiedTime() ? 
-                                date('Y-m-d H:i:s', strtotime($file->getModifiedTime())) : '';
-                            $file->size = $file->getSize() ?? 0;
-                            $file->web_view_link = $file->getWebViewLink() ?? '';
-                        }
-                        return true;
-                    }
-                    
-                    return false;
+                    return $hasPrefix;
                 });
                 
                 $contents['files'] = array_values($filteredFiles);
@@ -67,8 +47,7 @@ class RequirementsController extends Controller
                 'files' => $contents['files'] ?? [],
                 'path' => $contents['path'] ?? [],
                 'notice' => $contents['notice'] ?? null,
-                'current_folder' => $folderId ?? 'root',
-                'total_items' => count($contents['files'] ?? [])
+                'current_folder' => $folderId ?? 'root'
             ]);
         } catch (\Exception $e) {
             \Log::error('Folder contents error', [
@@ -85,79 +64,64 @@ class RequirementsController extends Controller
         }
     }
 
-    public function listFolderContents(Request $request, $folderId = null)
+    public function listFolderContents(Request $request)
     {
         try {
-            $contents = $this->driveService->listFolderContents($folderId);
+            $folderId = $request->query('folderId', null);
             $category = $request->query('category', 'Regular');
             $tenantId = tenant('id');
+            $perPage = 10;
+
+            // Get folder contents from Google Drive
+            $contents = $this->driveService->listFolderContents($folderId);
 
             // Filter contents by tenant and category
             $filteredContents = collect($contents['files'])->filter(function ($item) use ($category, $tenantId) {
-                // Get the name and mime type
-                $name = is_array($item) ? $item['name'] : $item->getName();
-                $mimeType = is_array($item) ? $item['mimeType'] : $item->getMimeType();
-                
-                // Only process folders
-                if ($mimeType !== 'application/vnd.google-apps.folder') {
+                if ($item['mimeType'] !== 'application/vnd.google-apps.folder') {
                     return false;
                 }
 
-                // Check if folder belongs to this tenant
-                if (!str_starts_with($name, "[{$tenantId}]")) {
+                // Check if folder belongs to current tenant
+                $tenantMatch = preg_match('/\[' . preg_quote($tenantId, '/') . '\]/', $item['name']);
+                if (!$tenantMatch) {
                     return false;
                 }
 
-                // Remove tenant prefix for category checking
-                $nameWithoutTenant = str_replace("[{$tenantId}] ", "", $name);
-                
                 // Extract category from folder name
-                $categoryMatch = preg_match('/\[(Regular|Irregular|Probation)\]/', $nameWithoutTenant, $matches);
+                $categoryMatch = preg_match('/\[(Regular|Irregular|Probation)\]/', $item['name'], $matches);
                 $itemCategory = $categoryMatch ? $matches[1] : 'Regular';
 
                 // Return true only if the category matches
                 return $itemCategory === $category;
-            })->map(function ($item) use ($tenantId) {
-                // Clean up the display name
-                $name = is_array($item) ? $item['name'] : $item->getName();
-                $displayName = $name;
-                
-                // Remove tenant prefix and clean up display name
-                if (str_starts_with($name, "[{$tenantId}]")) {
-                    $displayName = str_replace("[{$tenantId}] ", "", $name);
-                }
-                
-                // Convert DriveFile object to array with necessary properties
-                $fileData = is_array($item) ? $item : [
-                    'id' => $item->getId(),
-                    'name' => $item->getName(),
-                    'mimeType' => $item->getMimeType(),
-                    'modifiedTime' => $item->getModifiedTime(),
-                    'webViewLink' => $item->getWebViewLink(),
-                ];
-                
-                $fileData['display_name'] = $displayName;
-                $fileData['original_name'] = $name;
-                
-                return $fileData;
-            })->values()->all();
+            })->values();
+
+            // Paginate the filtered contents
+            $page = $request->query('page', 1);
+            $paginatedContents = new \Illuminate\Pagination\LengthAwarePaginator(
+                $filteredContents->forPage($page, $perPage),
+                $filteredContents->count(),
+                $perPage,
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
 
             return response()->json([
                 'success' => true,
-                'files' => $filteredContents,
+                'files' => $paginatedContents->items(),
+                'pagination' => [
+                    'total' => $paginatedContents->total(),
+                    'per_page' => $paginatedContents->perPage(),
+                    'current_page' => $paginatedContents->currentPage(),
+                    'last_page' => $paginatedContents->lastPage(),
+                    'from' => $paginatedContents->firstItem(),
+                    'to' => $paginatedContents->lastItem()
+                ],
                 'path' => $contents['path'] ?? [],
                 'currentFolder' => [
                     'id' => $folderId ?? 'root'
                 ]
             ]);
         } catch (\Exception $e) {
-            \Log::error('List folder contents error', [
-                'error' => $e->getMessage(),
-                'folder_id' => $folderId,
-                'category' => $category,
-                'trace' => $e->getTraceAsString()
-            ]);
-            
             return response()->json([
                 'success' => false,
                 'message' => 'Error listing folder contents: ' . $e->getMessage()

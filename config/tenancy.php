@@ -97,28 +97,19 @@ return [
      * Database tenancy config. Used by DatabaseTenancyBootstrapper.
      */
     'database' => [
-        /**
-         * The connection that will be used as a template for the dynamically created tenant connection.
-         * Set to null to use the default connection.
-         */
-        'based_on' => 'central',
-
-        /**
-         * Tenant database names are created like this:
-         * prefix + tenant_id + suffix.
-         */
-        'prefix' => 'tenant_',
+        'based_on' => null, // The connection that will be used as a base for the tenant connection. Set to null to use the default connection.
+        'prefix' => 'tenant',
         'suffix' => '',
-
-        /**
-         * Connection name used for the tenant connection.
-         * If null, tenant connections will have an auto-generated connection name. 
-         * If not null, all tenant connections will use the same connection name,
-         * and tenant connection configuration will be updated dynamically at runtime.
-         */
+        
+        // Use our own tenant database settings rather than duplicating the central database
+        'template_database' => null,
+        
+        // If you need to create databases with tenant names, this will be used to make them.
+        'database_manager' => App\TenantDatabaseManagers\CustomMySQLDatabaseManager::class,
+        
         'tenant_connection_name' => 'tenant',
-
-        'separate_by' => 'database', // database or schema (only supported by pgsql)
+        'central_connection' => 'mysql',
+        'separate_by' => 'database', // database or schema
     ],
 
     /**
@@ -270,7 +261,7 @@ return [
      */
     'seed_after_migration' => true, // should the seeder run after automatic migration
     'seeder_parameters' => [
-        '--class' => 'TenantDatabaseSeeder', // root seeder class, e.g.: 'DatabaseSeeder'
+        '--class' => 'Database\\Seeders\\TenantDatabaseSeeder', // root seeder class with full namespace
         '--force' => true,
     ],
 

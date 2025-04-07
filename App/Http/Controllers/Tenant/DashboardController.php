@@ -11,7 +11,7 @@ use App\Models\Course\Course;
 
 class DashboardController extends Controller
 {
-    public function adminDashboard()
+    public function index()
     {
         $data = [
             'instructorCount' => Staff::where('tenant_id', tenant('id'))->count(),
@@ -23,6 +23,19 @@ class DashboardController extends Controller
             'activeCourses' => Course::where('tenant_id', tenant('id'))
                 ->where('status', 'active')
                 ->count(),
+            'students' => Student::where('tenant_id', tenant('id'))
+                ->select('id', 'student_id', 'status')
+                ->orderBy('created_at', 'desc')
+                ->take(5)
+                ->get(),
+            'courses' => Course::where('tenant_id', tenant('id'))
+                ->with('staff')
+                ->where('status', 'active')
+                ->select('id', 'title', 'staff_id', 'status')
+                ->withCount('students')
+                ->orderBy('created_at', 'desc')
+                ->take(5)
+                ->get(),
             'instructors' => Staff::where('tenant_id', tenant('id'))
                 ->with(['courses' => function($query) {
                     $query->withCount('students');

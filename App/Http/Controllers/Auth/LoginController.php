@@ -91,7 +91,7 @@ class LoginController extends Controller
             Auth::guard('admin')->login($admin);
             
             if (tenant()) {
-                return redirect()->route('tenant.admin.dashboard');
+                return redirect()->route('tenant.dashboard');
             } else {
                 $domain = $admin->tenant->domains->first()->domain;
                 $port = request()->getPort();
@@ -99,7 +99,7 @@ class LoginController extends Controller
                 if ($port && $port != 80) {
                     $url .= ':' . $port;
                 }
-                return redirect()->to('http://' . $url . '/admin/dashboard');
+                return redirect()->to('http://' . $url . '/dashboard');
             }
         }
 
@@ -132,4 +132,17 @@ class LoginController extends Controller
 
     //     return redirect()->intended(RouteServiceProvider::HOME);
     // }
+
+    protected function authenticated(Request $request, $user)
+    {
+        if (tenant()) {
+            return redirect()->route('tenant.dashboard', ['tenant' => tenant('id')]);
+        }
+        
+        if ($user->role === 'superadmin') {
+            return redirect()->route('superadmin.dashboard');
+        }
+        
+        return redirect('/');
+    }
 }
