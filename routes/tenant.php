@@ -30,6 +30,11 @@ Route::middleware(['web'])
             ->name('tenant.login');
         Route::post('/login', [LoginController::class, 'login'])
             ->name('tenant.login.post');
+<<<<<<< HEAD
+=======
+        Route::get('/status', [\App\Http\Controllers\Auth\TenantStatusController::class, 'checkStatus'])
+            ->name('tenant.status');
+>>>>>>> 18436f6feb6c052fa7099992c8c486a3d681c694
     });
 
 // Protected tenant routes

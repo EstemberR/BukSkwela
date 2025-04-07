@@ -19,6 +19,16 @@ class StaffAuthController extends Controller
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
+        
+        // Check tenant approval status
+        if (tenant()) {
+            $tenant = \App\Models\Tenant::find(tenant('id'));
+            if (!$tenant || $tenant->status !== 'approved') {
+                return back()->withErrors([
+                    'email' => 'This tenant account is not active. Please contact the administrator.',
+                ])->withInput($request->except('password'));
+            }
+        }
 
         if (Auth::guard('staff')->attempt($credentials)) {
             $request->session()->regenerate();
@@ -35,6 +45,6 @@ class StaffAuthController extends Controller
         Auth::guard('staff')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('staff.login');
+        return redirect()->away('http://127.0.0.1:8000');
     }
 }

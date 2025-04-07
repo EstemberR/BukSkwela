@@ -110,6 +110,22 @@
                             <small class="text-muted">Your unique URL: subdomain.{{ env('CENTRAL_DOMAIN') }}</small>
                         </div>
 
+                        <div class="form-group">
+                            <label>Select Subscription Plan</label>
+                            <div class="d-flex">
+                                <input type="hidden" name="subscription_plan" id="selected_plan" value="basic">
+                                <div class="flex-grow-1 position-relative">
+                                    <div class="input-icon-wrapper">
+                                        <i class="fas fa-tag input-icon"></i>
+                                    </div>
+                                    <input type="text" class="form-control" id="plan_display" value="Basic Plan (Free)" readonly>
+                                </div>
+                                <button type="button" class="btn btn-info ml-2" data-toggle="modal" data-target="#planModal">
+                                    <i class="fas fa-list-ul"></i> View Plans
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="mt-4">
                             <button type="submit" class="btn btn-block btn-primary btn-lg auth-form-btn">
                                 Create My Department
@@ -140,6 +156,87 @@
             </div>
         </div>
 
+        <!-- Subscription Plan Modal -->
+        <div class="modal fade" id="planModal" tabindex="-1" role="dialog" aria-labelledby="planModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="planModalLabel">Choose Your Subscription Plan</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <!-- Basic Plan -->
+                            <div class="col-md-4 mb-3 mb-md-0">
+                                <div class="card h-100 pricing-card" id="basic-card">
+                                    <div class="card-header bg-light text-center">
+                                        <h5 class="my-0 font-weight-bold">Basic</h5>
+                                    </div>
+                                    <div class="card-body d-flex flex-column">
+                                        <h1 class="card-title pricing-card-title text-center">$0 <small class="text-muted">/ mo</small></h1>
+                                        <ul class="list-unstyled mt-3 mb-4">
+                                            <li><i class="fas fa-check text-success mr-2"></i> Up to 50 students</li>
+                                            <li><i class="fas fa-check text-success mr-2"></i> 5GB storage</li>
+                                            <li><i class="fas fa-check text-success mr-2"></i> Email support</li>
+                                            <li><i class="fas fa-times text-danger mr-2"></i> Advanced reporting</li>
+                                            <li><i class="fas fa-times text-danger mr-2"></i> Custom branding</li>
+                                        </ul>
+                                        <button type="button" class="btn btn-lg btn-block btn-outline-primary mt-auto select-plan" data-plan="basic" data-display="Basic Plan (Free)">Select</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Premium Plan -->
+                            <div class="col-md-4 mb-3 mb-md-0">
+                                <div class="card h-100 pricing-card" id="premium-card">
+                                    <div class="card-header bg-primary text-white text-center">
+                                        <h5 class="my-0 font-weight-bold">Premium</h5>
+                                        <span class="badge badge-light">POPULAR</span>
+                                    </div>
+                                    <div class="card-body d-flex flex-column">
+                                        <h1 class="card-title pricing-card-title text-center">$29 <small class="text-muted">/ mo</small></h1>
+                                        <ul class="list-unstyled mt-3 mb-4">
+                                            <li><i class="fas fa-check text-success mr-2"></i> Up to 500 students</li>
+                                            <li><i class="fas fa-check text-success mr-2"></i> 25GB storage</li>
+                                            <li><i class="fas fa-check text-success mr-2"></i> Priority support</li>
+                                            <li><i class="fas fa-check text-success mr-2"></i> Advanced reporting</li>
+                                            <li><i class="fas fa-times text-danger mr-2"></i> Custom branding</li>
+                                        </ul>
+                                        <button type="button" class="btn btn-lg btn-block btn-primary mt-auto select-plan" data-plan="premium" data-display="Premium Plan ($29/mo)">Select</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Enterprise Plan -->
+                            <div class="col-md-4">
+                                <div class="card h-100 pricing-card" id="enterprise-card">
+                                    <div class="card-header bg-dark text-white text-center">
+                                        <h5 class="my-0 font-weight-bold">Enterprise</h5>
+                                    </div>
+                                    <div class="card-body d-flex flex-column">
+                                        <h1 class="card-title pricing-card-title text-center">$49 <small class="text-muted">/ mo</small></h1>
+                                        <ul class="list-unstyled mt-3 mb-4">
+                                            <li><i class="fas fa-check text-success mr-2"></i> Unlimited students</li>
+                                            <li><i class="fas fa-check text-success mr-2"></i> 100GB storage</li>
+                                            <li><i class="fas fa-check text-success mr-2"></i> 24/7 support</li>
+                                            <li><i class="fas fa-check text-success mr-2"></i> Advanced reporting</li>
+                                            <li><i class="fas fa-check text-success mr-2"></i> Custom branding</li>
+                                        </ul>
+                                        <button type="button" class="btn btn-lg btn-block btn-dark mt-auto select-plan" data-plan="enterprise" data-display="Enterprise Plan ($49/mo)">Select</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Scripts -->
         <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
@@ -147,6 +244,21 @@
         <script>
             $(function () {
                 $('[data-toggle="tooltip"]').tooltip();
+                
+                // Plan selection
+                $('.select-plan').click(function() {
+                    const plan = $(this).data('plan');
+                    const displayText = $(this).data('display');
+                    
+                    $('#selected_plan').val(plan);
+                    $('#plan_display').val(displayText);
+                    
+                    // Highlight selected card
+                    $('.pricing-card').removeClass('border-primary');
+                    $(`#${plan}-card`).addClass('border-primary');
+                    
+                    $('#planModal').modal('hide');
+                });
             });
         </script>
     </body>

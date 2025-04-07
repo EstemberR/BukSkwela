@@ -54,6 +54,14 @@ class LoginController extends Controller
 
         // If not superadmin, proceed with tenant admin authentication
         if (tenant()) {
+            // Check if the tenant is active before trying to log in
+            $tenant = Tenant::find(tenant('id'));
+            if (!$tenant || $tenant->status !== 'approved') {
+                return back()->withErrors([
+                    'email' => 'This tenant account is not active. Please contact the administrator.',
+                ])->withInput($request->except('password'));
+            }
+            
             // For tenant domains
             $admin = TenantAdmin::where('email', $request->email)
                               ->where('tenant_id', tenant('id'))
@@ -61,6 +69,15 @@ class LoginController extends Controller
         } else {
             // For central domain
             $admin = TenantAdmin::where('email', $request->email)->first();
+            
+            // Check if admin exists and if their tenant is approved
+            if ($admin && $admin->tenant) {
+                if ($admin->tenant->status !== 'approved') {
+                    return back()->withErrors([
+                        'email' => 'This tenant account has not been approved yet. Please contact the administrator.',
+                    ])->withInput($request->except('password'));
+                }
+            }
         }
         
         if (!$admin) {
@@ -98,23 +115,10 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
         
         if (tenant()) {
-            return redirect()->route('tenant.login');
+            return redirect()->away('http://127.0.0.1:8000');
         }
         return redirect()->route('login');
     }
-
-    // public function store(LoginRequest $request)
-    // {
-    //     $request->authenticate();
-
-    //     $request->session()->regenerate();
-
-    //     if (auth()->user()->role === 'superadmin') {
-    //         return redirect()->intended(route('superadmin.dashboard'));
-    //     }
-
-    //     return redirect()->intended(RouteServiceProvider::HOME);
-    // }
 
     protected function authenticated(Request $request, $user)
     {
@@ -126,6 +130,6 @@ class LoginController extends Controller
             return redirect()->route('superadmin.dashboard');
         }
         
-        return redirect('/');
+        return redirect()->away('http://127.0.0.1:8000');
     }
 }

@@ -288,7 +288,7 @@ small.text-muted {
 }
 
 .login-link:hover {
-    color: #0056b3; 
+    color: #002b57;
     text-decoration: underline;
 }
 
@@ -307,6 +307,115 @@ body {
 small {
     font-family: 'Work Sans', sans-serif;
     font-weight: 400;
+}
+
+/* Subscription Options */
+.subscription-options {
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.subscription-option {
+    padding: 0;
+    margin: 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.subscription-option:last-child {
+    border-bottom: none;
+}
+
+.subscription-option .form-check-input {
+    margin-top: 0;
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.subscription-option .form-check-label {
+    display: flex;
+    flex-direction: column;
+    padding: 15px 15px 15px 50px;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.subscription-option .form-check-input:checked + .form-check-label {
+    background-color: #e6f3fe;
+}
+
+.subscription-option .plan-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #001c38;
+}
+
+.subscription-option .plan-price {
+    font-weight: 600;
+    color: #001c38;
+}
+
+.subscription-option .plan-features {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+/* Pricing Card Styles */
+.pricing-card {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+.pricing-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+}
+
+.pricing-card.border-primary {
+    border-color: #001c38 !important;
+    transform: translateY(-5px);
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+}
+
+.pricing-card .card-header {
+    border-bottom: 0;
+    position: relative;
+    overflow: hidden;
+    padding-top: 1.25rem;
+    padding-bottom: 1.25rem;
+}
+
+.pricing-card .card-header .badge {
+    position: absolute;
+    top: 10px;
+    right: -28px;
+    transform: rotate(45deg);
+    padding: 5px 40px;
+    font-size: 0.8rem;
+}
+
+.pricing-card .card-title {
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+.pricing-card ul li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.pricing-card ul li:last-child {
+    border-bottom: 0;
+}
+
+.pricing-card .btn {
+    border-radius: 6px;
+    font-weight: 500;
 }
 
 @media (max-width: 991.98px) {

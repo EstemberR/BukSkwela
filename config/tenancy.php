@@ -36,7 +36,7 @@ return [
              * Note: It's recommended to create a designated central connection,
              * to let you easily use it in your app, e.g. via the DB facade.
              */
-            'connection' => null,
+            'connection' => 'central',
 
             'table_names' => [
                 'tenants' => 'tenants',
@@ -97,20 +97,19 @@ return [
      * Database tenancy config. Used by DatabaseTenancyBootstrapper.
      */
     'database' => [
-        /**
-         * The connection that will be used as a template for the dynamically created tenant connection.
-         * Set to null to use the default connection.
-         */
-        'based_on' => null,
-
-        /**
-         * Tenant database names are created like this:
-         * prefix + tenant_id + suffix.
-         */
+        'based_on' => null, // The connection that will be used as a base for the tenant connection. Set to null to use the default connection.
         'prefix' => 'tenant',
         'suffix' => '',
-
-        'separate_by' => 'database', // database or schema (only supported by pgsql)
+        
+        // Use our own tenant database settings rather than duplicating the central database
+        'template_database' => null,
+        
+        // If you need to create databases with tenant names, this will be used to make them.
+        'database_manager' => App\TenantDatabaseManagers\CustomMySQLDatabaseManager::class,
+        
+        'tenant_connection_name' => 'tenant',
+        'central_connection' => 'mysql',
+        'separate_by' => 'database', // database or schema
     ],
 
     /**
@@ -194,7 +193,7 @@ return [
      */
     'database_managers' => [
         'sqlite' => Stancl\Tenancy\TenantDatabaseManagers\SQLiteDatabaseManager::class,
-        'mysql' => Stancl\Tenancy\TenantDatabaseManagers\MySQLDatabaseManager::class,
+        'mysql' => App\TenantDatabaseManagers\CustomMySQLDatabaseManager::class,
         'pgsql' => Stancl\Tenancy\TenantDatabaseManagers\PostgreSQLDatabaseManager::class,
 
         /**
@@ -251,19 +250,19 @@ return [
     /**
      * Should tenant migrations be ran after the tenant's database is created.
      */
-    'migrate_after_creation' => false,
+    'migrate_after_creation' => true,
     'migration_parameters' => [
-        // '--force' => true, // Set this to true to be able to run migrations in production
-        // '--path' => [], // If you need to customize paths to tenant migrations
+        '--force' => true, // Set this to true to be able to run migrations in production
+        '--path' => [database_path('migrations/tenant')], // Customize path to tenant migrations
     ],
 
     /**
      * Should tenant databases be automatically seeded after they're created & migrated.
      */
-    'seed_after_migration' => false, // should the seeder run after automatic migration
+    'seed_after_migration' => true, // should the seeder run after automatic migration
     'seeder_parameters' => [
-        '--class' => 'DatabaseSeeder', // root seeder class, e.g.: 'DatabaseSeeder'
-        // '--force' => true,
+        '--class' => 'Database\\Seeders\\TenantDatabaseSeeder', // root seeder class with full namespace
+        '--force' => true,
     ],
 
     /**
@@ -271,7 +270,7 @@ return [
      *
      * This will save space but permanently delete data which you might want to keep.
      */
-    'delete_database_after_tenant_deletion' => false,
+    'delete_database_after_tenant_deletion' => true,
 
     /**
      * Should tenant databases be deleted asynchronously in a queued job.
