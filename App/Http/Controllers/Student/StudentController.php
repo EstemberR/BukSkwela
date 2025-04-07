@@ -427,129 +427,71 @@ class StudentController extends Controller
     }
 
     /**
-     * The simplest possible update method with debugging.
+     * Update the specified student directly via a simple route.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
      */
-    public function updateDirectly(Request $request, $studentId)
+    public function updateDirectly(Request $request, $id)
     {
-        // Log everything to help diagnose
-        Log::info('Update request received', [
-            'studentId' => $studentId,
-            'student_db_id' => $request->input('student_db_id'),
-            'debug_student_id' => $request->input('debug_student_id'),
-            'all_params' => $request->all(),
-            'server_params' => $_SERVER,
-            'tenant_id' => tenant('id')
-        ]);
+        // Find the student (try multiple approaches)
+        $student = null;
         
-        // Convert to integer
-        $id = (int)$studentId;
+        // First try the route parameter
+        $student = Student::where('id', $id)->first();
         
-        try {
-            // First find all students to debug
-            $allStudents = Student::where('tenant_id', tenant('id'))->get(['id', 'name', 'student_id', 'tenant_id']);
-            Log::info('All students', ['count' => $allStudents->count(), 'students' => $allStudents->toArray()]);
-            
-            // Find the specific student
-            $student = null;
-            
-            // Try with route parameter
-            $student = Student::where('id', $id)
-                ->where('tenant_id', tenant('id'))
-                ->first();
-                
-            if (!$student && $request->has('student_db_id')) {
-                // Try with form field
-                $formId = (int)$request->input('student_db_id');
-                $student = Student::where('id', $formId)
-                    ->where('tenant_id', tenant('id'))
-                    ->first();
-                Log::info('Tried student_db_id from form', ['id' => $formId, 'found' => ($student ? 'yes' : 'no')]);
-            }
-            
-            if (!$student) {
-                // Everything failed
-                return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
-                    ->with('error', 'Student not found. ID: ' . $id);
-            }
-            
-            // We found the student, now update
-            $request->validate([
-                'student_id' => 'required|unique:students,student_id,' . $student->id,
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|unique:students,email,' . $student->id,
-                'course_id' => 'required|exists:courses,id',
-            ]);
-
-            // Track what fields were updated
-            $updatedFields = [];
-
-            if ($student->student_id != $request->student_id) {
-                $updatedFields['student_id'] = $request->student_id;
-            }
-            
-            if ($student->name != $request->name) {
-                $updatedFields['name'] = $request->name;
-            }
-            
-            if ($student->email != $request->email) {
-                $updatedFields['email'] = $request->email;
-            }
-            
-            if ($student->course_id != $request->course_id) {
-                $course = Course::find($request->course_id);
-                if ($course) {
-                    $updatedFields['course'] = $course->title;
-                }
-            }
-
-            // Update the student
-            $student->update([
-                'student_id' => $request->student_id,
-                'name' => $request->name,
-                'email' => $request->email,
-                'course_id' => $request->course_id,
-            ]);
-
-            // Password update
-            if ($request->filled('password')) {
-                $student->update([
-                    'password' => Hash::make($request->password),
-                ]);
-                $updatedFields['password'] = 'Password has been updated';
-            }
-            
-            // Log the successful update
-            Log::info('Student updated successfully', [
-                'student_id' => $student->id,
-                'name' => $student->name,
-                'updated_fields' => $updatedFields
-            ]);
-
-            // Send email notification if anything was updated
-            if (!empty($updatedFields)) {
-                try {
-                    Mail::to($student->email)->send(new StudentCredentialsUpdated($student, $updatedFields));
-                    return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
-                        ->with('success', 'Student updated successfully and notification email sent');
-                } catch (\Exception $e) {
-                    Log::error('Failed to send email', ['error' => $e->getMessage()]);
-                    return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
-                        ->with('warning', 'Student updated but failed to send email');
-                }
-            }
-
-            return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
-                ->with('success', 'Student updated successfully');
-                
-        } catch (\Exception $e) {
-            Log::error('Failed to update student', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
-                ->with('error', 'Error updating student: ' . $e->getMessage());
+        // If not found and we have student_db_id in the request, try that
+        if (!$student && $request->has('student_db_id')) {
+            $student = Student::where('id', $request->student_db_id)->first();
         }
+        
+        // If still not found, return with error
+        if (!$student) {
+            return redirect()->back()
+                ->with('error', "Student not found with ID: {$id}");
+        }
+
+        // Validate student data
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:students,email,'.$student->id,
+            'course_id' => 'required|exists:courses,id',
+            'status' => 'required|in:active,inactive',
+        ]);
+
+        // Track if any fields were updated
+        $updated = false;
+
+        // Update only if values are different
+        foreach ($validated as $field => $value) {
+            if ($student->{$field} != $value) {
+                $student->{$field} = $value;
+                $updated = true;
+            }
+        }
+
+        // Save if there were changes
+        if ($updated) {
+            $student->save();
+            
+            // Send email if email is changed
+            if ($student->wasChanged('email')) {
+                // Send email notification about updated credentials
+                try {
+                    Mail::to($student->email)->send(new StudentCredentialsUpdated($student));
+                } catch (\Exception $e) {
+                    // Log the error but don't stop the process
+                    \Log::error('Failed to send email to student: ' . $e->getMessage());
+                }
+            }
+            
+            return redirect()->route('tenant.students.index')
+                ->with('success', 'Student updated successfully');
+        }
+
+        return redirect()->route('tenant.students.index')
+            ->with('info', 'No changes were made to the student');
     }
 
     /**
