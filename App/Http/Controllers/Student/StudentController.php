@@ -11,6 +11,7 @@ use App\Mail\StudentRegistered;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Helpers\PasswordGenerator;
+use App\Mail\StudentCredentialsUpdated;
 
 class StudentController extends Controller
 {
@@ -83,6 +84,12 @@ class StudentController extends Controller
 
     public function update(Request $request, Student $student)
     {
+        // Ensure the student belongs to the current tenant
+        if ($student->tenant_id != tenant('id')) {
+            return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                ->with('error', 'Unauthorized access to student from another tenant');
+        }
+
         $request->validate([
             'student_id' => 'required|unique:students,student_id,' . $student->id,
             'name' => 'required|string|max:255',
@@ -90,6 +97,30 @@ class StudentController extends Controller
             'course_id' => 'required|exists:courses,id',
         ]);
 
+        // Track what fields were updated
+        $updatedFields = [];
+        $originalValues = $student->getOriginal();
+
+        if ($student->student_id != $request->student_id) {
+            $updatedFields['student_id'] = $request->student_id;
+        }
+        
+        if ($student->name != $request->name) {
+            $updatedFields['name'] = $request->name;
+        }
+        
+        if ($student->email != $request->email) {
+            $updatedFields['email'] = $request->email;
+        }
+        
+        if ($student->course_id != $request->course_id) {
+            $course = Course::find($request->course_id);
+            if ($course) {
+                $updatedFields['course'] = $course->title;
+            }
+        }
+
+        // Update the student
         $student->update([
             'student_id' => $request->student_id,
             'name' => $request->name,
@@ -97,10 +128,43 @@ class StudentController extends Controller
             'course_id' => $request->course_id,
         ]);
 
+        // Password update
         if ($request->filled('password')) {
             $student->update([
                 'password' => Hash::make($request->password),
             ]);
+            $updatedFields['password'] = 'Password has been updated';
+        }
+
+        // Send email notification if anything was updated
+        try {
+            if (!empty($updatedFields)) {
+                Log::info('Sending credential update email', [
+                    'student_id' => $student->id,
+                    'email' => $student->email,
+                    'updated_fields' => array_keys($updatedFields)
+                ]);
+                
+                Mail::to($student->email)->send(new StudentCredentialsUpdated($student, $updatedFields));
+                
+                Log::info('Credential update email sent successfully', [
+                    'student_id' => $student->id,
+                    'email' => $student->email
+                ]);
+                
+                return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                    ->with('success', 'Student updated successfully and notification email sent');
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send credential update email', [
+                'student_id' => $student->id,
+                'email' => $student->email,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                ->with('warning', 'Student updated successfully but failed to send notification email');
         }
 
         return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])

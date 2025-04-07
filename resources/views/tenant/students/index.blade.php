@@ -4,6 +4,16 @@
 
 @section('content')
 <div class="container">
+    @if(session('success'))
+        <input type="hidden" id="success-message" value="{{ session('success') }}">
+    @endif
+    @if(session('error'))
+        <input type="hidden" id="error-message" value="{{ session('error') }}">
+    @endif
+    @if(session('warning'))
+        <input type="hidden" id="warning-message" value="{{ session('warning') }}">
+    @endif
+    
     <div class="row">
         <div class="col-md-12">
             <div class="card">
@@ -183,8 +193,13 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password (leave blank to keep current)</label>
+                        <input type="password" class="form-control" name="password">
+                        <div class="form-text">Enter a new password only if you want to change it.</div>
+                    </div>
                     <div class="alert alert-info">
-                        <small><i class="fas fa-info-circle"></i> Student passwords can only be reset by the system administrator.</small>
+                        <small><i class="fas fa-info-circle"></i> Changing the password will send an email notification to the student.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -203,6 +218,40 @@
 <!-- Add SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    // Show success/error messages using SweetAlert2
+    document.addEventListener('DOMContentLoaded', function() {
+        const successMessage = document.getElementById('success-message');
+        const errorMessage = document.getElementById('error-message');
+        const warningMessage = document.getElementById('warning-message');
+
+        if (successMessage) {
+            Swal.fire({
+                title: 'Success!',
+                text: successMessage.value,
+                icon: 'success',
+                timer: 3000,
+                timerProgressBar: true,
+                showConfirmButton: false
+            });
+        }
+
+        if (errorMessage) {
+            Swal.fire({
+                title: 'Error!',
+                text: errorMessage.value,
+                icon: 'error'
+            });
+        }
+
+        if (warningMessage) {
+            Swal.fire({
+                title: 'Warning!',
+                text: warningMessage.value,
+                icon: 'warning'
+            });
+        }
+    });
+
     function showDeleteConfirmation(studentId) {
         Swal.fire({
             title: 'Are you sure?',
