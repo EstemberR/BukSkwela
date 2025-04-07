@@ -9,6 +9,9 @@ use App\Models\TenantDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\TenantAdmin;
+use App\Mail\TenantRegistrationPending;
+use Illuminate\Support\Facades\Mail;
+use App\Helpers\PasswordGenerator;
 
 class Controller extends BaseController
 {
@@ -24,6 +27,9 @@ class Controller extends BaseController
             if (!preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $subdomain)) {
                 throw new \Exception('Invalid subdomain format');
             }
+
+            // Generate a secure password
+            $password = PasswordGenerator::generate(random_int(10, 15));
 
             // Create tenant first with pending status
             $tenant = new Tenant();
@@ -63,14 +69,22 @@ class Controller extends BaseController
             ]);
             $tenantDatabase->save();
 
-            // Create tenant admin
+            // Create tenant admin with generated password
             $tenantAdmin = new TenantAdmin([
                 'name' => $request->admin_name,
                 'email' => $request->admin_email,
-                'password' => Hash::make($request->password),
+                'password' => Hash::make($password),
                 'tenant_id' => $tenant->id
             ]);
             $tenantAdmin->save();
+
+            // Send registration pending email with credentials
+            try {
+                Mail::to($request->admin_email)->send(new TenantRegistrationPending($tenant, $password));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send registration email: ' . $e->getMessage());
+                // Continue with registration even if email fails
+            }
 
             // Automatically set up database for this tenant
             try {
@@ -98,5 +112,35 @@ class Controller extends BaseController
     public function registerSuccess()
     {
         return view('register-success');
+    }
+
+    public function testEmail()
+    {
+        try {
+            $testEmail = env('MAIL_FROM_ADDRESS');
+            
+            // Create a test tenant
+            $tenant = new Tenant();
+            $tenant->id = 'test-dept';
+            $tenant->tenant_name = 'Test Department';
+            $tenant->tenant_email = $testEmail;
+            $tenant->status = 'pending';
+            $tenant->data = [
+                'name' => 'Test Department',
+                'admin_name' => 'Test Admin',
+                'admin_email' => $testEmail
+            ];
+
+            // Generate a test password
+            $password = PasswordGenerator::generate(12);
+
+            // Send test email
+            Mail::to($testEmail)->send(new TenantRegistrationPending($tenant, $password));
+
+            return 'Test email sent successfully! Check your inbox at ' . $testEmail;
+        } catch (\Exception $e) {
+            \Log::error('Test email failed: ' . $e->getMessage());
+            return 'Test email failed: ' . $e->getMessage();
+        }
     }
 }

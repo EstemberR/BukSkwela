@@ -39,6 +39,9 @@ Route::middleware(['web'])
         Route::get('/register', [Controller::class, 'register'])->name('register');
         Route::post('/register', [Controller::class, 'registerSave'])->name('register.save');
         Route::get('/register/success', [Controller::class, 'registerSuccess'])->name('register.success');
+        
+        // Test email route (remove in production)
+        Route::get('/test-email', [Controller::class, 'testEmail'])->name('test.email');
 
         // Student Requirements Route
         Route::get('/requirements', [RequirementController::class, 'showStudentRequirements'])

@@ -82,15 +82,8 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label>Password</label>
-                            <div class="position-relative">
-                                <div class="input-icon-wrapper">
-                                    <i class="fas fa-lock input-icon"></i>
-                                </div>
-                                <input type="password" class="form-control" name="password" 
-                                    placeholder="Enter password" required>
-                            </div>
+                        <div class="alert alert-info">
+                            <small><i class="fas fa-info-circle"></i> A secure password will be automatically generated and sent to your email once you register.</small>
                         </div>
 
                         <div class="form-group">
