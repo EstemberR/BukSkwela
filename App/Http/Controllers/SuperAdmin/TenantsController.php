@@ -53,11 +53,34 @@ class TenantsController extends Controller
             // Force refresh from database to ensure data is updated
             $tenant->refresh();
             
+            // Automatically set up and migrate the tenant database
+            try {
+                \Log::info("Auto-setting up database for newly approved tenant: {$tenant->id}");
+                
+                // First set up the database (creates DB and user credentials)
+                \Artisan::call('db:setup-tenant', [
+                    'tenant' => $tenant->id
+                ]);
+                \Log::info("Database setup response: " . \Artisan::output());
+                
+                // Run migrations to create tables
+                \Artisan::call('tenant:direct-migrate', [
+                    'database' => 'tenant_' . $tenant->id
+                ]);
+                \Log::info("Migration response: " . \Artisan::output());
+                
+                \Log::info("Tenant database auto-setup complete for tenant: {$tenant->id}");
+            } catch (\Exception $e) {
+                \Log::error("Error auto-setting up database for approved tenant: " . $e->getMessage());
+                // We continue even if database setup fails
+                // The admin can manually set up the database later
+            }
+            
             // Log the status change
             \Log::info('Tenant approved: ' . $id, ['tenant_id' => $id, 'status' => $tenant->status]);
             
             return redirect()->route('superadmin.tenants.index')
-                ->with('success', 'Tenant approved successfully.')
+                ->with('success', 'Tenant approved successfully. Database was automatically set up.')
                 ->with('tab', 'active');
         } catch(\Exception $e) {
             \Log::error('Failed to approve tenant: ' . $e->getMessage(), ['tenant_id' => $id]);

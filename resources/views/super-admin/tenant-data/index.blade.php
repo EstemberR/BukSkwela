@@ -3,111 +3,131 @@
 @section('content')
 <div class="container-fluid">
     <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Database System Check</h5>
-                </div>
-                <div class="card-body">
-                    <p>Check MySQL connection status before running tenant migrations:</p>
-                    <a href="{{ route('super-admin.system-check.mysql') }}" class="btn btn-info btn-lg btn-block w-100">
-                        <i class="fas fa-database mr-2"></i> Check MySQL Connection Status
-                    </a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">Safe Migration Options</h5>
-                </div>
-                <div class="card-body">
-                    <p>Run migrations in batches to prevent connection issues:</p>
-                    <a href="{{ route('super-admin.tenant-data.run-batched-migration') }}" class="btn btn-success btn-lg btn-block w-100">
-                        <i class="fas fa-database mr-2"></i> Run Batched Migration (Recommended)
-                    </a>
-                </div>
-            </div>
+        <div class="col-12">
+            <h1 class="h3 mb-2 text-gray-800">Tenant Database Management</h1>
+            <p class="mb-4">Manage and configure databases for all tenant accounts in the system.</p>
         </div>
     </div>
-
+    
     @if(session('success'))
-        <div class="alert alert-success">
+        <div class="alert alert-success alert-dismissible fade show">
             {!! session('success') !!}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
         </div>
     @endif
 
     @if(session('error'))
-        <div class="alert alert-danger">
+        <div class="alert alert-danger alert-dismissible fade show">
             {!! session('error') !!}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
         </div>
     @endif
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title">Tenant Data Management</h4>
+    <!-- Database Actions Dashboard -->
+    <div class="row mb-4">
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-primary">
+                    <h6 class="m-0 font-weight-bold text-white">System Check</h6>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Tenant ID</th>
-                                    <th>Tenant Name</th>
-                                    <th>Email</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($tenants as $tenant)
-                                <tr>
-                                    <td>{{ $tenant->id }}</td>
-                                    <td>{{ $tenant->tenant_name }}</td>
-                                    <td>{{ $tenant->tenant_email }}</td>
-                                    <td>
-                                        <span class="badge bg-{{ $tenant->status == 'active' ? 'success' : ($tenant->status == 'pending' ? 'warning' : 'danger') }}">
-                                            {{ ucfirst($tenant->status) }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <a href="{{ route('super-admin.tenant-data.view', $tenant->id) }}" 
-                                           class="btn btn-sm btn-primary">
-                                            View Data
-                                        </a>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                    <p class="mb-3">Verify MySQL connection status before performing database operations.</p>
+                    <a href="{{ route('super-admin.system-check.mysql') }}" class="btn btn-info btn-block">
+                        <i class="fas fa-database mr-2"></i> Check MySQL Connection
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-8 col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-success">
+                    <h6 class="m-0 font-weight-bold text-white">Database Operations</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-4 mb-2">
+                            <a href="{{ route('super-admin.tenant-data.run-batched-migration') }}" class="btn btn-outline-success btn-block">
+                                <i class="fas fa-database mr-1"></i> Batched Migration
+                            </a>
+                        </div>
+                        <div class="col-lg-4 mb-2">
+                            <a href="{{ route('super-admin.tenant-data.auto-setup') }}" class="btn btn-outline-primary btn-block">
+                                <i class="fas fa-magic mr-1"></i> Auto Setup
+                            </a>
+                        </div>
+                        <div class="col-lg-4 mb-2">
+                            <a href="{{ route('super-admin.tenant-data.auto-migrate') }}" class="btn btn-outline-warning btn-block">
+                                <i class="fas fa-sync mr-1"></i> Auto Migrate
+                            </a>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <p class="text-sm text-muted mb-0">
+                            <i class="fas fa-info-circle mr-1"></i> These operations affect all tenant databases. Use with caution.
+                        </p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-4 mb-4">
-            <div class="card bg-warning h-100">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">Database Management</h5>
-                    <p class="card-text">Create and manage tenant-specific databases</p>
-                    <div class="mt-auto">
-                        <a href="{{ route('super-admin.tenant-data.run-batched-migration') }}" class="btn btn-success btn-lg btn-block w-100">
-                            <i class="fas fa-database"></i> Create All Tenant Databases (Batched)
-                        </a>
-                        <a href="{{ route('super-admin.tenant-data.auto-setup') }}" class="btn btn-primary btn-lg btn-block w-100 mt-2">
-                            <i class="fas fa-magic"></i> Auto Setup Tenant Databases
-                        </a>
-                        <a href="{{ route('super-admin.tenant-data.auto-migrate') }}" class="btn btn-warning btn-lg btn-block w-100 mt-2">
-                            <i class="fas fa-sync"></i> Auto Migrate All Tenant Databases
-                        </a>
-                    </div>
-                </div>
+    <!-- Tenant Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-light">
+            <h6 class="m-0 font-weight-bold text-primary">Tenant Databases</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="tenantTable" width="100%" cellspacing="0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Tenant ID</th>
+                            <th>Tenant Name</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th class="text-center">Database</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($tenants as $tenant)
+                        <tr>
+                            <td>{{ $tenant->id }}</td>
+                            <td>{{ $tenant->tenant_name }}</td>
+                            <td>{{ $tenant->tenant_email }}</td>
+                            <td>
+                                <span class="badge badge-{{ $tenant->status == 'active' ? 'success' : ($tenant->status == 'pending' ? 'warning' : 'danger') }} py-1 px-2 text-dark">
+                                    {{ ucfirst($tenant->status) }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                @if($tenant->tenantDatabase)
+                                    <span class="badge badge-info py-1 px-2 text-dark">
+                                        <i class="fas fa-check-circle mr-1"></i> Configured
+                                    </span>
+                                @else
+                                    <span class="badge badge-danger py-1 px-2 text-dark">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i> Not Set Up
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="text-center">
+                                <a href="{{ route('super-admin.tenant-data.view', $tenant->id) }}" 
+                                   class="btn btn-sm btn-primary">
+                                    <i class="fas fa-database mr-1"></i> Manage
+                                </a>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
-@endsection 
+@endsection

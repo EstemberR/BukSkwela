@@ -45,6 +45,6 @@ class StaffAuthController extends Controller
         Auth::guard('staff')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('staff.login');
+        return redirect()->away('http://127.0.0.1:8000');
     }
 }

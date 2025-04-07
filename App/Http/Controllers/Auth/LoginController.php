@@ -115,23 +115,10 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
         
         if (tenant()) {
-            return redirect()->route('tenant.login');
+            return redirect()->away('http://127.0.0.1:8000');
         }
         return redirect()->route('login');
     }
-
-    // public function store(LoginRequest $request)
-    // {
-    //     $request->authenticate();
-
-    //     $request->session()->regenerate();
-
-    //     if (auth()->user()->role === 'superadmin') {
-    //         return redirect()->intended(route('superadmin.dashboard'));
-    //     }
-
-    //     return redirect()->intended(RouteServiceProvider::HOME);
-    // }
 
     protected function authenticated(Request $request, $user)
     {
@@ -143,6 +130,6 @@ class LoginController extends Controller
             return redirect()->route('superadmin.dashboard');
         }
         
-        return redirect('/');
+        return redirect()->away('http://127.0.0.1:8000');
     }
 }

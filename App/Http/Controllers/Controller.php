@@ -72,6 +72,19 @@ class Controller extends BaseController
             ]);
             $tenantAdmin->save();
 
+            // Automatically set up database for this tenant
+            try {
+                \Log::info("Auto-setting up database for new tenant: {$tenant->id}");
+                \Artisan::call('db:setup-tenant', [
+                    'tenant' => $tenant->id
+                ]);
+                \Log::info("Database setup response: " . \Artisan::output());
+            } catch (\Exception $e) {
+                \Log::error("Error auto-setting up database: " . $e->getMessage());
+                // We continue even if database setup fails
+                // The admin can manually set up the database later
+            }
+
             // Return to registration success page
             return redirect()->route('register.success');
 
