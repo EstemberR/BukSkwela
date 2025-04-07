@@ -105,10 +105,16 @@
                     <!-- Pagination -->
                     <div class="d-flex justify-content-between align-items-center mt-4">
                         <div class="text-muted">
-                            Showing {{ $staffMembers->firstItem() ?? 0 }} to {{ $staffMembers->lastItem() ?? 0 }} of {{ $staffMembers->total() }} entries
+                            @if ($staffMembers instanceof \Illuminate\Pagination\LengthAwarePaginator)
+                                Showing {{ $staffMembers->firstItem() ?? 0 }} to {{ $staffMembers->lastItem() ?? 0 }} of {{ $staffMembers->total() }} entries
+                            @else
+                                Showing {{ $staffMembers->count() }} entries
+                            @endif
                         </div>
                         <div>
-                            {{ $staffMembers->links() }}
+                            @if ($staffMembers instanceof \Illuminate\Pagination\LengthAwarePaginator)
+                                {{ $staffMembers->links() }}
+                            @endif
                         </div>
                     </div>
                 </div>

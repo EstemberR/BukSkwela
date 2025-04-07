@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Helpers\PasswordGenerator;
 use App\Mail\StudentCredentialsUpdated;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
 {
@@ -28,20 +30,31 @@ class StudentController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'student_id' => 'required|unique:students,student_id',
+        // Use a custom validator to specify the connection
+        $validator = Validator::make($request->all(), [
+            'student_id' => 'required|unique:tenant.students,student_id',
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:students,email',
-            'course_id' => 'required|exists:courses,id',
+            'email' => 'required|email|unique:tenant.students,email',
+            'course_id' => 'required|exists:tenant.courses,id',
         ]);
+        
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
 
         Log::info('Creating new student', [
             'student_id' => $request->student_id,
-            'email' => $request->email
+            'email' => $request->email,
+            'tenant_id' => tenant('id')
         ]);
 
         // Generate a secure password
         $password = PasswordGenerator::generate(random_int(10, 15));
+
+        // Make sure we're connected to the tenant database
+        DB::connection('tenant')->getPdo();
 
         $student = Student::create([
             'student_id' => $request->student_id,
@@ -50,7 +63,7 @@ class StudentController extends Controller
             'course_id' => $request->course_id,
             'password' => Hash::make($password),
             'tenant_id' => tenant('id'),
-            'status' => 'Regular',
+            'status' => 'active', // Changed from 'Regular' to match status options
         ]);
 
         // Send welcome email to the student with their password
@@ -90,12 +103,19 @@ class StudentController extends Controller
                 ->with('error', 'Unauthorized access to student from another tenant');
         }
 
-        $request->validate([
-            'student_id' => 'required|unique:students,student_id,' . $student->id,
+        // Use a custom validator to specify the connection
+        $validator = Validator::make($request->all(), [
+            'student_id' => 'required|unique:tenant.students,student_id,' . $student->id,
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:students,email,' . $student->id,
-            'course_id' => 'required|exists:courses,id',
+            'email' => 'required|email|unique:tenant.students,email,' . $student->id,
+            'course_id' => 'required|exists:tenant.courses,id',
         ]);
+        
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
 
         // Track what fields were updated
         $updatedFields = [];
@@ -116,7 +136,7 @@ class StudentController extends Controller
         if ($student->course_id != $request->course_id) {
             $course = Course::find($request->course_id);
             if ($course) {
-                $updatedFields['course'] = $course->title;
+                $updatedFields['course'] = $course->title ?: $course->name;
             }
         }
 

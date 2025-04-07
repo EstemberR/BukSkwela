@@ -47,7 +47,7 @@
                                 <option value="">All Courses</option>
                                 @foreach($courses ?? [] as $course)
                                     <option value="{{ $course->id }}" {{ request('course_id') == $course->id ? 'selected' : '' }}>
-                                        {{ $course->title }}
+                                        {{ $course->name }}
                                     </option>
                                 @endforeach
                             </select>
@@ -72,7 +72,7 @@
                                 <tr data-student-id="{{ $student->id }}">
                                     <td>{{ $student->student_id }}</td>
                                     <td>{{ $student->name }}</td>
-                                    <td>{{ $student->course->title ?? 'N/A' }}</td>
+                                    <td>{{ $student->course->name ?? 'N/A' }}</td>
                                     <td>{{ $student->email }}</td>
                                     <td>
                                         <span class="badge bg-{{ $student->status === 'active' ? 'success' : 'warning' }}">
@@ -140,7 +140,7 @@
                         <select class="form-select" name="course_id" required>
                             <option value="">Select Course</option>
                             @foreach($courses ?? [] as $course)
-                                <option value="{{ $course->id }}">{{ $course->title }}</option>
+                                <option value="{{ $course->id }}">{{ $course->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -188,7 +188,7 @@
                             <option value="">Select Course</option>
                             @foreach($courses ?? [] as $course)
                                 <option value="{{ $course->id }}" {{ $student->course_id == $course->id ? 'selected' : '' }}>
-                                    {{ $course->title }}
+                                    {{ $course->name }}
                                 </option>
                             @endforeach
                         </select>

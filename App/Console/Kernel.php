@@ -15,9 +15,6 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         \App\Console\Commands\CreateSuperAdmin::class,
         \App\Console\Commands\UpdateTenantMigrations::class,
-        \App\Console\Commands\MigrateTenants::class,
-        \App\Console\Commands\MigrateTenantsBatched::class,
-        \App\Console\Commands\MigrateTenantsByDomain::class,
         \App\Console\Commands\CreateTenantDatabases::class,
         \App\Console\Commands\TenantDatabaseManagement::class,
         \App\Console\Commands\CheckMySQLConnections::class,
@@ -28,6 +25,21 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\VerifyTenantDatabase::class,
         \App\Console\Commands\VerifyAllTenantDatabases::class,
         \App\Console\Commands\AutoMigrateTenantDatabases::class,
+        \App\Console\Commands\TenantMigrateDb::class,
+        \App\Console\Commands\TenantListTables::class,
+        \App\Console\Commands\TenantVerifyData::class,
+        \App\Console\Commands\MoveStaffToTenant::class,
+        \App\Console\Commands\VerifyTableStructure::class,
+        \App\Console\Commands\VerifyTenantId::class,
+        \App\Console\Commands\ReadLogs::class,
+        \App\Console\Commands\FixTenantStaffTable::class,
+        \App\Console\Commands\FixTenantDatabase::class,
+        \App\Console\Commands\SeedTenantDatabase::class,
+        \App\Console\Commands\FixStaffTable::class,
+        \App\Console\Commands\FixAllTenantDatabases::class,
+        \App\Console\Commands\FixCoursesTable::class,
+        \App\Console\Commands\FixTenantRelationships::class,
+        \App\Console\Commands\CreateTenant::class,
     ];
 
     /**

@@ -9,19 +9,27 @@ use App\Models\Course\Course;
 use App\Models\Staff\Staff;
 use App\Models\Requirements\StudentRequirement;
 use App\Models\Requirements\Requirement;
+use App\Traits\HasTenantConnection;
 
 class Student extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasTenantConnection;
+
+    protected $connection = 'tenant';
+    
+    protected $table = 'students';
 
     protected $fillable = [
+        'id',
         'student_id',
         'name',
         'email',
         'password',
         'course_id',
         'status',
-        'tenant_id'
+        'tenant_id',
+        'created_at',
+        'updated_at'
     ];
 
     protected $hidden = [
@@ -33,6 +41,12 @@ class Student extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    // Force tenant connection
+    public function getConnectionName()
+    {
+        return 'tenant';
+    }
 
     public function course()
     {
@@ -54,5 +68,17 @@ class Student extends Authenticatable
     public function studentRequirements()
     {
         return $this->hasMany(StudentRequirement::class);
+    }
+    
+    // Boot method to ensure tenant_id is set
+    protected static function boot()
+    {
+        parent::boot();
+        
+        static::creating(function ($model) {
+            if (tenant()) {
+                $model->tenant_id = tenant('id');
+            }
+        });
     }
 }

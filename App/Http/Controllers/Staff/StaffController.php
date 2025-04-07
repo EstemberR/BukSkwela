@@ -12,215 +12,247 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Helpers\PasswordGenerator;
 use App\Mail\StaffCredentialsUpdated;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Schema;
 
 class StaffController extends Controller
 {
     public function index(Request $request)
     {
-        // Start with a query scoped to the current tenant
-        $query = Staff::where('tenant_id', tenant('id'));
+        try {
+            $tenantId = tenant('id');
+            
+            // Start with a query scoped to the current tenant
+            $query = Staff::where('tenant_id', $tenantId);
 
-        // Apply search filter
-        if ($request->has('search')) {
-            $search = $request->get('search');
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('staff_id', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
-            });
+            // Apply search filter
+            if ($request->has('search')) {
+                $search = $request->get('search');
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('staff_id', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                });
+            }
+
+            // Apply role filter
+            if ($request->has('role') && $request->get('role') !== '') {
+                $query->where('role', $request->get('role'));
+            }
+
+            $staffMembers = $query->paginate(10);
+            $departments = Department::where('tenant_id', $tenantId)->get();
+            
+            return view('tenant.staff.index', compact('staffMembers', 'departments'));
+            
+        } catch (\Exception $e) {
+            Log::error('Error in staff index', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'An error occurred while fetching staff members: ' . $e->getMessage());
         }
+    }
 
-        // Apply role filter
-        if ($request->has('role') && $request->get('role') !== '') {
-            $query->where('role', $request->get('role'));
+    public function create()
+    {
+        try {
+            $tenantId = tenant('id');
+            $departments = Department::where('tenant_id', $tenantId)->get();
+            return view('tenant.staff.create', compact('departments'));
+            
+        } catch (\Exception $e) {
+            Log::error('Error in staff create', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'An error occurred while loading the create form.');
         }
-
-        $staffMembers = $query->paginate(10);
-        $departments = Department::where('tenant_id', tenant('id'))->get();
-
-        return view('tenant.staff.index', compact('staffMembers', 'departments'));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'staff_id' => 'required|unique:staff,staff_id',
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:staff,email',
-            'role' => 'required|in:instructor,admin,staff',
-            'department' => 'required|string|max:255',
-        ]);
-
-        Log::info('Creating new staff member', [
-            'staff_id' => $request->staff_id,
-            'email' => $request->email
-        ]);
-
-        // Generate a secure password
-        $password = PasswordGenerator::generate(random_int(10, 15));
-
-        // Find or create the department
-        $department = Department::firstOrCreate(
-            [
-                'name' => $request->department,
-                'tenant_id' => tenant('id')
-            ],
-            [
-                'code' => strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $request->department), 0, 5)),
-                'description' => 'Department for ' . $request->department,
-                'status' => 'active'
-            ]
-        );
-
-        $staff = Staff::create([
-            'staff_id' => $request->staff_id,
-            'name' => $request->name,
-            'email' => $request->email,
-            'role' => $request->role,
-            'department_id' => $department->id,
-            'password' => Hash::make($password),
-            'tenant_id' => tenant('id'),
-            'status' => 'active',
-        ]);
-
-        // Send welcome email to the staff member with their password
         try {
-            Log::info('Attempting to send welcome email', [
-                'to' => $staff->email,
-                'staff_id' => $staff->staff_id
+            $tenantId = tenant('id');
+            
+            Log::info('Storing new staff member', [
+                'tenant_id' => $tenantId
+            ]);
+
+            $request->validate([
+                'staff_id' => 'required|unique:staff,staff_id',
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:staff,email',
+                'role' => 'required|in:instructor,admin,staff',
+                'department' => 'required|string|max:255',
+            ]);
+
+            // Generate a secure password
+            $password = PasswordGenerator::generate(random_int(10, 15));
+            
+            // Find or create the department
+            $department = Department::firstOrCreate(
+                [
+                    'name' => $request->department,
+                    'tenant_id' => $tenantId
+                ],
+                [
+                    'code' => strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $request->department), 0, 5)),
+                    'description' => 'Department for ' . $request->department,
+                    'status' => 'active'
+                ]
+            );
+            
+            Log::info('Department created or found', [
+                'department_id' => $department->id,
+                'department_name' => $department->name
+            ]);
+
+            // Create the staff member
+            $staff = Staff::create([
+                'staff_id' => $request->staff_id,
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($password),
+                'role' => $request->role,
+                'department_id' => $department->id,
+                'status' => 'active',
+                'tenant_id' => $tenantId
             ]);
             
+            Log::info('Staff member created', [
+                'staff_id' => $staff->id,
+                'email' => $staff->email
+            ]);
+
+            // Send email with credentials
             Mail::to($staff->email)->send(new StaffRegistered($staff, $password));
-            
-            Log::info('Welcome email sent successfully', [
-                'to' => $staff->email,
-                'staff_id' => $staff->staff_id
-            ]);
 
-            return redirect()->route('tenant.staff.index', ['tenant' => tenant('id')])
-                ->with('success', 'Staff member added successfully and welcome email sent');
+            return redirect()->route('tenant.staff.index', ['tenant' => $tenantId])->with('success', 'Staff member created successfully. Login credentials have been sent to their email.');
+            
         } catch (\Exception $e) {
-            Log::error('Failed to send welcome email to staff', [
-                'staff_id' => $staff->id,
-                'email' => $staff->email,
+            Log::error('Error in staff store', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
-            return redirect()->route('tenant.staff.index', ['tenant' => tenant('id')])
-                ->with('warning', 'Staff member added successfully but failed to send welcome email. Error: ' . $e->getMessage());
+            return back()->with('error', 'An error occurred while creating the staff member: ' . $e->getMessage());
         }
     }
 
-    public function update(Request $request, Staff $staff)
+    public function edit($id)
     {
-        // Ensure the staff member belongs to the current tenant
-        if ($staff->tenant_id != tenant('id')) {
-            return redirect()->route('tenant.staff.index', ['tenant' => tenant('id')])
-                ->with('error', 'Unauthorized access to staff member from another tenant');
-        }
-
-        $request->validate([
-            'staff_id' => 'required|unique:staff,staff_id,' . $staff->id,
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:staff,email,' . $staff->id,
-            'role' => 'required|in:instructor,admin,staff',
-            'department_id' => 'required|exists:departments,id',
-        ]);
-
-        // Verify the department belongs to this tenant
-        $department = Department::find($request->department_id);
-        if (!$department || $department->tenant_id != tenant('id')) {
-            return redirect()->route('tenant.staff.index', ['tenant' => tenant('id')])
-                ->with('error', 'The selected department is invalid');
-        }
-
-        // Track what fields were updated
-        $updatedFields = [];
-        
-        if ($staff->staff_id != $request->staff_id) {
-            $updatedFields['staff_id'] = $request->staff_id;
-        }
-        
-        if ($staff->name != $request->name) {
-            $updatedFields['name'] = $request->name;
-        }
-        
-        if ($staff->email != $request->email) {
-            $updatedFields['email'] = $request->email;
-        }
-        
-        if ($staff->role != $request->role) {
-            $updatedFields['role'] = ucfirst($request->role);
-        }
-        
-        if ($staff->department_id != $request->department_id) {
-            $updatedFields['department'] = $department->name;
-        }
-
-        // Update staff information
-        $staff->update([
-            'staff_id' => $request->staff_id,
-            'name' => $request->name,
-            'email' => $request->email,
-            'role' => $request->role,
-            'department_id' => $request->department_id,
-        ]);
-
-        // Password update
-        if ($request->filled('password')) {
-            $staff->update([
-                'password' => Hash::make($request->password),
-            ]);
-            $updatedFields['password'] = 'Password has been updated';
-        }
-
-        // Send email notification if anything was updated
         try {
-            if (!empty($updatedFields)) {
-                Log::info('Sending staff credential update email', [
-                    'staff_id' => $staff->id,
-                    'email' => $staff->email,
-                    'updated_fields' => array_keys($updatedFields)
-                ]);
-                
-                Mail::to($staff->email)->send(new StaffCredentialsUpdated($staff, $updatedFields));
-                
-                Log::info('Staff credential update email sent successfully', [
-                    'staff_id' => $staff->id,
-                    'email' => $staff->email
-                ]);
-                
-                return redirect()->route('tenant.staff.index', ['tenant' => tenant('id')])
-                    ->with('success', 'Staff member updated successfully and notification email sent');
-            }
+            $tenantId = tenant('id');
+            
+            $staff = Staff::findOrFail($id);
+            $departments = Department::where('tenant_id', $tenantId)->get();
+            
+            return view('tenant.staff.edit', compact('staff', 'departments'));
+            
         } catch (\Exception $e) {
-            Log::error('Failed to send staff credential update email', [
-                'staff_id' => $staff->id,
-                'email' => $staff->email,
+            Log::error('Error in staff edit', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
-            return redirect()->route('tenant.staff.index', ['tenant' => tenant('id')])
-                ->with('warning', 'Staff member updated successfully but failed to send notification email');
+            return back()->with('error', 'An error occurred while loading the edit form.');
         }
-
-        return redirect()->route('tenant.staff.index', ['tenant' => tenant('id')])
-            ->with('success', 'Staff member updated successfully');
     }
 
-    public function destroy(Staff $staff)
+    public function update(Request $request, $id)
     {
-        // Ensure the staff member belongs to the current tenant
-        if ($staff->tenant_id != tenant('id')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized access to staff member from another tenant'
-            ], 403);
-        }
+        try {
+            $tenantId = tenant('id');
 
-        $staff->delete();
-        return response()->json(['success' => true]);
+            $staff = Staff::findOrFail($id);
+
+            $request->validate([
+                'staff_id' => 'required|unique:staff,staff_id,' . $id,
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:staff,email,' . $id,
+                'role' => 'required|in:instructor,admin,staff',
+                'department' => 'required|string|max:255',
+                'status' => 'required|in:active,inactive'
+            ]);
+
+            // Find or create the department
+            $department = Department::firstOrCreate(
+                [
+                    'name' => $request->department,
+                    'tenant_id' => $tenantId
+                ],
+                [
+                    'code' => strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $request->department), 0, 5)),
+                    'description' => 'Department for ' . $request->department,
+                    'status' => 'active'
+                ]
+            );
+
+            $staff->update([
+                'staff_id' => $request->staff_id,
+                'name' => $request->name,
+                'email' => $request->email,
+                'role' => $request->role,
+                'department_id' => $department->id,
+                'status' => $request->status
+            ]);
+
+            return redirect()->route('tenant.staff.index', ['tenant' => $tenantId])->with('success', 'Staff member updated successfully.');
+            
+        } catch (\Exception $e) {
+            Log::error('Error in staff update', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'An error occurred while updating the staff member: ' . $e->getMessage());
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $tenantId = tenant('id');
+            
+            $staff = Staff::findOrFail($id);
+            $staff->delete();
+
+            return redirect()->route('tenant.staff.index', ['tenant' => $tenantId])->with('success', 'Staff member deleted successfully.');
+            
+        } catch (\Exception $e) {
+            Log::error('Error in staff destroy', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'An error occurred while deleting the staff member.');
+        }
+    }
+
+    public function resetPassword($id)
+    {
+        try {
+            $tenantId = tenant('id');
+            
+            $staff = Staff::findOrFail($id);
+            
+            // Generate a new secure password
+            $newPassword = PasswordGenerator::generate(random_int(10, 15));
+            
+            // Update the staff password
+            $staff->update([
+                'password' => Hash::make($newPassword)
+            ]);
+            
+            // Send email with new credentials
+            Mail::to($staff->email)->send(new StaffCredentialsUpdated($staff, $newPassword));
+            
+            return redirect()->route('tenant.staff.index', ['tenant' => $tenantId])->with('success', 'Staff password reset successfully. New login credentials have been sent to their email.');
+            
+        } catch (\Exception $e) {
+            Log::error('Error in staff reset password', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'An error occurred while resetting the staff password.');
+        }
     }
 } 

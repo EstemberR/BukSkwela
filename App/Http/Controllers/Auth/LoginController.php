@@ -115,7 +115,7 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
         
         if (tenant()) {
-            return redirect()->away('http://127.0.0.1:8000');
+            return redirect()->away('http://127.0.0.1.localhost:8000/login');
         }
         return redirect()->route('login');
     }

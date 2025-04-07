@@ -68,7 +68,7 @@
                     <tbody>
                         @forelse($courses as $course)
                         <tr>
-                            <td>{{ $course->title }}</td>
+                            <td>{{ $course->name }}</td>
                             <td>{{ Str::limit($course->description, 50) }}</td>
                             <td>
                                 <span class="badge bg-{{ $course->status === 'active' ? 'success' : 'warning' }}">
@@ -119,7 +119,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Title</label>
-                        <input type="text" class="form-control" name="title" required>
+                        <input type="text" class="form-control" name="name" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
@@ -150,7 +150,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Title</label>
-                        <input type="text" class="form-control" name="title" value="{{ $course->title }}" required>
+                        <input type="text" class="form-control" name="name" value="{{ $course->name }}" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>

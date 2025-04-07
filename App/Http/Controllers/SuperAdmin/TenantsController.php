@@ -69,6 +69,13 @@ class TenantsController extends Controller
                 ]);
                 \Log::info("Migration response: " . \Artisan::output());
                 
+                // Fix the staff table structure to ensure it's correct
+                \Artisan::call('tenant:fix-staff', [
+                    'tenant' => $tenant->id,
+                    '--force' => true
+                ]);
+                \Log::info("Staff table fix response: " . \Artisan::output());
+                
                 \Log::info("Tenant database auto-setup complete for tenant: {$tenant->id}");
             } catch (\Exception $e) {
                 \Log::error("Error auto-setting up database for approved tenant: " . $e->getMessage());
