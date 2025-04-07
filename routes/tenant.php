@@ -49,19 +49,34 @@ Route::middleware(['web', 'tenant', 'auth:admin'])
                 ->name('staff.register.save');
             Route::post('/instructor', [StaffRegistrationController::class, 'register'])
                 ->name('tenant.instructor.store');
+            
+            // Direct delete routes without model binding - must be before other student routes
+            Route::post('/students/delete-direct/{id}', [StudentController::class, 'deleteDirectly'])
+                ->name('tenant.students.delete.direct.post');
+            Route::get('/students/delete-direct/{id}', [StudentController::class, 'deleteDirectly'])
+                ->name('tenant.students.delete.direct');
+                
+            // Simple POST endpoint that uses the request body instead of URL parameters
+            Route::post('/students/delete-simple', [StudentController::class, 'deleteSimple'])
+                ->name('tenant.students.delete.simple');
+                
+            // Test route for debugging student lookup
+            Route::get('/students/test-lookup/{id?}', [StudentController::class, 'testStudentLookup'])
+                ->name('tenant.students.test.lookup');
+            
             Route::get('/students', [StudentController::class, 'index'])
                 ->name('tenant.students.index');
-            // Modify the delete route to explicitly separate the ID parameter from URL segments
-            Route::get('/students/delete/{student}', [StudentController::class, 'deleteStudent'])
-                ->name('tenant.students.delete')
-                ->where('student', '[0-9]+'); // Use 'student' as parameter name for consistency
             Route::post('/students', [StudentController::class, 'store'])
                 ->name('tenant.students.store');
             Route::put('/students/{student}', [StudentController::class, 'update'])
                 ->name('tenant.students.update');
             Route::delete('/students/{student}', [StudentController::class, 'destroy'])
-                ->name('tenant.students.destroy')
-                ->where('student', '[0-9]+');
+                ->name('tenant.students.destroy');
+            Route::post('/students/{student}/delete', [StudentController::class, 'destroy'])
+                ->name('tenant.students.delete');
+            // Add a GET route for delete as a last resort workaround
+            Route::get('/students/{student}/delete', [StudentController::class, 'destroy'])
+                ->name('tenant.students.delete.get');
             Route::get('/staff', [StaffController::class, 'index'])
                 ->name('tenant.staff.index');
             Route::post('/staff', [StaffController::class, 'store'])

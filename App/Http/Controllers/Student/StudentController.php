@@ -174,53 +174,255 @@ class StudentController extends Controller
     public function destroy(Student $student)
     {
         try {
-            // Log the deletion attempt
-            Log::info('Attempting to delete student', [
-                'student_id' => $student->student_id,
-                'name' => $student->name,
-                'email' => $student->email,
-                'tenant_id' => tenant('id'),
-                'student_tenant_id' => $student->tenant_id
-            ]);
-
             // Check if the student belongs to the current tenant
             if ($student->tenant_id !== tenant('id')) {
-                Log::warning('Unauthorized deletion attempt - tenant mismatch', [
-                    'student_tenant_id' => $student->tenant_id,
-                    'current_tenant_id' => tenant('id')
+                Log::warning('Unauthorized deletion attempt for student', [
+                    'student_id' => $student->id,
+                    'requested_tenant' => tenant('id'),
+                    'student_tenant' => $student->tenant_id
                 ]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized deletion attempt'
-                ], 403);
+                
+                if (request()->wantsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized deletion attempt'
+                    ], 403);
+                }
+                
+                return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                    ->with('error', 'Unauthorized deletion attempt');
             }
-
-            $student->delete();
-
-            // Log successful deletion
-            Log::info('Student deleted successfully', [
-                'student_id' => $student->student_id,
+            
+            Log::info('Deleting student', [
+                'student_id' => $student->id,
+                'student_name' => $student->name,
                 'tenant_id' => tenant('id')
             ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Student deleted successfully'
-            ]);
-
+            
+            $student->delete();
+            
+            if (request()->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Student deleted successfully'
+                ]);
+            }
+            
+            return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                ->with('success', 'Student deleted successfully');
         } catch (\Exception $e) {
-            // Log the error
             Log::error('Failed to delete student', [
-                'student_id' => $student->student_id ?? null,
-                'tenant_id' => tenant('id'),
+                'student_id' => $student->id ?? null,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
+            
+            if (request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to delete student: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                ->with('error', 'Failed to delete student: ' . $e->getMessage());
+        }
+    }
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete student: ' . $e->getMessage()
-            ], 500);
+    /**
+     * Direct delete method that doesn't rely on model binding.
+     */
+    public function deleteDirectly($studentId)
+    {
+        try {
+            // Ensure we're dealing with a number
+            $studentId = intval($studentId);
+            
+            // Log received parameters
+            Log::info('Delete request received', [
+                'student_id' => $studentId,
+                'tenant_id' => tenant('id'),
+                'request_url' => request()->fullUrl(),
+                'request_method' => request()->method()
+            ]);
+            
+            // Check if student exists without tenant filter first
+            $studentWithoutTenant = Student::where('id', $studentId)->first();
+            
+            if ($studentWithoutTenant) {
+                Log::info('Student exists in database but may be in wrong tenant', [
+                    'student_id' => $studentWithoutTenant->id,
+                    'student_tenant_id' => $studentWithoutTenant->tenant_id,
+                    'current_tenant_id' => tenant('id')
+                ]);
+            } else {
+                Log::warning('Student does not exist in database at all', [
+                    'requested_id' => $studentId
+                ]);
+            }
+            
+            // Find the student with tenant filter
+            $student = Student::where('id', $studentId)
+                ->where('tenant_id', tenant('id'))
+                ->first();
+                
+            if (!$student) {
+                Log::warning('Student not found or not authorized', [
+                    'requested_id' => $studentId,
+                    'tenant_id' => tenant('id')
+                ]);
+                
+                return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                    ->with('error', 'Student not found or not authorized');
+            }
+            
+            // Log the deletion
+            Log::info('Directly deleting student', [
+                'student_id' => $student->id,
+                'student_name' => $student->name,
+                'tenant_id' => tenant('id')
+            ]);
+            
+            // Perform the delete operation
+            $student->delete();
+            
+            // Always redirect back to index
+            return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                ->with('success', 'Student deleted successfully');
+                
+        } catch (\Exception $e) {
+            Log::error('Failed to directly delete student', [
+                'student_id' => $studentId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                ->with('error', 'Error deleting student: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Test method to debug student lookup issues
+     */
+    public function testStudentLookup($studentId = null)
+    {
+        // Ensure we're dealing with a number if provided
+        if ($studentId !== null) {
+            $studentId = intval($studentId);
+        }
+        
+        // Get current tenant
+        $tenantId = tenant('id');
+        
+        // Output format
+        $output = [
+            'tenant_id' => $tenantId,
+            'requested_student_id' => $studentId,
+            'request_url' => request()->fullUrl(),
+            'request_method' => request()->method(),
+            'all_tenant_students' => []
+        ];
+        
+        // Get all students for this tenant to check if any exist
+        $allTenantStudents = Student::where('tenant_id', $tenantId)->get();
+        foreach ($allTenantStudents as $student) {
+            $output['all_tenant_students'][] = [
+                'id' => $student->id,
+                'student_id' => $student->student_id,
+                'name' => $student->name,
+                'tenant_id' => $student->tenant_id
+            ];
+        }
+        
+        // Check if specified student exists without tenant filter
+        if ($studentId) {
+            $studentWithoutTenant = Student::where('id', $studentId)->first();
+            
+            if ($studentWithoutTenant) {
+                $output['student_exists_in_database'] = true;
+                $output['student_details'] = [
+                    'id' => $studentWithoutTenant->id,
+                    'student_id' => $studentWithoutTenant->student_id,
+                    'name' => $studentWithoutTenant->name,
+                    'tenant_id' => $studentWithoutTenant->tenant_id
+                ];
+                
+                if ($studentWithoutTenant->tenant_id === $tenantId) {
+                    $output['student_belongs_to_current_tenant'] = true;
+                } else {
+                    $output['student_belongs_to_current_tenant'] = false;
+                    $output['student_tenant_id'] = $studentWithoutTenant->tenant_id;
+                }
+            } else {
+                $output['student_exists_in_database'] = false;
+            }
+        }
+        
+        // Return as JSON for easy reading
+        return response()->json($output);
+    }
+
+    /**
+     * Most direct delete method that takes the student_id from the request body.
+     */
+    public function deleteSimple(Request $request)
+    {
+        try {
+            // Get student ID from request body
+            $studentId = intval($request->input('student_id'));
+            
+            if (!$studentId) {
+                return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                    ->with('error', 'No student ID provided');
+            }
+            
+            // Log received parameters
+            Log::info('Simple delete request received', [
+                'student_id' => $studentId,
+                'student_id_type' => gettype($studentId),
+                'tenant_id' => tenant('id'),
+                'request_url' => request()->fullUrl(),
+                'request_method' => request()->method()
+            ]);
+            
+            // Find the student
+            $student = Student::where('id', $studentId)
+                ->where('tenant_id', tenant('id'))
+                ->first();
+                
+            if (!$student) {
+                Log::warning('Student not found or not authorized', [
+                    'requested_id' => $studentId,
+                    'tenant_id' => tenant('id')
+                ]);
+                
+                return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                    ->with('error', 'Student not found or not authorized');
+            }
+            
+            // Log the deletion
+            Log::info('Simple delete for student', [
+                'student_id' => $student->id,
+                'student_name' => $student->name,
+                'tenant_id' => tenant('id')
+            ]);
+            
+            // Perform the delete operation
+            $student->delete();
+            
+            // Always redirect back to index
+            return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                ->with('success', 'Student deleted successfully');
+                
+        } catch (\Exception $e) {
+            Log::error('Failed to delete student via simple method', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                ->with('error', 'Error deleting student: ' . $e->getMessage());
         }
     }
 } 

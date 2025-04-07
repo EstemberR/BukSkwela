@@ -86,6 +86,14 @@
                                         <button class="btn btn-sm btn-danger" onclick="showDeleteConfirmation('{{ $student->id }}')">
                                             Delete
                                         </button>
+                                        
+                                        <!-- Hidden Delete Form -->
+                                        <form id="delete-form-{{ $student->id }}" 
+                                              action="{{ route('tenant.students.delete.direct.post', ['tenant' => tenant('id'), 'id' => $student->id]) }}" 
+                                              method="POST" 
+                                              style="display: none;">
+                                            @csrf
+                                        </form>
                                     </td>
                                 </tr>
                                 @empty
@@ -250,104 +258,152 @@
                 icon: 'warning'
             });
         }
+        
+        // Setup delete form submission with AJAX
+        setupDeleteForms();
     });
+    
+    function setupDeleteForms() {
+        // Get all delete forms
+        const deleteForms = document.querySelectorAll('form[id^="delete-form-"]');
+        
+        // Add submit handler to each form
+        deleteForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const studentId = this.id.replace('delete-form-', '');
+                const formAction = this.action;
+                
+                console.log('Form action URL:', formAction);
+                
+                // Create a new XMLHttpRequest instead of fetch for more control
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', formAction, true);
+                xhr.setRequestHeader('X-CSRF-TOKEN', document.querySelector('meta[name="csrf-token"]').content);
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                xhr.setRequestHeader('Accept', 'application/json');
+                
+                // Get form data
+                const formData = new FormData(this);
+                
+                xhr.onload = function() {
+                    console.log('Response status:', xhr.status);
+                    console.log('Response text:', xhr.responseText);
+                    
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            const data = JSON.parse(xhr.responseText);
+                            
+                            if (data.success) {
+                                // Remove the row from the table
+                                const row = document.querySelector(`tr[data-student-id="${studentId}"]`);
+                                if (row) {
+                                    row.remove();
+                                }
+                                
+                                Swal.fire({
+                                    title: 'Deleted!',
+                                    text: data.message || 'Student deleted successfully',
+                                    icon: 'success',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: data.message || 'Failed to delete student',
+                                    icon: 'error'
+                                });
+                            }
+                        } catch (e) {
+                            console.error('Error parsing JSON:', e);
+                            Swal.fire({
+                                title: 'Error!',
+                                text: 'Error processing server response',
+                                icon: 'error'
+                            });
+                        }
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: `Server error: ${xhr.status}`,
+                            icon: 'error'
+                        });
+                    }
+                };
+                
+                xhr.onerror = function() {
+                    console.error('Network error');
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Network error occurred',
+                        icon: 'error'
+                    });
+                };
+                
+                xhr.send(formData);
+            });
+        });
+    }
 
     function showDeleteConfirmation(studentId) {
+        // Ensure studentId is treated as a number
+        studentId = parseInt(studentId, 10);
+        
         Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
+            title: 'Delete Student',
+            text: "Are you sure you want to delete this student? This action cannot be undone.",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#dc3545',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Yes, delete it!'
+            confirmButtonText: 'Yes, delete',
+            cancelButtonText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
-                deleteStudent(studentId);
-            }
-        });
-    }
-
-    async function deleteStudent(studentId) {
-        try {
-            const tenant = '{{ tenant("id") }}';
-            const deleteUrl = `/admin/students/${studentId}`;
-            
-            console.log('Attempting to delete student:', {
-                studentId,
-                deleteUrl,
-                tenant
-            });
-
-            const csrfToken = document.querySelector('meta[name="csrf-token"]');
-            if (!csrfToken) {
-                throw new Error('CSRF token not found. Please refresh the page and try again.');
-            }
-
-            // Show loading state
-            Swal.fire({
-                title: 'Deleting...',
-                text: 'Please wait',
-                allowOutsideClick: false,
-                showConfirmButton: false,
-                willOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-
-            const response = await fetch(deleteUrl, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken.content,
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            let result;
-            try {
-                result = await response.json();
-            } catch (e) {
-                console.error('Failed to parse response:', e);
-                const text = await response.text();
-                console.error('Raw response:', text);
-                throw new Error('Invalid response from server');
-            }
-
-            if (!response.ok) {
-                console.error('Delete response:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    result
-                });
-                throw new Error(result?.message || `Failed to delete student (${response.status})`);
-            }
-
-            if (result.success) {
+                // Show loading state
                 Swal.fire({
-                    title: 'Success!',
-                    text: 'Student deleted successfully',
-                    icon: 'success'
-                }).then(() => {
-                    // Remove the row from the table
-                    const row = document.querySelector(`tr[data-student-id="${studentId}"]`);
-                    if (row) {
-                        row.remove();
-                    } else {
-                        window.location.reload();
+                    title: 'Deleting...',
+                    text: 'Please wait',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
                     }
                 });
-            } else {
-                throw new Error(result.message || 'Failed to delete student');
+                
+                // Create a temporary form to submit
+                const form = document.createElement('form');
+                form.method = 'POST';
+                
+                // Use the tenant ID from the page
+                const tenantId = '{{ tenant("id") }}';
+                // Use the simple endpoint that doesn't need ID in URL
+                const deleteUrl = '/admin/students/delete-simple';
+                
+                // Create the full URL
+                form.action = deleteUrl;
+                
+                // Add CSRF token
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_token';
+                csrfInput.value = document.querySelector('meta[name="csrf-token"]').content;
+                form.appendChild(csrfInput);
+                
+                // Add an explicit student ID field
+                const idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = 'student_id';
+                idInput.value = studentId;
+                form.appendChild(idInput);
+                
+                // Add to body, submit, then remove
+                document.body.appendChild(form);
+                form.submit();
             }
-        } catch (error) {
-            console.error('Delete error:', error);
-            Swal.fire({
-                title: 'Error!',
-                text: error.message || 'An error occurred while deleting the student',
-                icon: 'error'
-            });
-        }
+        });
     }
 
     // Search and filter functionality
