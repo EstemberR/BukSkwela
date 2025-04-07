@@ -65,6 +65,7 @@
                                     <th class="fw-bold">Email</th>
                                     <th class="fw-bold">Status</th>
                                     <th class="fw-bold">Actions</th>
+                                    <th class="fw-bold">DB ID</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -87,6 +88,12 @@
                                             Delete
                                         </button>
                                         
+                                        <a href="{{ route('tenant.students.test.lookup', ['tenant' => tenant('id'), 'id' => $student->id]) }}" 
+                                           target="_blank" 
+                                           class="btn btn-sm btn-secondary">
+                                            Test
+                                        </a>
+                                        
                                         <!-- Hidden Delete Form -->
                                         <form id="delete-form-{{ $student->id }}" 
                                               action="{{ route('tenant.students.delete.direct.post', ['tenant' => tenant('id'), 'id' => $student->id]) }}" 
@@ -95,6 +102,7 @@
                                             @csrf
                                         </form>
                                     </td>
+                                    <td>{{ $student->id }}</td>
                                 </tr>
                                 @empty
                                 <tr>
@@ -128,7 +136,7 @@
                 <h5 class="modal-title">Add New Student</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('tenant.students.store', ['tenant' => tenant('id')]) }}" method="POST">
+            <form action="{{ route('tenant.students.store.direct', ['tenant' => tenant('id')]) }}" method="POST">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
@@ -174,9 +182,13 @@
                 <h5 class="modal-title">Edit Student</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('tenant.students.update', ['tenant' => tenant('id'), 'student' => $student->id]) }}" method="POST">
+            <form action="{{ url('/admin/students/update-direct/' . $student->id) }}" method="POST">
                 @csrf
-                @method('PUT')
+                <!-- Hidden ID field to ensure we're editing the right record -->
+                <input type="hidden" name="student_db_id" value="{{ $student->id }}">
+                <!-- Debug info -->
+                <input type="hidden" name="debug_student_id" value="{{ $student->id }}">
+                <input type="hidden" name="debug_tenant_id" value="{{ tenant('id') }}">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Student ID</label>
@@ -219,6 +231,30 @@
     </div>
 </div>
 @endforeach
+
+<!-- Detailed Debug Info -->
+<div class="alert alert-info mt-3">
+    <p><strong>Detailed Debug Info:</strong></p>
+    <p>Current tenant ID: {{ tenant('id') }}</p>
+    <p>Current host: {{ request()->getHost() }}</p>
+    <p>Current URL: {{ request()->fullUrl() }}</p>
+    <p>Current path: {{ request()->path() }}</p>
+    <p>Post delete-direct URL: {{ route('tenant.students.delete.direct.post', ['tenant' => tenant('id'), 'id' => 1]) }}</p>
+    <p>Simple delete URL: {{ route('tenant.students.delete.simple', ['tenant' => tenant('id')]) }}</p>
+    <p>Direct update URL: {{ route('tenant.students.update.direct', ['tenant' => tenant('id'), 'id' => 1]) }}</p>
+    <p>Direct store URL: {{ route('tenant.students.store.direct', ['tenant' => tenant('id')]) }}</p>
+    <hr>
+    <p>Full direct delete URL: <span id="js-debug-url"></span></p>
+    <button class="btn btn-sm btn-secondary" onclick="testDeleteURL(1)">Test URL generation</button>
+</div>
+
+<script>
+function testDeleteURL(studentId) {
+    const tenantId = '{{ tenant("id") }}';
+    const deleteUrl = '/admin/students/delete-direct/' + studentId;
+    document.getElementById('js-debug-url').innerText = deleteUrl;
+}
+</script>
 
 @endsection
 
@@ -348,8 +384,12 @@
     }
 
     function showDeleteConfirmation(studentId) {
+        console.log('Delete requested for student ID:', studentId);
+        console.log('Student ID type:', typeof studentId);
+        
         // Ensure studentId is treated as a number
         studentId = parseInt(studentId, 10);
+        console.log('Parsed student ID:', studentId);
         
         Swal.fire({
             title: 'Delete Student',
@@ -381,8 +421,10 @@
                 const tenantId = '{{ tenant("id") }}';
                 // Use the simple endpoint that doesn't need ID in URL
                 const deleteUrl = '/admin/students/delete-simple';
+                console.log('Tenant ID:', tenantId);
+                console.log('Delete URL path:', deleteUrl);
                 
-                // Create the full URL
+                // Create the full URL - this is key to making it work
                 form.action = deleteUrl;
                 
                 // Add CSRF token
@@ -401,6 +443,7 @@
                 
                 // Add to body, submit, then remove
                 document.body.appendChild(form);
+                console.log('Submitting delete form to URL:', form.action);
                 form.submit();
             }
         });

@@ -60,6 +60,14 @@ Route::middleware(['web', 'tenant', 'auth:admin'])
             Route::post('/students/delete-simple', [StudentController::class, 'deleteSimple'])
                 ->name('tenant.students.delete.simple');
                 
+            // Direct update route without model binding
+            Route::post('/students/update-direct/{id}', [StudentController::class, 'updateDirectly'])
+                ->name('tenant.students.update.direct');
+                
+            // Direct store route without model binding  
+            Route::post('/students/add-direct', [StudentController::class, 'storeDirectly'])
+                ->name('tenant.students.store.direct');
+                
             // Test route for debugging student lookup
             Route::get('/students/test-lookup/{id?}', [StudentController::class, 'testStudentLookup'])
                 ->name('tenant.students.test.lookup');

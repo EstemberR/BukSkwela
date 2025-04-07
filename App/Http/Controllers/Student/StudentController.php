@@ -425,4 +425,206 @@ class StudentController extends Controller
                 ->with('error', 'Error deleting student: ' . $e->getMessage());
         }
     }
+
+    /**
+     * The simplest possible update method with debugging.
+     */
+    public function updateDirectly(Request $request, $studentId)
+    {
+        // Log everything to help diagnose
+        Log::info('Update request received', [
+            'studentId' => $studentId,
+            'student_db_id' => $request->input('student_db_id'),
+            'debug_student_id' => $request->input('debug_student_id'),
+            'all_params' => $request->all(),
+            'server_params' => $_SERVER,
+            'tenant_id' => tenant('id')
+        ]);
+        
+        // Convert to integer
+        $id = (int)$studentId;
+        
+        try {
+            // First find all students to debug
+            $allStudents = Student::where('tenant_id', tenant('id'))->get(['id', 'name', 'student_id', 'tenant_id']);
+            Log::info('All students', ['count' => $allStudents->count(), 'students' => $allStudents->toArray()]);
+            
+            // Find the specific student
+            $student = null;
+            
+            // Try with route parameter
+            $student = Student::where('id', $id)
+                ->where('tenant_id', tenant('id'))
+                ->first();
+                
+            if (!$student && $request->has('student_db_id')) {
+                // Try with form field
+                $formId = (int)$request->input('student_db_id');
+                $student = Student::where('id', $formId)
+                    ->where('tenant_id', tenant('id'))
+                    ->first();
+                Log::info('Tried student_db_id from form', ['id' => $formId, 'found' => ($student ? 'yes' : 'no')]);
+            }
+            
+            if (!$student) {
+                // Everything failed
+                return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                    ->with('error', 'Student not found. ID: ' . $id);
+            }
+            
+            // We found the student, now update
+            $request->validate([
+                'student_id' => 'required|unique:students,student_id,' . $student->id,
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:students,email,' . $student->id,
+                'course_id' => 'required|exists:courses,id',
+            ]);
+
+            // Track what fields were updated
+            $updatedFields = [];
+
+            if ($student->student_id != $request->student_id) {
+                $updatedFields['student_id'] = $request->student_id;
+            }
+            
+            if ($student->name != $request->name) {
+                $updatedFields['name'] = $request->name;
+            }
+            
+            if ($student->email != $request->email) {
+                $updatedFields['email'] = $request->email;
+            }
+            
+            if ($student->course_id != $request->course_id) {
+                $course = Course::find($request->course_id);
+                if ($course) {
+                    $updatedFields['course'] = $course->title;
+                }
+            }
+
+            // Update the student
+            $student->update([
+                'student_id' => $request->student_id,
+                'name' => $request->name,
+                'email' => $request->email,
+                'course_id' => $request->course_id,
+            ]);
+
+            // Password update
+            if ($request->filled('password')) {
+                $student->update([
+                    'password' => Hash::make($request->password),
+                ]);
+                $updatedFields['password'] = 'Password has been updated';
+            }
+            
+            // Log the successful update
+            Log::info('Student updated successfully', [
+                'student_id' => $student->id,
+                'name' => $student->name,
+                'updated_fields' => $updatedFields
+            ]);
+
+            // Send email notification if anything was updated
+            if (!empty($updatedFields)) {
+                try {
+                    Mail::to($student->email)->send(new StudentCredentialsUpdated($student, $updatedFields));
+                    return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                        ->with('success', 'Student updated successfully and notification email sent');
+                } catch (\Exception $e) {
+                    Log::error('Failed to send email', ['error' => $e->getMessage()]);
+                    return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                        ->with('warning', 'Student updated but failed to send email');
+                }
+            }
+
+            return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                ->with('success', 'Student updated successfully');
+                
+        } catch (\Exception $e) {
+            Log::error('Failed to update student', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                ->with('error', 'Error updating student: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Store a new student record directly without relying on model binding.
+     */
+    public function storeDirectly(Request $request)
+    {
+        try {
+            // Log received parameters
+            Log::info('Direct store request received', [
+                'tenant_id' => tenant('id'),
+                'request_url' => request()->fullUrl(),
+                'request_method' => request()->method()
+            ]);
+            
+            $request->validate([
+                'student_id' => 'required|unique:students,student_id',
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:students,email',
+                'course_id' => 'required|exists:courses,id',
+            ]);
+
+            Log::info('Creating new student directly', [
+                'student_id' => $request->student_id,
+                'email' => $request->email
+            ]);
+
+            // Generate a secure password
+            $password = PasswordGenerator::generate(random_int(10, 15));
+
+            $student = Student::create([
+                'student_id' => $request->student_id,
+                'name' => $request->name,
+                'email' => $request->email,
+                'course_id' => $request->course_id,
+                'password' => Hash::make($password),
+                'tenant_id' => tenant('id'),
+                'status' => 'Regular',
+            ]);
+
+            // Send welcome email to the student with their password
+            try {
+                Log::info('Attempting to send welcome email', [
+                    'to' => $student->email,
+                    'student_id' => $student->student_id
+                ]);
+                
+                Mail::to($student->email)->send(new StudentRegistered($student, $password));
+                
+                Log::info('Welcome email sent successfully', [
+                    'to' => $student->email,
+                    'student_id' => $student->student_id
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send welcome email to student', [
+                    'student_id' => $student->id,
+                    'email' => $student->email,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                
+                return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                    ->with('warning', 'Student added successfully but failed to send welcome email. Error: ' . $e->getMessage());
+            }
+
+            return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                ->with('success', 'Student added successfully and welcome email sent');
+        } catch (\Exception $e) {
+            Log::error('Failed to directly create student', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->route('tenant.students.index', ['tenant' => tenant('id')])
+                ->with('error', 'Error creating student: ' . $e->getMessage());
+        }
+    }
 } 
