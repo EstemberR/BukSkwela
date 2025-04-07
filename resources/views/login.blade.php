@@ -33,6 +33,14 @@
                     </div>
                 @endif
 
+                @error('email')
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            $('#tenantApprovalModal').modal('show');
+                        });
+                    </script>
+                @enderror
+
                 <form method="POST" action="{{ route('login.post') }}">
                     @csrf
                     <div class="form-group">
@@ -95,9 +103,20 @@
         </div>
     </div>
 
+    <!-- Include the Tenant Approval Modal -->
+    @include('Modals.TenantApproval')
+
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    
+    @if(session('show_approval_modal'))
+    <script>
+        $(document).ready(function() {
+            $('#tenantApprovalModal').modal('show');
+        });
+    </script>
+    @endif
 </body>
 </html>

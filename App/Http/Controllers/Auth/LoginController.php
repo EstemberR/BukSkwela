@@ -57,9 +57,8 @@ class LoginController extends Controller
             // Check if the tenant is active before trying to log in
             $tenant = Tenant::find(tenant('id'));
             if (!$tenant || $tenant->status !== 'approved') {
-                return back()->withErrors([
-                    'email' => 'This tenant account is not active. Please contact the administrator.',
-                ])->withInput($request->except('password'));
+                return back()->with('show_approval_modal', true)
+                    ->withInput($request->except('password'));
             }
             
             // For tenant domains
@@ -73,9 +72,8 @@ class LoginController extends Controller
             // Check if admin exists and if their tenant is approved
             if ($admin && $admin->tenant) {
                 if ($admin->tenant->status !== 'approved') {
-                    return back()->withErrors([
-                        'email' => 'This tenant account has not been approved yet. Please contact the administrator.',
-                    ])->withInput($request->except('password'));
+                    return back()->with('show_approval_modal', true)
+                        ->withInput($request->except('password'));
                 }
             }
         }
