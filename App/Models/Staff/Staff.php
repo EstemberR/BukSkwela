@@ -73,5 +73,12 @@ class Staff extends Authenticatable
                 $model->tenant_id = tenant('id');
             }
         });
+
+        // Add global scope to always filter by tenant_id
+        static::addGlobalScope('tenant', function ($builder) {
+            if (tenant()) {
+                $builder->where('tenant_id', tenant('id'));
+            }
+        });
     }
 }

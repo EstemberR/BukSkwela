@@ -128,12 +128,13 @@
                 <h5 class="modal-title">Add New Student</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('tenant.students.store.direct') }}" method="POST">
+            <form id="addStudentForm" action="{{ route('tenant.students.store.direct') }}" method="POST">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Student ID</label>
-                        <input type="text" class="form-control" name="student_id" required>
+                        <input type="text" class="form-control" name="student_id" id="new_student_id" required>
+                        <div class="invalid-feedback" id="student_id_error"></div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Name</label>
@@ -141,7 +142,8 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Email</label>
-                        <input type="email" class="form-control" name="email" required>
+                        <input type="email" class="form-control" name="email" id="new_student_email" required>
+                        <div class="invalid-feedback" id="student_email_error"></div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Course</label>
@@ -158,7 +160,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Add Student</button>
+                    <button type="submit" class="btn btn-primary" id="addStudentBtn">Add Student</button>
                 </div>
             </form>
         </div>
@@ -269,7 +271,100 @@
         
         // Setup delete form submission with AJAX
         setupDeleteForms();
+        
+        // Setup duplicate checking for student add form
+        setupStudentAddForm();
     });
+    
+    // Function to check for duplicate student IDs and emails
+    function setupStudentAddForm() {
+        const addStudentForm = document.getElementById('addStudentForm');
+        const studentIdInput = document.getElementById('new_student_id');
+        const studentEmailInput = document.getElementById('new_student_email');
+        const studentIdError = document.getElementById('student_id_error');
+        const studentEmailError = document.getElementById('student_email_error');
+        const addStudentBtn = document.getElementById('addStudentBtn');
+        
+        if (!addStudentForm) return;
+        
+        // Collect existing student IDs and emails
+        const existingStudentIds = [];
+        const existingEmails = [];
+        
+        document.querySelectorAll('table tbody tr').forEach(row => {
+            if (row.cells && row.cells.length >= 4) {
+                // Student ID is in the first column
+                const studentId = row.cells[0].textContent.trim();
+                if (studentId) existingStudentIds.push(studentId);
+                
+                // Email is in the fourth column
+                const email = row.cells[3].textContent.trim();
+                if (email) existingEmails.push(email);
+            }
+        });
+        
+        console.log('Existing Student IDs:', existingStudentIds);
+        console.log('Existing Emails:', existingEmails);
+        
+        // Function to check for duplicates
+        function checkDuplicates() {
+            let isValid = true;
+            
+            // Check student ID
+            if (studentIdInput.value && existingStudentIds.includes(studentIdInput.value)) {
+                studentIdInput.classList.add('is-invalid');
+                studentIdError.textContent = 'This Student ID is already in use';
+                isValid = false;
+            } else {
+                studentIdInput.classList.remove('is-invalid');
+                studentIdError.textContent = '';
+            }
+            
+            // Check email
+            if (studentEmailInput.value && existingEmails.includes(studentEmailInput.value)) {
+                studentEmailInput.classList.add('is-invalid');
+                studentEmailError.textContent = 'This email address is already in use';
+                isValid = false;
+            } else {
+                studentEmailInput.classList.remove('is-invalid');
+                studentEmailError.textContent = '';
+            }
+            
+            // Enable/disable submit button
+            addStudentBtn.disabled = !isValid;
+            
+            return isValid;
+        }
+        
+        // Add event listeners for real-time validation
+        studentIdInput.addEventListener('input', checkDuplicates);
+        studentEmailInput.addEventListener('input', checkDuplicates);
+        
+        // Validate on form submission
+        addStudentForm.addEventListener('submit', function(e) {
+            if (!checkDuplicates()) {
+                e.preventDefault();
+                // Show error message
+                Swal.fire({
+                    title: 'Validation Error',
+                    text: 'Please correct the errors before submitting',
+                    icon: 'error'
+                });
+            }
+        });
+        
+        // Reset validation when modal is opened
+        const addStudentModal = document.getElementById('addStudentModal');
+        if (addStudentModal) {
+            addStudentModal.addEventListener('shown.bs.modal', function() {
+                studentIdInput.classList.remove('is-invalid');
+                studentEmailInput.classList.remove('is-invalid');
+                studentIdError.textContent = '';
+                studentEmailError.textContent = '';
+                addStudentBtn.disabled = false;
+            });
+        }
+    }
     
     function setupDeleteForms() {
         // Get all delete forms

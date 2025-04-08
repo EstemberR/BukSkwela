@@ -15,6 +15,7 @@ use App\Mail\StaffCredentialsUpdated;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Validator;
 
 class StaffController extends Controller
 {
@@ -22,9 +23,41 @@ class StaffController extends Controller
     {
         try {
             $tenantId = tenant('id');
+            if (!$tenantId) {
+                Log::error('No tenant ID found in staff index');
+                return redirect()->back()->with('error', 'No tenant context found.');
+            }
+            
+            Log::info('Loading staff index for tenant', ['tenant_id' => $tenantId]);
+            
+            // Set up the database connection for the tenant
+            $tenantDBName = 'tenant_' . $tenantId;
+            Config::set('database.connections.tenant.database', $tenantDBName);
+            
+            // Purge and reconnect to ensure we're using the right connection
+            DB::purge('tenant');
+            DB::reconnect('tenant');
+            
+            // Verify database connection
+            try {
+                DB::connection('tenant')->getPdo();
+            } catch (\Exception $e) {
+                Log::error('Failed to connect to tenant database', [
+                    'tenant_id' => $tenantId,
+                    'database' => $tenantDBName,
+                    'error' => $e->getMessage()
+                ]);
+                return redirect()->back()->with('error', 'Unable to connect to tenant database.');
+            }
+            
+            // Log the current database connection
+            Log::info('Current database connection', [
+                'database' => Config::get('database.connections.tenant.database'),
+                'connection' => DB::connection('tenant')->getDatabaseName()
+            ]);
             
             // Start with a query scoped to the current tenant
-            $query = Staff::where('tenant_id', $tenantId);
+            $query = Staff::query();
 
             // Apply search filter
             if ($request->has('search')) {
@@ -41,12 +74,23 @@ class StaffController extends Controller
                 $query->where('role', $request->get('role'));
             }
 
+            // Log the SQL query
+            Log::info('Staff query SQL', ['sql' => $query->toSql(), 'bindings' => $query->getBindings()]);
+            
             $staffMembers = $query->paginate(10);
+            
+            // Log the results
+            Log::info('Retrieved staff members', [
+                'count' => $staffMembers->count(),
+                'total' => $staffMembers->total(),
+                'first_item' => $staffMembers->firstItem(),
+                'last_item' => $staffMembers->lastItem()
+            ]);
             
             // Check if departments table exists and handle if it doesn't
             $departments = [];
             if (Schema::connection('tenant')->hasTable('departments')) {
-                $departments = Department::where('tenant_id', $tenantId)->get();
+                $departments = Department::query()->get();
             } else {
                 // Create departments table if it doesn't exist
                 Schema::connection('tenant')->create('departments', function ($table) {
@@ -68,7 +112,7 @@ class StaffController extends Controller
                     'status' => 'active'
                 ]);
                 
-                $departments = Department::where('tenant_id', $tenantId)->get();
+                $departments = Department::query()->get();
             }
             
             return view('tenant.staff.index', compact('staffMembers', 'departments'));
@@ -126,18 +170,45 @@ class StaffController extends Controller
     {
         try {
             $tenantId = tenant('id');
+            if (!$tenantId) {
+                Log::error('No tenant ID found in staff store');
+                return response()->json(['error' => 'No tenant context found.'], 422);
+            }
             
-            Log::info('Storing new staff member', [
-                'tenant_id' => $tenantId
-            ]);
+            Log::info('Storing new staff member', ['tenant_id' => $tenantId]);
+            
+            // Set up the database connection for the tenant
+            $tenantDBName = 'tenant_' . $tenantId;
+            Config::set('database.connections.tenant.database', $tenantDBName);
+            
+            // Purge and reconnect to ensure we're using the right connection
+            DB::purge('tenant');
+            DB::reconnect('tenant');
 
-            $request->validate([
+            // Verify database connection
+            try {
+                DB::connection('tenant')->getPdo();
+            } catch (\Exception $e) {
+                Log::error('Failed to connect to tenant database', [
+                    'tenant_id' => $tenantId,
+                    'database' => $tenantDBName,
+                    'error' => $e->getMessage()
+                ]);
+                return response()->json(['error' => 'Unable to connect to tenant database.'], 500);
+            }
+
+            // Validate the request
+            $validator = Validator::make($request->all(), [
                 'staff_id' => 'required|unique:staff,staff_id',
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:staff,email',
                 'role' => 'required|in:instructor,admin,staff',
                 'department' => 'required|string|max:255',
             ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
 
             // Generate a secure password
             $password = PasswordGenerator::generate(random_int(10, 15));
@@ -178,16 +249,27 @@ class StaffController extends Controller
             ]);
 
             // Send email with credentials
-            Mail::to($staff->email)->send(new StaffRegistered($staff, $password));
+            try {
+                Mail::to($staff->email)->send(new StaffRegistered($staff, $password));
+                Log::info('Staff credentials email sent', ['email' => $staff->email]);
+            } catch (\Exception $e) {
+                Log::error('Failed to send staff credentials email', [
+                    'error' => $e->getMessage(),
+                    'staff_email' => $staff->email
+                ]);
+            }
 
-            return redirect()->route('tenant.staff.index', ['tenant' => $tenantId])->with('success', 'Staff member created successfully. Login credentials have been sent to their email.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Staff member created successfully. Login credentials have been sent to their email.'
+            ]);
             
         } catch (\Exception $e) {
             Log::error('Error in staff store', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            return back()->with('error', 'An error occurred while creating the staff member: ' . $e->getMessage());
+            return response()->json(['error' => 'An error occurred while creating the staff member: ' . $e->getMessage()], 500);
         }
     }
 
@@ -238,32 +320,43 @@ class StaffController extends Controller
     {
         try {
             $tenantId = tenant('id');
-
-            $staff = Staff::findOrFail($id);
-
-            $request->validate([
-                'staff_id' => 'required|unique:staff,staff_id,' . $id,
-                'name' => 'required|string|max:255',
-                'email' => 'required|email|unique:staff,email,' . $id,
-                'role' => 'required|in:instructor,admin,staff',
-                'department' => 'required|string|max:255',
-                'status' => 'required|in:active,inactive'
+            Log::info('Updating staff member', [
+                'staff_id' => $id,
+                'tenant_id' => $tenantId
             ]);
-
-            // Check if departments table exists and handle if it doesn't
-            if (!Schema::connection('tenant')->hasTable('departments')) {
-                // Create departments table if it doesn't exist
-                Schema::connection('tenant')->create('departments', function ($table) {
-                    $table->id();
-                    $table->string('name');
-                    $table->string('code');
-                    $table->text('description')->nullable();
-                    $table->string('tenant_id');
-                    $table->enum('status', ['active', 'inactive'])->default('active');
-                    $table->timestamps();
-                });
+            
+            // Set up the database connection for the tenant
+            $tenantDBName = 'tenant_' . $tenantId;
+            Config::set('database.connections.tenant.database', $tenantDBName);
+            
+            // Purge and reconnect to ensure we're using the right connection
+            DB::purge('tenant');
+            DB::reconnect('tenant');
+            
+            // Find staff directly using the ID
+            $staff = Staff::where('id', $id)
+                         ->where('tenant_id', $tenantId)
+                         ->first();
+            
+            if (!$staff) {
+                Log::warning('Staff member not found for update', [
+                    'id' => $id,
+                    'tenant_id' => $tenantId
+                ]);
+                return redirect()->route('tenant.staff.index', ['tenant' => $tenantId])
+                                 ->with('error', 'Staff member not found.');
             }
 
+            // Validate the request data
+            $request->validate([
+                'staff_id' => 'required|unique:staff,staff_id,'.$staff->id,
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:staff,email,'.$staff->id,
+                'role' => 'required|in:instructor,admin,staff',
+                'department' => 'required|string|max:255',
+                'status' => 'required|in:active,inactive',
+            ]);
+            
             // Find or create the department
             $department = Department::firstOrCreate(
                 [
@@ -277,23 +370,46 @@ class StaffController extends Controller
                 ]
             );
 
-            $staff->update([
+            // Update staff data
+            $updateData = [
                 'staff_id' => $request->staff_id,
                 'name' => $request->name,
                 'email' => $request->email,
                 'role' => $request->role,
                 'department_id' => $department->id,
                 'status' => $request->status
-            ]);
-
-            return redirect()->route('tenant.staff.index', ['tenant' => $tenantId])->with('success', 'Staff member updated successfully.');
+            ];
             
+            // Only update password if it's provided
+            if ($request->filled('password')) {
+                $updateData['password'] = Hash::make($request->password);
+                
+                // Send email with updated credentials
+                Mail::to($staff->email)->send(new StaffCredentialsUpdated($staff, $request->password));
+                
+                Log::info('Staff credentials updated and email sent', [
+                    'staff_id' => $staff->id,
+                    'email' => $staff->email
+                ]);
+            }
+            
+            $staff->update($updateData);
+            
+            Log::info('Staff member updated successfully', [
+                'id' => $id,
+                'tenant_id' => $tenantId
+            ]);
+            
+            return redirect()->route('tenant.staff.index', ['tenant' => $tenantId])
+                             ->with('success', 'Staff member updated successfully.');
+                             
         } catch (\Exception $e) {
             Log::error('Error in staff update', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            return back()->with('error', 'An error occurred while updating the staff member: ' . $e->getMessage());
+            return redirect()->route('tenant.staff.index', ['tenant' => $tenantId])
+                             ->with('error', 'An error occurred while updating the staff member: ' . $e->getMessage());
         }
     }
 
@@ -301,48 +417,51 @@ class StaffController extends Controller
     {
         try {
             $tenantId = tenant('id');
+            Log::info('Deleting staff member', [
+                'staff_id' => $id,
+                'tenant_id' => $tenantId
+            ]);
             
-            // Find the staff member and ensure we use the tenant connection
-            $staff = Staff::on('tenant')->findOrFail($id);
+            // Set up the database connection for the tenant
+            $tenantDBName = 'tenant_' . $tenantId;
+            Config::set('database.connections.tenant.database', $tenantDBName);
             
-            // Get staff details for logging
-            $staffDetails = [
-                'id' => $staff->id,
-                'staff_id' => $staff->staff_id,
-                'name' => $staff->name,
-                'email' => $staff->email
-            ];
+            // Purge and reconnect to ensure we're using the right connection
+            DB::purge('tenant');
+            DB::reconnect('tenant');
             
-            // Log deletion attempt
-            Log::info('Attempting to delete staff member', $staffDetails);
+            // Find staff directly using the ID
+            $staff = Staff::where('id', $id)
+                         ->where('tenant_id', $tenantId)
+                         ->first();
             
-            // Explicitly set connection and delete
-            $staff->setConnection('tenant');
-            $staff->delete();
-            
-            // Log successful deletion
-            Log::info('Staff member deleted successfully', $staffDetails);
-
-            if (request()->expectsJson()) {
-                return response()->json(['success' => true, 'message' => 'Staff member deleted successfully']);
+            if (!$staff) {
+                Log::warning('Staff member not found for deletion', [
+                    'id' => $id,
+                    'tenant_id' => $tenantId
+                ]);
+                return redirect()->route('tenant.staff.index', ['tenant' => $tenantId])
+                                 ->with('error', 'Staff member not found.');
             }
             
-            return redirect()->route('tenant.staff.index', ['tenant' => $tenantId])
-                ->with('success', 'Staff member deleted successfully.');
+            // Delete the staff member
+            $staff->delete();
             
+            Log::info('Staff member deleted successfully', [
+                'id' => $id,
+                'tenant_id' => $tenantId
+            ]);
+            
+            return redirect()->route('tenant.staff.index', ['tenant' => $tenantId])
+                             ->with('success', 'Staff member deleted successfully.');
+                             
         } catch (\Exception $e) {
-            // Log the error
-            Log::error('Error in staff destroy', [
-                'staff_id' => $id,
+            Log::error('Error in staff deletion', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
-            if (request()->expectsJson()) {
-                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-            }
-            
-            return back()->with('error', 'An error occurred while deleting the staff member: ' . $e->getMessage());
+            return redirect()->route('tenant.staff.index', ['tenant' => $tenantId])
+                             ->with('error', 'An error occurred while deleting the staff member: ' . $e->getMessage());
         }
     }
 

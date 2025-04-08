@@ -135,12 +135,13 @@
                 <h5 class="modal-title">Add New Staff Member</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('tenant.staff.store', ['tenant' => tenant('id')]) }}" method="POST">
+            <form id="addStaffForm" action="{{ route('tenant.staff.store', ['tenant' => tenant('id')]) }}" method="POST">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Staff ID</label>
-                        <input type="text" class="form-control" name="staff_id" required>
+                        <input type="text" class="form-control" name="staff_id" id="new_staff_id" required>
+                        <div class="invalid-feedback" id="staff_id_error"></div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Name</label>
@@ -148,7 +149,8 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Email</label>
-                        <input type="email" class="form-control" name="email" required>
+                        <input type="email" class="form-control" name="email" id="new_staff_email" required>
+                        <div class="invalid-feedback" id="staff_email_error"></div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Role</label>
@@ -169,7 +171,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Add Staff Member</button>
+                    <button type="submit" class="btn btn-primary" id="addStaffBtn">Add Staff Member</button>
                 </div>
             </form>
         </div>
@@ -245,6 +247,108 @@
 @push('scripts')
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+    // Auto-dismiss success and error alerts after 3 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        // Select all success and error alerts
+        const alerts = document.querySelectorAll('.alert-success, .alert-danger');
+        
+        // Set a timeout to fade them out after 3 seconds
+        if (alerts.length > 0) {
+            setTimeout(function() {
+                alerts.forEach(function(alert) {
+                    // Add fade-out transition
+                    alert.style.transition = 'opacity 1s';
+                    alert.style.opacity = '0';
+                    
+                    // Remove from DOM after fade completes
+                    setTimeout(function() {
+                        alert.remove();
+                    }, 1000);
+                });
+            }, 3000);
+        }
+
+        // Handle staff form submission
+        $('#addStaffForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            // Clear previous errors
+            $('.is-invalid').removeClass('is-invalid');
+            $('.invalid-feedback').text('');
+            
+            // Get form data
+            const formData = $(this).serialize();
+            
+            // Disable submit button
+            $('#addStaffBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Adding...');
+            
+            // Submit form via AJAX
+            $.ajax({
+                url: $(this).attr('action'),
+                method: 'POST',
+                data: formData,
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Show success message
+                        const successAlert = $('<div class="alert alert-success alert-dismissible fade show" role="alert">' +
+                            response.message +
+                            '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+                            '</div>');
+                        
+                        // Insert alert at the top of the page
+                        $('.container').prepend(successAlert);
+                        
+                        // Close modal
+                        $('#addStaffModal').modal('hide');
+                        
+                        // Reset form
+                        $('#addStaffForm')[0].reset();
+                        
+                        // Reload page after a short delay
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        // Show error message
+                        const errorAlert = $('<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
+                            response.error +
+                            '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+                            '</div>');
+                        
+                        // Insert alert at the top of the page
+                        $('.container').prepend(errorAlert);
+                    }
+                },
+                error: function(xhr) {
+                    // Show error message
+                    const errorAlert = $('<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
+                        'An error occurred while adding the staff member. Please try again.' +
+                        '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+                        '</div>');
+                    
+                    // Insert alert at the top of the page
+                    $('.container').prepend(errorAlert);
+                    
+                    // Handle validation errors
+                    if (xhr.status === 422) {
+                        const errors = xhr.responseJSON.errors;
+                        for (const field in errors) {
+                            $(`#${field}_error`).text(errors[field][0]);
+                            $(`[name="${field}"]`).addClass('is-invalid');
+                        }
+                    }
+                },
+                complete: function() {
+                    // Re-enable submit button
+                    $('#addStaffBtn').prop('disabled', false).text('Add Staff Member');
+                }
+            });
+        });
+    });
+
     // Delete staff function
     function deleteStaff(staffId) {
         if (confirm('Are you sure you want to delete this staff member?')) {
@@ -309,6 +413,99 @@
                 $(this).find('.is-invalid').first().focus();
             }
         });
+    });
+
+    // Function to check for duplicate staff IDs and emails
+    function setupStaffAddForm() {
+        const addStaffForm = document.getElementById('addStaffForm');
+        const staffIdInput = document.getElementById('new_staff_id');
+        const staffEmailInput = document.getElementById('new_staff_email');
+        const staffIdError = document.getElementById('staff_id_error');
+        const staffEmailError = document.getElementById('staff_email_error');
+        const addStaffBtn = document.getElementById('addStaffBtn');
+        
+        if (!addStaffForm) return;
+        
+        // Collect existing staff IDs and emails
+        const existingStaffIds = [];
+        const existingEmails = [];
+        
+        document.querySelectorAll('table tbody tr').forEach(row => {
+            if (row.cells && row.cells.length >= 4) {
+                // Staff ID is in the first column
+                const staffId = row.cells[0].textContent.trim();
+                if (staffId) existingStaffIds.push(staffId);
+                
+                // Email is in the third column
+                const email = row.cells[2].textContent.trim();
+                if (email) existingEmails.push(email);
+            }
+        });
+        
+        // Function to check for duplicates
+        function checkDuplicates() {
+            let isValid = true;
+            
+            // Check staff ID
+            if (staffIdInput.value && existingStaffIds.includes(staffIdInput.value)) {
+                staffIdInput.classList.add('is-invalid');
+                staffIdError.textContent = 'This Staff ID is already in use';
+                isValid = false;
+            } else {
+                staffIdInput.classList.remove('is-invalid');
+                staffIdError.textContent = '';
+            }
+            
+            // Check email
+            if (staffEmailInput.value && existingEmails.includes(staffEmailInput.value)) {
+                staffEmailInput.classList.add('is-invalid');
+                staffEmailError.textContent = 'This email address is already in use';
+                isValid = false;
+            } else {
+                staffEmailInput.classList.remove('is-invalid');
+                staffEmailError.textContent = '';
+            }
+            
+            // Enable/disable submit button
+            addStaffBtn.disabled = !isValid;
+            
+            return isValid;
+        }
+        
+        // Add event listeners for real-time validation
+        staffIdInput.addEventListener('input', checkDuplicates);
+        staffEmailInput.addEventListener('input', checkDuplicates);
+        
+        // Validate on form submission
+        addStaffForm.addEventListener('submit', function(e) {
+            if (!checkDuplicates()) {
+                e.preventDefault();
+                // Show error message
+                Swal.fire({
+                    title: 'Validation Error',
+                    text: 'Please correct the errors before submitting',
+                    icon: 'error'
+                });
+            }
+        });
+        
+        // Reset validation when modal is opened
+        const addStaffModal = document.getElementById('addStaffModal');
+        if (addStaffModal) {
+            addStaffModal.addEventListener('shown.bs.modal', function() {
+                staffIdInput.classList.remove('is-invalid');
+                staffEmailInput.classList.remove('is-invalid');
+                staffIdError.textContent = '';
+                staffEmailError.textContent = '';
+                addStaffBtn.disabled = false;
+            });
+        }
+    }
+
+    // Initialize the staff form validation when the document is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        setupStaffAddForm();
+        // ... existing code ...
     });
 </script>
 @endpush 
