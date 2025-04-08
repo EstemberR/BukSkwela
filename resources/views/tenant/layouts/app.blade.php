@@ -1214,13 +1214,10 @@
                                     <span>Settings</span>
                                 </a>
                                 <div class="dropdown-divider"></div>
-                                <form action="{{ route('logout') }}" method="POST" class="px-3 py-2">
-                    @csrf
-                                    <button type="submit" class="btn btn-danger w-100">
-                                        <i class="fas fa-sign-out-alt"></i>
-                                        <span>Logout</span>
-                    </button>
-                </form>
+                                <a href="#" onclick="logoutToCentralDomain()" class="dropdown-item">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Logout</span>
+                                </a>
                             </div>
                         </div>
             </div>
@@ -1423,6 +1420,17 @@
             // Example usage:
             // setupPagination('myTable', 20, 95); // 20 items per page, 95 total items
         });
+    </script>
+
+    <!-- Add this at the bottom of your layout file, before the closing </body> tag -->
+    
+    <script>
+        // Global function to redirect to central domain
+        function logoutToCentralDomain() {
+            // Use the tenant_logout.html page to perform a client-side redirect
+            window.location.href = '/tenant_logout.html';
+            return false; // Prevent default link behavior
+        }
     </script>
 </body>
 </html>

@@ -116,6 +116,7 @@ Route::prefix('staff')->group(function () {
     Route::get('/login', [StaffAuthController::class, 'showLoginForm'])->name('staff.login');
     Route::post('/login', [StaffAuthController::class, 'login'])->name('staff.login.post');
     Route::post('/logout', [StaffAuthController::class, 'logout'])->name('staff.logout');
+    Route::get('/tenant-logout', [StaffAuthController::class, 'tenantLogout'])->name('staff.tenant.logout');
 
     // Protected staff routes
     Route::middleware(['auth:staff'])->group(function () {
