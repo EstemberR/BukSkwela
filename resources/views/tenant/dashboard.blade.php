@@ -1,10 +1,30 @@
-
 @extends('tenant.layouts.app')
 
 @section('title', 'Department Dashboard')
 
 @section('content')
 <div class="container-fluid py-2">
+    <!-- Admin Tools Section -->
+    @if(auth()->user()->is_admin)
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Admin Tools</h5>
+                    <div class="d-flex gap-2">
+                        <button onclick="runCommand('setup-tenant')" class="btn btn-primary">
+                            <i class="fas fa-database me-2"></i>Setup Tenant Database
+                        </button>
+                        <button onclick="runCommand('fix-tenant')" class="btn btn-warning">
+                            <i class="fas fa-tools me-2"></i>Fix Tenant Issues
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <div class="row">
         <!-- Main Content -->
         <div class="col-12">
@@ -429,6 +449,52 @@ const setupRequirementsChart = () => {
 
 // Initialize chart when DOM is loaded
 document.addEventListener('DOMContentLoaded', setupRequirementsChart);
+
+function runCommand(type) {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Running...';
+
+    const endpoint = type === 'setup-tenant' 
+        ? '/api/tenant/setup-database' 
+        : '/api/tenant/fix-issues';
+
+    fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: data.message
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message
+            });
+        }
+    })
+    .catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An error occurred while running the command.'
+        });
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = originalText;
+    });
+}
 </script>
 @endsection
 

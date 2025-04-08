@@ -91,10 +91,34 @@
                                 <i class="fas fa-search mr-1"></i> Check Database
                             </a>
                         </div>
-                        <div class="col-12">
+                        <div class="col-12 mb-2">
                             <a href="{{ route('super-admin.tenant-data.manage-database', $tenant->id) }}" class="btn btn-primary btn-block">
                                 <i class="fas fa-cogs mr-1"></i> Manage Database
                             </a>
+                        </div>
+                        <!-- Admin Tools Section -->
+                        <div class="col-12 mt-3">
+                            <div class="card border-left-warning">
+                                <div class="card-header py-2 bg-gradient-warning">
+                                    <h6 class="m-0 font-weight-bold text-white">
+                                        <i class="fas fa-wrench mr-1"></i> Admin Tools
+                                    </h6>
+                                </div>
+                                <div class="card-body p-2">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <button onclick="runCommand('setup-tenant', event)" class="btn btn-primary btn-sm btn-block">
+                                                <i class="fas fa-database mr-1"></i> Setup Tenant Database
+                                            </button>
+                                        </div>
+                                        <div class="col-6">
+                                            <button onclick="runCommand('fix-tenant', event)" class="btn btn-warning btn-sm btn-block">
+                                                <i class="fas fa-tools mr-1"></i> Fix Tenant Issues
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -174,6 +198,53 @@
             "order": [[ 0, "asc" ]]
         });
     });
+
+function runCommand(type, event) {
+    event.preventDefault();
+    const button = event.currentTarget;
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Running...';
+
+    const endpoint = type === 'setup-tenant' 
+        ? '/api/tenant/setup-database' 
+        : '/api/tenant/fix-issues';
+
+    fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: data.message
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message
+            });
+        }
+    })
+    .catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An error occurred while running the command.'
+        });
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = originalText;
+    });
+}
 </script>
 @endpush
 

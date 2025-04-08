@@ -36,28 +36,24 @@
                     <!-- Search and filters -->
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <form id="searchForm" action="{{ route('tenant.staff.index', ['tenant' => tenant('id')]) }}" method="GET">
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="fas fa-search"></i>
-                                    </span>
-                                    <input type="text" 
-                                           class="form-control" 
-                                           placeholder="Search staff..." 
-                                           id="searchStaff"
-                                           name="search"
-                                           value="{{ request('search') }}"
-                                           autocomplete="off">
-                                </div>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       placeholder="Search staff..." 
+                                       id="searchStaff" 
+                                       autocomplete="off">
                             </div>
-                            <div class="col-md-6 text-end">
-                                <select class="form-select d-inline-block w-auto" id="roleFilter" name="role" onchange="document.getElementById('searchForm').submit()">
-                                    <option value="">All Roles</option>
-                                    <option value="instructor" {{ request('role') == 'instructor' ? 'selected' : '' }}>Instructor</option>
-                                    <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Admin</option>
-                                    <option value="staff" {{ request('role') == 'staff' ? 'selected' : '' }}>Staff</option>
-                                </select>
-                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <select class="form-select d-inline-block w-auto" id="roleFilter">
+                                <option value="">All Roles</option>
+                                <option value="instructor">Instructor</option>
+                                <option value="admin">Admin</option>
+                                <option value="staff">Staff</option>
+                            </select>
                         </div>
                     </div>
 
@@ -82,7 +78,7 @@
                                     <td>{{ $staff->name }}</td>
                                     <td>{{ $staff->email }}</td>
                                     <td>{{ ucfirst($staff->role) }}</td>
-                                    <td>{{ optional($staff->department)->name ?? 'N/A' }}</td>
+                                    <td>{{ $staff->department->name ?? 'N/A' }}</td>
                                     <td>
                                         <span class="badge bg-{{ $staff->status === 'active' ? 'success' : 'warning' }}">
                                             {{ ucfirst($staff->status) }}
@@ -109,16 +105,10 @@
                     <!-- Pagination -->
                     <div class="d-flex justify-content-between align-items-center mt-4">
                         <div class="text-muted">
-                            @if ($staffMembers instanceof \Illuminate\Pagination\LengthAwarePaginator)
-                                Showing {{ $staffMembers->firstItem() ?? 0 }} to {{ $staffMembers->lastItem() ?? 0 }} of {{ $staffMembers->total() }} entries
-                            @else
-                                Showing {{ $staffMembers->count() }} entries
-                            @endif
+                            Showing {{ $staffMembers->firstItem() ?? 0 }} to {{ $staffMembers->lastItem() ?? 0 }} of {{ $staffMembers->total() }} entries
                         </div>
                         <div>
-                            @if ($staffMembers instanceof \Illuminate\Pagination\LengthAwarePaginator)
-                                {{ $staffMembers->links() }}
-                            @endif
+                            {{ $staffMembers->links() }}
                         </div>
                     </div>
                 </div>
@@ -212,22 +202,18 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Department</label>
-                        <input type="text" class="form-control" name="department" value="{{ optional($staff->department)->name ?? 'N/A' }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Status</label>
-                        <select class="form-select" name="status" required>
-                            <option value="active" {{ $staff->status === 'active' ? 'selected' : '' }}>Active</option>
-                            <option value="inactive" {{ $staff->status === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                        <select class="form-select" name="department_id" required>
+                            <option value="">Select Department</option>
+                            @foreach($departments ?? [] as $department)
+                                <option value="{{ $department->id }}" {{ $staff->department_id === $department->id ? 'selected' : '' }}>
+                                    {{ $department->name }}
+                                </option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Password (leave blank to keep current)</label>
                         <input type="password" class="form-control" name="password">
-                        <div class="form-text">Enter a new password only if you want to change it.</div>
-                    </div>
-                    <div class="alert alert-info">
-                        <small><i class="fas fa-info-circle"></i> Changing the password will send an email notification to the staff member.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -240,6 +226,30 @@
 </div>
 @endforeach
 
+@endsection
+
+@section('scripts')
+<script>
+    function deleteStaff(staffId) {
+        if (confirm('Are you sure you want to delete this staff member?')) {
+            fetch(`/tenant/{{ tenant('id') }}/admin/staff/${staffId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert('Error deleting staff member');
+                }
+            });
+        }
+    }
+</script>
 @endsection
 
 @push('scripts')
@@ -288,26 +298,73 @@
             }, 300);
         });
         
-        // Proper form validation
-        $('form').on('submit', function(e) {
+        // Proper form validation for modals
+        $('#addStaffModal form').on('submit', function(e) {
+            e.preventDefault();
             let isValid = true;
+            let firstInvalidField = null;
             
             // Check all required fields
             $(this).find('input[required], select[required]').each(function() {
                 if ($(this).val() === '') {
                     $(this).addClass('is-invalid');
                     isValid = false;
+                    if (!firstInvalidField) {
+                        firstInvalidField = this;
+                    }
                 } else {
                     $(this).removeClass('is-invalid');
                 }
             });
             
-            // Prevent form submission if validation fails
-            if (!isValid) {
-                e.preventDefault();
+            // If form is valid, submit it
+            if (isValid) {
+                const form = this;
+                const modal = $(this).closest('.modal');
+                
+                // Submit the form via AJAX
+                $.ajax({
+                    url: $(form).attr('action'),
+                    method: $(form).attr('method'),
+                    data: $(form).serialize(),
+                    success: function(response) {
+                        // Close the modal
+                        modal.modal('hide');
+                        // Reload the page to show the new data
+                        window.location.reload();
+                    },
+                    error: function(xhr) {
+                        // Handle validation errors
+                        if (xhr.status === 422) {
+                            const errors = xhr.responseJSON.errors;
+                            // Clear previous errors
+                            $(form).find('.is-invalid').removeClass('is-invalid');
+                            $(form).find('.invalid-feedback').remove();
+                            
+                            // Show new errors
+                            for (const field in errors) {
+                                const input = $(form).find('[name="' + field + '"]');
+                                input.addClass('is-invalid');
+                                input.after('<div class="invalid-feedback">' + errors[field][0] + '</div>');
+                            }
+                        } else {
+                            alert('An error occurred while processing your request.');
+                        }
+                    }
+                });
+            } else {
                 // Focus on the first invalid field
-                $(this).find('.is-invalid').first().focus();
+                if (firstInvalidField) {
+                    $(firstInvalidField).focus();
+                }
             }
+        });
+
+        // Clear validation errors when modal is closed
+        $('.modal').on('hidden.bs.modal', function() {
+            $(this).find('.is-invalid').removeClass('is-invalid');
+            $(this).find('.invalid-feedback').remove();
+            $(this).find('form')[0].reset();
         });
     });
 </script>
