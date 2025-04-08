@@ -40,6 +40,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\FixCoursesTable::class,
         \App\Console\Commands\FixTenantRelationships::class,
         \App\Console\Commands\CreateTenant::class,
+        \App\Console\Commands\MigrateTenantToSeparateDb::class,
     ];
 
     /**

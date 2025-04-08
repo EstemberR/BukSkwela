@@ -18,13 +18,26 @@ class TenantDatabaseMiddleware
             $tenantId = $tenant->id;
             $databaseName = 'tenant_' . $tenantId;
             
-            // Set the database connection for the tenant with proper credentials
-            Config::set('database.connections.tenant.database', $databaseName);
-            Config::set('database.connections.tenant.username', env('DB_USERNAME'));
-            Config::set('database.connections.tenant.password', env('DB_PASSWORD'));
+            // Get the tenant database credentials from the tenant_databases table
+            $tenantDB = \App\Models\TenantDatabase::where('tenant_id', $tenantId)->first();
             
-            // Log connection attempt for debugging
-            Log::info("Setting tenant database connection for tenant {$tenantId} to database {$databaseName}");
+            if ($tenantDB) {
+                // Set the database connection with proper credentials from tenant_databases table
+                Config::set('database.connections.tenant.database', $tenantDB->database_name);
+                Config::set('database.connections.tenant.username', $tenantDB->database_username);
+                Config::set('database.connections.tenant.password', $tenantDB->database_password);
+                Config::set('database.connections.tenant.host', $tenantDB->database_host);
+                Config::set('database.connections.tenant.port', $tenantDB->database_port);
+                
+                Log::info("Setting tenant database connection for tenant {$tenantId} using tenant-specific credentials");
+            } else {
+                // Fallback to default credentials with tenant database name
+                Config::set('database.connections.tenant.database', $databaseName);
+                Config::set('database.connections.tenant.username', env('DB_USERNAME'));
+                Config::set('database.connections.tenant.password', env('DB_PASSWORD'));
+                
+                Log::warning("No tenant database record found for {$tenantId}, using default credentials");
+            }
             
             // Purge the tenant connection to force a new connection with the updated config
             DB::purge('tenant');

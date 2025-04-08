@@ -51,6 +51,13 @@ class Controller extends BaseController
             ];
             
             $tenant->save();
+            
+            // Log successful tenant creation
+            \Log::info("Tenant registered", [
+                'tenant_id' => $tenant->id,
+                'name' => $tenant->tenant_name,
+                'admin_email' => $tenant->tenant_email
+            ]);
 
             // Create domain
             $domain = $subdomain . '.' . env('CENTRAL_DOMAIN');

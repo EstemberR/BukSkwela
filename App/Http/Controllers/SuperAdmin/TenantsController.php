@@ -8,6 +8,7 @@ use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class TenantsController extends Controller
 {
@@ -60,17 +61,14 @@ class TenantsController extends Controller
             try {
                 Log::info("Auto-setting up database for newly approved tenant: {$tenant->id}");
                 
-                // First set up the database (creates DB and user credentials)
+                // Use the dedicated setup-tenant command to create a separate database
                 \Artisan::call('db:setup-tenant', [
                     'tenant' => $tenant->id
                 ]);
-                Log::info("Database setup response: " . \Artisan::output());
+                $setupOutput = \Artisan::output();
+                Log::info("Database setup output: " . $setupOutput);
                 
-                // Run migrations to create tables
-                \Artisan::call('tenant:direct-migrate', [
-                    'database' => 'tenant_' . $tenant->id
-                ]);
-                Log::info("Migration response: " . \Artisan::output());
+                // No need to run migrations separately as db:setup-tenant does this
                 
                 // Fix the staff table structure to ensure it's correct
                 \Artisan::call('tenant:fix-staff', [
@@ -78,6 +76,16 @@ class TenantsController extends Controller
                     '--force' => true
                 ]);
                 Log::info("Staff table fix response: " . \Artisan::output());
+                
+                // Verify the database exists
+                $databaseName = 'tenant_' . $tenant->id;
+                $dbExists = DB::select("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?", [$databaseName]);
+                
+                if (!empty($dbExists)) {
+                    Log::info("Verified database {$databaseName} exists for tenant {$tenant->id}");
+                } else {
+                    Log::error("Failed to create database {$databaseName} for tenant {$tenant->id}");
+                }
                 
                 Log::info("Tenant database auto-setup complete for tenant: {$tenant->id}");
             } catch (\Exception $e) {
