@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Illuminate\Auth\Middleware\Authenticate as Middleware;
+use Illuminate\Support\Facades\Log;
 
 class Authenticate extends Middleware
 {
@@ -15,7 +16,16 @@ class Authenticate extends Middleware
     protected function redirectTo($request)
     {
         if (! $request->expectsJson()) {
-            return tenant() ? route('tenant.login') : route('login');
+            try {
+                $hasTenant = function_exists('tenant') && tenant() !== null;
+                return $hasTenant ? route('tenant.login') : '/login';
+            } catch (\Exception $e) {
+                Log::error('Error in authentication redirect', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                return '/login';
+            }
         }
     }
 }

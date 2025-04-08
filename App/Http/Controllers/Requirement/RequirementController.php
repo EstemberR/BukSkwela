@@ -63,8 +63,7 @@ class RequirementController extends Controller
         ]);
 
         // Get all students in the selected category
-        $students = Student::where('tenant_id', tenant('id'))
-            ->where('status', $request->student_category)
+        $students = Student::where('status', $request->student_category)
             ->get();
 
         // Create student requirements for each student

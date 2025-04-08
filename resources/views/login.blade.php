@@ -41,7 +41,7 @@
                     </script>
                 @enderror
 
-                <form method="POST" action="{{ route('login.post') }}">
+                <form method="POST" action="{{ url('/login') }}">
                     @csrf
                     <div class="form-group">
                         <label>Email</label>
@@ -85,7 +85,7 @@
                         <div class="text-center mt-3">
                             <small>
                                 Don't have an account? 
-                                <a href="{{ route('register') }}" class="font-weight-medium login-link">Create one</a>
+                                <a href="{{ url('/register') }}" class="font-weight-medium login-link">Create one</a>
                             </small>
                         </div>
                     </div>

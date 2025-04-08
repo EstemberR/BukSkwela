@@ -35,8 +35,8 @@
                     </nav>
 
                     <div class="d-flex">
-                        <a href="{{ route('login') }}" class="btn-primary">Login</a>
-                        <a href="{{ route('register') }}" class="btn-primary">Register</a>
+                        <a href="{{ url('/login') }}" class="btn-primary">Login</a>
+                        <a href="{{ url('/register') }}" class="btn-primary">Register</a>
                     </div>
                 </div>
             </div>
@@ -52,7 +52,7 @@
                         <p class="hero-description">
                         BukSkwela is your all-in-one enrollment repository—securely collect, track, <br> and manage student requirements with ease.
                         </p>
-                        <a href="{{ route('register') }}" class="btn-get-started">Let's Get Started!</a>
+                        <a href="{{ url('/register') }}" class="btn-get-started">Let's Get Started!</a>
                     </div>
                 </div>
             </div>
@@ -184,7 +184,7 @@
                                 <li class="na"><i class="bi bi-x"></i> <span>Submission Reports</span></li>
                                 <li class="na"><i class="bi bi-x"></i> <span>Branding Customization</span></li>
                             </ul>
-                            <a href="{{ route('register') }}" class="btn-buy">Start for Free</a>
+                            <a href="{{ url('/register') }}" class="btn-buy">Start for Free</a>
                         </div>
                     </div>
 
@@ -205,7 +205,7 @@
                                 <li><i class="bi bi-check"></i> Submission Reports</li>
                                 <li><i class="bi bi-check"></i> Branding Customization</li>
                             </ul>
-                            <a href="{{ route('register') }}" class="btn-buy">Upgrade to Premium</a>
+                            <a href="{{ url('/register') }}" class="btn-buy">Upgrade to Premium</a>
                         </div>
                     </div>
                 </div>

@@ -34,23 +34,27 @@
             <!-- Search and filters -->
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="fas fa-search"></i>
-                        </span>
-                        <input type="text" 
-                               class="form-control" 
-                               placeholder="Search courses..." 
-                               id="searchCourse" 
-                               autocomplete="off">
-                    </div>
+                    <form id="searchForm" action="/admin/courses?tenant={{ tenant('id') }}" method="GET">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" 
+                                   class="form-control" 
+                                   placeholder="Search courses..." 
+                                   id="searchCourse"
+                                   name="search"
+                                   value="{{ request('search') }}"
+                                   autocomplete="off">
+                        </div>
                 </div>
                 <div class="col-md-6 text-end">
-                    <select class="form-select d-inline-block w-auto" id="statusFilter">
+                    <select class="form-select d-inline-block w-auto" id="statusFilter" name="status" onchange="document.getElementById('searchForm').submit()">
                         <option value="">All Status</option>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
+                        <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                        <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
                     </select>
+                    </form>
                 </div>
             </div>
 
@@ -68,7 +72,7 @@
                     <tbody>
                         @forelse($courses as $course)
                         <tr>
-                            <td>{{ $course->title }}</td>
+                            <td>{{ $course->name }}</td>
                             <td>{{ Str::limit($course->description, 50) }}</td>
                             <td>
                                 <span class="badge bg-{{ $course->status === 'active' ? 'success' : 'warning' }}">
@@ -114,12 +118,12 @@
                 <h5 class="modal-title">Add New Course</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('tenant.courses.store', ['tenant' => tenant('id')]) }}" method="POST">
+            <form action="/admin/courses?tenant={{ tenant('id') }}" method="POST">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Title</label>
-                        <input type="text" class="form-control" name="title" required>
+                        <input type="text" class="form-control" name="name" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
@@ -144,28 +148,17 @@
                 <h5 class="modal-title">Edit Course</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('tenant.courses.update', ['tenant' => tenant('id'), 'course' => $course->id]) }}" method="POST">
+            <form action="/admin/courses/{{ $course->id }}?tenant={{ tenant('id') }}" method="POST">
                 @csrf
                 @method('PUT')
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Title</label>
-                        <input type="text" class="form-control" name="title" value="{{ $course->title }}" required>
+                        <input type="text" class="form-control" name="name" value="{{ $course->name }}" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
                         <textarea class="form-control" name="description" rows="3">{{ $course->description }}</textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Instructor</label>
-                        <select class="form-select" name="staff_id" required>
-                            <option value="">Select Instructor</option>
-                            @foreach($instructors as $instructor)
-                                <option value="{{ $instructor->id }}" {{ $course->staff_id === $instructor->id ? 'selected' : '' }}>
-                                    {{ $instructor->name }}
-                                </option>
-                            @endforeach
-                        </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Status</label>
@@ -189,92 +182,45 @@
 <script>
 function deleteCourse(courseId) {
     if (confirm('Are you sure you want to delete this course?')) {
-        fetch(`/tenant/{{ tenant('id') }}/courses/${courseId}`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.location.reload();
-            }
-        });
+        // Create a form for proper CSRF token submission
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "/admin/courses/" + courseId + "?tenant={{ tenant('id') }}";
+        
+        // Add CSRF token
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = '_token';
+        csrfToken.value = '{{ csrf_token() }}';
+        form.appendChild(csrfToken);
+        
+        // Add method spoofing for DELETE request
+        const methodField = document.createElement('input');
+        methodField.type = 'hidden';
+        methodField.name = '_method';
+        methodField.value = 'DELETE';
+        form.appendChild(methodField);
+        
+        // Append form to body, submit it, and then remove it
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
     }
 }
 
 // Search and filter functionality
 document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.getElementById('searchForm');
     const searchInput = document.getElementById('searchCourse');
-    const statusFilter = document.getElementById('statusFilter');
     let searchTimeout;
-
-    function filterTable() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const selectedStatus = statusFilter.value.toLowerCase();
-        const tableRows = document.querySelectorAll('#folderContentsTable tbody tr, .table tbody tr');
-        let hasVisibleRows = false;
-
-        tableRows.forEach(row => {
-            if (row.classList.contains('no-results-row')) {
-                return; // Skip the no results message row
-            }
-
-            const cells = row.getElementsByTagName('td');
-            if (!cells.length) return; // Skip if no cells
-
-            const title = cells[0].textContent.toLowerCase();
-            const description = cells[1].textContent.toLowerCase();
-            const statusCell = cells[2].querySelector('.badge');
-            const status = statusCell ? statusCell.textContent.toLowerCase() : '';
-
-            const matchesSearch = !searchTerm || 
-                title.includes(searchTerm) || 
-                description.includes(searchTerm);
-
-            const matchesStatus = !selectedStatus || 
-                status.includes(selectedStatus);
-
-            if (matchesSearch && matchesStatus) {
-                row.style.display = '';
-                hasVisibleRows = true;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-
-        // Handle no results message
-        const tbody = document.querySelector('.table tbody');
-        let noResultsRow = tbody.querySelector('.no-results-row');
-
-        if (!hasVisibleRows) {
-            if (!noResultsRow) {
-                noResultsRow = document.createElement('tr');
-                noResultsRow.className = 'no-results-row';
-                noResultsRow.innerHTML = `<td colspan="4" class="text-center">
-                    No courses found ${searchTerm ? 'matching "' + searchTerm + '"' : ''} 
-                    ${selectedStatus ? 'with status "' + selectedStatus + '"' : ''}
-                </td>`;
-                tbody.appendChild(noResultsRow);
-            }
-        } else if (noResultsRow) {
-            noResultsRow.remove();
-        }
-    }
 
     // Handle search input with debounce
     searchInput.addEventListener('input', function() {
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(filterTable, 300);
+        searchTimeout = setTimeout(() => {
+            searchForm.submit();
+        }, 300);
     });
-
-    // Handle status filter change
-    statusFilter.addEventListener('change', filterTable);
-
-    // Initial filter (in case there are pre-selected values)
-    filterTable();
 });
 </script>
 @endpush

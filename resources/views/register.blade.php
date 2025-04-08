@@ -387,7 +387,7 @@
                         </div>
                     @endif
 
-                    <form method="post" action="{{ route('register.save') }}" id="registrationForm">
+                    <form method="post" action="{{ url('/register') }}" id="registrationForm">
                         @csrf
 
                         <div class="form-group">
@@ -465,10 +465,10 @@
                                 Create My Department
                             </button>
 
-                            <div class="text-center mt-2">
-                                <small>
-                                    Already have an account? <a href="{{ route('login') }}" class="login-link">Login</a>
-                                </small>
+                            <div class="col-md-12 mt-4 text-center">
+                                <p class="mb-0">
+                                    Already have an account? <a href="{{ url('/login') }}" class="login-link">Login</a>
+                                </p>
                             </div>
                         </div>
                     </form>

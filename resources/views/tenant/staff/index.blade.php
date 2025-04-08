@@ -36,24 +36,28 @@
                     <!-- Search and filters -->
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="fas fa-search"></i>
-                                </span>
-                                <input type="text" 
-                                       class="form-control" 
-                                       placeholder="Search staff..." 
-                                       id="searchStaff" 
-                                       autocomplete="off">
+                            <form id="searchForm" action="{{ route('tenant.staff.index', ['tenant' => tenant('id')]) }}" method="GET">
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           placeholder="Search staff..." 
+                                           id="searchStaff"
+                                           name="search"
+                                           value="{{ request('search') }}"
+                                           autocomplete="off">
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-6 text-end">
-                            <select class="form-select d-inline-block w-auto" id="roleFilter">
-                                <option value="">All Roles</option>
-                                <option value="instructor">Instructor</option>
-                                <option value="admin">Admin</option>
-                                <option value="staff">Staff</option>
-                            </select>
+                            <div class="col-md-6 text-end">
+                                <select class="form-select d-inline-block w-auto" id="roleFilter" name="role" onchange="document.getElementById('searchForm').submit()">
+                                    <option value="">All Roles</option>
+                                    <option value="instructor" {{ request('role') == 'instructor' ? 'selected' : '' }}>Instructor</option>
+                                    <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Admin</option>
+                                    <option value="staff" {{ request('role') == 'staff' ? 'selected' : '' }}>Staff</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -78,7 +82,7 @@
                                     <td>{{ $staff->name }}</td>
                                     <td>{{ $staff->email }}</td>
                                     <td>{{ ucfirst($staff->role) }}</td>
-                                    <td>{{ $staff->department->name ?? 'N/A' }}</td>
+                                    <td>{{ optional($staff->department)->name ?? 'N/A' }}</td>
                                     <td>
                                         <span class="badge bg-{{ $staff->status === 'active' ? 'success' : 'warning' }}">
                                             {{ ucfirst($staff->status) }}
@@ -105,10 +109,16 @@
                     <!-- Pagination -->
                     <div class="d-flex justify-content-between align-items-center mt-4">
                         <div class="text-muted">
-                            Showing {{ $staffMembers->firstItem() ?? 0 }} to {{ $staffMembers->lastItem() ?? 0 }} of {{ $staffMembers->total() }} entries
+                            @if ($staffMembers instanceof \Illuminate\Pagination\LengthAwarePaginator)
+                                Showing {{ $staffMembers->firstItem() ?? 0 }} to {{ $staffMembers->lastItem() ?? 0 }} of {{ $staffMembers->total() }} entries
+                            @else
+                                Showing {{ $staffMembers->count() }} entries
+                            @endif
                         </div>
                         <div>
-                            {{ $staffMembers->links() }}
+                            @if ($staffMembers instanceof \Illuminate\Pagination\LengthAwarePaginator)
+                                {{ $staffMembers->links() }}
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -202,13 +212,13 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Department</label>
-                        <select class="form-select" name="department_id" required>
-                            <option value="">Select Department</option>
-                            @foreach($departments ?? [] as $department)
-                                <option value="{{ $department->id }}" {{ $staff->department_id === $department->id ? 'selected' : '' }}>
-                                    {{ $department->name }}
-                                </option>
-                            @endforeach
+                        <input type="text" class="form-control" name="department" value="{{ optional($staff->department)->name ?? 'N/A' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" name="status" required>
+                            <option value="active" {{ $staff->status === 'active' ? 'selected' : '' }}>Active</option>
+                            <option value="inactive" {{ $staff->status === 'inactive' ? 'selected' : '' }}>Inactive</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -232,86 +242,73 @@
 
 @endsection
 
-@section('scripts')
-<script>
-    function deleteStaff(staffId) {
-        if (confirm('Are you sure you want to delete this staff member?')) {
-            fetch(`/tenant/{{ tenant('id') }}/admin/staff/${staffId}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.reload();
-                } else {
-                    alert('Error deleting staff member');
-                }
-            });
-        }
-    }
-</script>
-@endsection
-
 @push('scripts')
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-$(document).ready(function() {
-    // Live search functionality
-    $("#searchStaff").on("keyup", function() {
-        var value = $(this).val().toLowerCase();
-        $(".table tbody tr").filter(function() {
-            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+    // Delete staff function
+    function deleteStaff(staffId) {
+        if (confirm('Are you sure you want to delete this staff member?')) {
+            // Create a form for proper CSRF token submission
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{{ route('tenant.staff.destroy', ['tenant' => tenant('id'), 'staff' => ':staffId']) }}".replace(':staffId', staffId);
+            
+            // Add CSRF token
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '_token';
+            csrfToken.value = '{{ csrf_token() }}';
+            form.appendChild(csrfToken);
+            
+            // Add method spoofing for DELETE request
+            const methodField = document.createElement('input');
+            methodField.type = 'hidden';
+            methodField.name = '_method';
+            methodField.value = 'DELETE';
+            form.appendChild(methodField);
+            
+            // Append form to body, submit it, and then remove it
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        }
+    }
+
+    // Wait for document to be ready
+    $(document).ready(function() {
+        const searchForm = document.getElementById('searchForm');
+        const searchInput = document.getElementById('searchStaff');
+        let searchTimeout;
+
+        // Handle search input with debounce
+        $("#searchStaff").on("keyup", function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                searchForm.submit();
+            }, 300);
         });
         
-        // Show no results message if needed
-        if ($('.table tbody tr:visible').length === 0) {
-            if ($('.no-results').length === 0) {
-                $('.table tbody').append('<tr class="no-results"><td colspan="7" class="text-center">No matching results found</td></tr>');
-            }
-        } else {
-            $('.no-results').remove();
-        }
-    });
-    
-    // Role filter
-    $("#roleFilter").on("change", function() {
-        var selectedRole = $(this).val().toLowerCase();
-        
-        if (selectedRole === "") {
-            // Show all rows if no role is selected
-            $(".table tbody tr").show();
-        } else {
-            // Hide all rows first
-            $(".table tbody tr").hide();
+        // Proper form validation
+        $('form').on('submit', function(e) {
+            let isValid = true;
             
-            // Show only rows matching the selected role
-            $(".table tbody tr").filter(function() {
-                var roleText = $(this).find("td:eq(3)").text().toLowerCase();
-                return roleText.indexOf(selectedRole) > -1;
-            }).show();
-        }
-        
-        // Combine with text search
-        var searchText = $("#searchStaff").val().toLowerCase();
-        if (searchText !== "") {
-            $(".table tbody tr:visible").filter(function() {
-                $(this).toggle($(this).text().toLowerCase().indexOf(searchText) > -1);
+            // Check all required fields
+            $(this).find('input[required], select[required]').each(function() {
+                if ($(this).val() === '') {
+                    $(this).addClass('is-invalid');
+                    isValid = false;
+                } else {
+                    $(this).removeClass('is-invalid');
+                }
             });
-        }
-        
-        // Show no results message if needed
-        if ($('.table tbody tr:visible').length === 0) {
-            if ($('.no-results').length === 0) {
-                $('.table tbody').append('<tr class="no-results"><td colspan="7" class="text-center">No matching results found</td></tr>');
+            
+            // Prevent form submission if validation fails
+            if (!isValid) {
+                e.preventDefault();
+                // Focus on the first invalid field
+                $(this).find('.is-invalid').first().focus();
             }
-        } else {
-            $('.no-results').remove();
-        }
+        });
     });
-});
 </script>
 @endpush 

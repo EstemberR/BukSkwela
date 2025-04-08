@@ -803,11 +803,13 @@
     function loadFolder(folderId = null, page = 1) {
         console.log('Loading folder:', folderId);
         console.log('Current category:', currentCategory);
+        console.log('Current tenant ID:', '{{ tenant("id") }}');
         
         currentFolderId = folderId;
         
         $('#folderContentsTable tbody').html('<tr><td colspan="3" class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
         
+        // Use the Laravel route helper
         let url = "{{ route('tenant.admin.requirements.folder.contents', ['tenant' => tenant('id')]) }}";
         if (folderId) {
             url += "/" + encodeURIComponent(folderId);
@@ -832,12 +834,18 @@
                 console.log('Folder contents response:', response);
                 
                 if (response.success) {
-                    if (response.files && response.files.length > 0) {
-                        displayFolderContents(response.files, response.path);
+                    if (response.files && Array.isArray(response.files) && response.files.length > 0) {
+                        console.log('Found folders to display:', response.files.length);
+                        displayFolderContents(response.files, response.path || []);
                         
-                        // Update pagination info
+                        // Update pagination info - check if pagination exists first
+                        if (response.pagination) {
                         const pagination = response.pagination;
-                        $('.pagination-info').html(`Showing ${pagination.from} to ${pagination.to} of ${pagination.total} entries`);
+                            const from = pagination.from || 0;
+                            const to = pagination.to || 0;
+                            const total = pagination.total || 0;
+                            
+                            $('.pagination-info').html(`Showing ${from} to ${to} of ${total} entries`);
                         
                         // Generate pagination links
                         let paginationHtml = '';
@@ -879,18 +887,35 @@
                         // Update pagination container
                         $('.pagination-container').html(paginationHtml);
                     } else {
+                            // No pagination data
+                            $('.pagination-info').html('Showing 0 to 0 of 0 entries');
+                            $('.pagination-container').empty();
+                        }
+                    } else {
+                        console.log('No folders found in response or files array is empty/invalid');
                         $('#folderContentsTable tbody').html('<tr><td colspan="3" class="text-center">No folders found in this category. Create a new folder to get started.</td></tr>');
                         $('.pagination-info').html('Showing 0 to 0 of 0 entries');
                         $('.pagination-container').empty();
                     }
                 } else {
+                    console.error('Error in response - success flag is false:', response.message);
                     $('#folderContentsTable tbody').html('<tr><td colspan="3" class="text-center text-danger">' + (response.message || 'Failed to load folder contents') + '</td></tr>');
-                    console.error('Error loading folder:', response.message);
+                    $('.pagination-info').html('Showing 0 to 0 of 0 entries');
+                    $('.pagination-container').empty();
                 }
             },
             error: function(xhr, status, error) {
-                console.error('AJAX error:', xhr.responseText);
-                $('#folderContentsTable tbody').html('<tr><td colspan="3" class="text-center text-danger">Failed to load folder contents. Please try again.</td></tr>');
+                console.error('AJAX error:', xhr.status, error);
+                console.error('Response text:', xhr.responseText);
+                try {
+                    const errorResponse = JSON.parse(xhr.responseText);
+                    console.error('Parsed error response:', errorResponse);
+                } catch (e) {
+                    console.error('Failed to parse error response');
+                }
+                $('#folderContentsTable tbody').html('<tr><td colspan="3" class="text-center text-danger">Failed to load folder contents. Please try again. Error: ' + error + '</td></tr>');
+                $('.pagination-info').html('Showing 0 to 0 of 0 entries');
+                $('.pagination-container').empty();
             }
         });
     }
@@ -920,10 +945,13 @@
 
     function loadFolderContents(folderId) {
         console.log('Loading folder contents for modal:', folderId);
+        
+        // Use the Laravel route helper
         let url = "{{ route('tenant.admin.requirements.folder.contents', ['tenant' => tenant('id')]) }}";
         if (folderId) {
             url += "/" + encodeURIComponent(folderId);
         }
+        
         // Add category parameter to the URL
         url += (url.includes('?') ? '&' : '?') + 'category=' + encodeURIComponent(currentCategory);
 
@@ -939,8 +967,14 @@
             success: function(response) {
                 console.log('Modal folder contents response:', response);
                 if (response.success) {
-                    console.log('Files to display:', response.files);
+                    // Check if files is a valid array
+                    if (response.files && Array.isArray(response.files)) {
+                        console.log('Files to display:', response.files.length);
                     displayModalContents(response.files);
+                    } else {
+                        console.error('Invalid or missing files array in response:', response);
+                        $('#modalFileContents').html('<div class="col-12 text-center text-warning">No files found or invalid data format</div>');
+                    }
                 } else {
                     console.error('Error loading folder contents:', response.message);
                     $('#modalFileContents').html('<div class="col-12 text-center text-danger">' + (response.message || 'Failed to load contents') + '</div>');
@@ -962,9 +996,62 @@
             return;
         }
 
+        // Get current tenant ID
+        const currentTenantId = '{{ tenant("id") }}';
+        
+        // Filter out folders and only include files belonging to the current tenant
         const filesList = files.filter(file => {
-            console.log('Checking file:', file.name, 'Type:', file.mimeType);
-            return file.mimeType !== 'application/vnd.google-apps.folder';
+            // Skip folders, we only want files
+            if (file.mimeType === 'application/vnd.google-apps.folder') return false;
+            
+            // If the file has no name, skip it
+            if (!file.name) {
+                console.warn('File has no name property:', file);
+                return false;
+            }
+            
+            // Check if file belongs to current tenant
+            let isTenantMatch = false;
+            
+            // First try exact prefix match
+            if (file.name.startsWith(`[${currentTenantId}]`)) {
+                isTenantMatch = true;
+            } else if (file.name.startsWith('[')) {
+                // Extract the tenant ID for comparison
+                const tenantMatch = file.name.match(/^\[([^\]]+)\]/);
+                const fileTenantId = tenantMatch ? tenantMatch[1] : null;
+                
+                if (fileTenantId) {
+                    // Normalize both tenant IDs for comparison
+                    const normalizedFileTenantId = fileTenantId.toLowerCase().trim();
+                    const normalizedCurrentTenantId = currentTenantId.toLowerCase().trim();
+                    
+                    // Check if normalized versions match or one contains the other
+                    isTenantMatch = normalizedFileTenantId === normalizedCurrentTenantId || 
+                        normalizedFileTenantId.includes(normalizedCurrentTenantId) || 
+                        normalizedCurrentTenantId.includes(normalizedFileTenantId);
+                        
+                    console.log('File tenant ID check:', {
+                        filename: file.name,
+                        fileTenantId,
+                        currentTenantId,
+                        normalizedFileTenantId,
+                        normalizedCurrentTenantId,
+                        isTenantMatch
+                    });
+                }
+            } else {
+                // For files without tenant prefix, include them
+                isTenantMatch = true;
+            }
+            
+            // Skip files that don't belong to this tenant
+            if (!isTenantMatch) {
+                console.log('Skipping file, tenant mismatch:', file.name);
+                return false;
+            }
+            
+            return true;
         });
         
         console.log('Filtered files list:', filesList);
@@ -1006,8 +1093,8 @@
                                     <a href="${file.webViewLink}" target="_blank" class="btn btn-sm btn-outline-primary me-2">
                                         <i class="fas fa-external-link-alt"></i> Open
                                     </a>
-                                    <button class="btn btn-sm btn-outline-danger delete-file" data-file-id="${file.id}" data-file-name="${name}">
-                                        <i class="fas fa-trash"></i> Delete
+                                    <button class="btn btn-sm btn-secondary" disabled title="Delete functionality not available">
+                                        <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
                             </div>
@@ -1019,40 +1106,159 @@
     }
 
     function displayFolderContents(files, path) {
-        console.log('Displaying folder contents:', { files, path });
+        console.log('Displaying folder contents, received files:', files.length);
+        
+        // Check if path is valid
+        if (!path || !Array.isArray(path)) {
+            console.warn('Invalid path data received:', path);
+            path = [];
+        }
         
         updateBreadcrumbs(path);
 
+        // Sort files (folders first, then alphabetical)
+        try {
         files.sort((a, b) => {
             const aIsFolder = a.mimeType === 'application/vnd.google-apps.folder';
             const bIsFolder = b.mimeType === 'application/vnd.google-apps.folder';
             
             if (aIsFolder && !bIsFolder) return -1;
             if (!aIsFolder && bIsFolder) return 1;
-            return a.name.localeCompare(b.name);
-        });
+                
+                // Use name as a fallback if it exists
+                const aName = a.name || '';
+                const bName = b.name || '';
+                return aName.localeCompare(bName);
+            });
+        } catch (error) {
+            console.error('Error sorting files:', error);
+        }
 
         let foldersBody = $('#folderContentsTable tbody');
         foldersBody.empty();
 
-        // Filter folders only and by category
-        const folders = files.filter(file => {
-            if (file.mimeType !== 'application/vnd.google-apps.folder') return false;
+        // Get current tenant ID
+        const currentTenantId = '{{ tenant("id") }}';
+        console.log('Current tenant ID for filtering:', currentTenantId);
+        
+        // Log each folder before filtering
+        console.log('All folders before filtering:');
+        files.forEach((file, index) => {
+            if (file && file.mimeType === 'application/vnd.google-apps.folder') {
+                console.log(`Folder ${index}: ${file.name}`);
+            }
+        });
+
+        // Filter folders by tenant ID and category
+        try {
+            var folders = files.filter(file => {
+                // Validate file object
+                if (!file || typeof file !== 'object') {
+                    console.warn('Invalid file object in files array:', file);
+                    return false;
+                }
+                
+                // Check if it's a folder
+                if (!file.mimeType || file.mimeType !== 'application/vnd.google-apps.folder') {
+                    return false;
+                }
+                
+                // Check if name exists
+                if (!file.name) {
+                    console.warn('File has no name property:', file);
+                    return false;
+                }
+                
+                console.log('Checking folder:', file.name);
+                
+                // Check if folder belongs to current tenant
+                const tenantMatch = file.name.match(/^\[([^\]]+)\]/);
+                const folderTenantId = tenantMatch ? tenantMatch[1] : null;
+                
+                // Try to normalize tenant IDs for comparison
+                const normalizedFolderTenantId = folderTenantId ? folderTenantId.toLowerCase().trim() : null;
+                const normalizedCurrentTenantId = currentTenantId ? currentTenantId.toLowerCase().trim() : null;
+                
+                // Log this check for debugging
+                console.log('Tenant check for folder:', { 
+                    folderName: file.name,
+                    tenantMatch: tenantMatch ? tenantMatch[0] : null,
+                    folderTenantId: folderTenantId,
+                    normalizedFolderTenantId: normalizedFolderTenantId,
+                    currentTenantId: currentTenantId,
+                    normalizedCurrentTenantId: normalizedCurrentTenantId,
+                    exactMatch: folderTenantId === currentTenantId,
+                    normalizedMatch: normalizedFolderTenantId === normalizedCurrentTenantId
+                });
+                
+                // Check for an exact match first
+                let isTenantMatch = folderTenantId === currentTenantId;
+                
+                // If no exact match, try normalized comparison
+                if (!isTenantMatch && normalizedFolderTenantId && normalizedCurrentTenantId) {
+                    isTenantMatch = normalizedFolderTenantId === normalizedCurrentTenantId;
+                    
+                    if (isTenantMatch) {
+                        console.log('Found match using normalized tenant IDs');
+                    }
+                    
+                    // If still no match, check if one contains the other (for partial matches)
+                    if (!isTenantMatch && (
+                        normalizedFolderTenantId.includes(normalizedCurrentTenantId) || 
+                        normalizedCurrentTenantId.includes(normalizedFolderTenantId)
+                    )) {
+                        isTenantMatch = true;
+                        console.log('Found partial tenant ID match');
+                    }
+                }
+                
+                // Skip folders that don't belong to this tenant
+                if (!isTenantMatch) {
+                    console.log('Skipping folder, tenant mismatch:', file.name, folderTenantId, currentTenantId);
+                    return false;
+                }
             
             // Extract category from folder name
             const categoryMatch = file.name.match(/\[(Regular|Irregular|Probation)\]/);
             const folderCategory = categoryMatch ? categoryMatch[1] : 'Regular';
             
             // Only show folders matching current category
-            return folderCategory === currentCategory;
-        });
+                const categoryMatches = folderCategory === currentCategory;
+                console.log('Category check:', { 
+                    folderCategory: folderCategory, 
+                    currentCategory: currentCategory,
+                    matches: categoryMatches
+                });
+                
+                const shouldInclude = categoryMatches;
+                console.log(`Final decision for ${file.name}: ${shouldInclude ? 'INCLUDE' : 'EXCLUDE'}`);
+                
+                return shouldInclude;
+            });
+            
+            console.log('Filtered folders for display:', folders.length);
+            
+            // Log folders after filtering
+            if (folders.length > 0) {
+                console.log('Folders that passed filtering:');
+                folders.forEach((folder, index) => {
+                    console.log(`Folder ${index}: ${folder.name}`);
+                });
+            } else {
+                console.log('No folders passed the filtering');
+            }
+        } catch (error) {
+            console.error('Error filtering folders:', error);
+            folders = [];
+        }
 
         if (!folders || folders.length === 0) {
-            foldersBody.html('<tr><td colspan="3" class="text-center">No folders found</td></tr>');
+            foldersBody.html('<tr><td colspan="3" class="text-center">No folders found matching the current filters</td></tr>');
             return;
         }
 
         folders.forEach(folder => {
+            try {
             // Remove tenant prefix, category, and timestamp from display name
             const displayName = folder.name
                 .replace(/^\[[^\]]+\]\s*/, '') // Remove tenant prefix
@@ -1078,6 +1284,9 @@
             row += '</tr>';
             
             foldersBody.append(row);
+            } catch (error) {
+                console.error('Error rendering folder row:', error, folder);
+            }
         });
     }
 
@@ -1258,8 +1467,7 @@ function displayFirstFolderFiles(files) {
             <td>${formatFileSize(file.size)}</td>
             <td>${new Date(file.lastModified).toLocaleString()}</td>
             <td class="text-center">
-
-                <button class="btn btn-sm btn-danger" onclick="deleteFile('${file.id}')">
+                <button class="btn btn-sm btn-secondary" disabled title="Delete functionality not available">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
@@ -1278,8 +1486,15 @@ function deleteFile(fileId) {
         confirmButtonColor: '#dc3545'
     }).then((result) => {
         if (result.isConfirmed) {
-            const url = '{{ route("tenant.admin.requirements.files.delete", ["tenant" => tenant("id"), "fileId" => "__id__"]) }}'.replace('__id__', fileId);
-            fetch(url, {
+            const url = '#'; // Delete functionality not implemented
+            Swal.fire({
+                icon: 'info',
+                title: 'Feature Not Available',
+                text: 'The delete functionality has not been integrated yet.'
+            });
+            return;
+            // Delete code below is commented out since it's not implemented yet
+            /*fetch(url, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1311,7 +1526,7 @@ function deleteFile(fileId) {
                     title: 'Error',
                     text: error.message || 'Failed to delete file'
                 });
-            });
+            });*/
         }
     });
 }
@@ -1421,7 +1636,12 @@ function setupModalFileUploadHandler() {
             uploadBtn.disabled = true;
             uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
 
-            const response = await fetch('{{ route("tenant.admin.requirements.file.upload", ["tenant" => tenant("id")]) }}', {
+            // Use the Laravel route helper with the folderId parameter
+            const uploadUrl = "{{ route('tenant.admin.requirements.folder.upload', ['tenant' => tenant('id'), 'folderId' => '__FOLDER_ID__']) }}".replace('__FOLDER_ID__', folderId);
+
+            console.log('Uploading file to:', uploadUrl);
+
+            const response = await fetch(uploadUrl, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',

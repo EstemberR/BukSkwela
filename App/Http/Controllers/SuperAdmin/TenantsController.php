@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\TenantApproved;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class TenantsController extends Controller
 {
@@ -55,35 +58,58 @@ class TenantsController extends Controller
             
             // Automatically set up and migrate the tenant database
             try {
-                \Log::info("Auto-setting up database for newly approved tenant: {$tenant->id}");
+                Log::info("Auto-setting up database for newly approved tenant: {$tenant->id}");
                 
                 // First set up the database (creates DB and user credentials)
                 \Artisan::call('db:setup-tenant', [
                     'tenant' => $tenant->id
                 ]);
-                \Log::info("Database setup response: " . \Artisan::output());
+                Log::info("Database setup response: " . \Artisan::output());
                 
                 // Run migrations to create tables
                 \Artisan::call('tenant:direct-migrate', [
                     'database' => 'tenant_' . $tenant->id
                 ]);
-                \Log::info("Migration response: " . \Artisan::output());
+                Log::info("Migration response: " . \Artisan::output());
                 
-                \Log::info("Tenant database auto-setup complete for tenant: {$tenant->id}");
+                // Fix the staff table structure to ensure it's correct
+                \Artisan::call('tenant:fix-staff', [
+                    'tenant' => $tenant->id,
+                    '--force' => true
+                ]);
+                Log::info("Staff table fix response: " . \Artisan::output());
+                
+                Log::info("Tenant database auto-setup complete for tenant: {$tenant->id}");
             } catch (\Exception $e) {
-                \Log::error("Error auto-setting up database for approved tenant: " . $e->getMessage());
+                Log::error("Error auto-setting up database for approved tenant: " . $e->getMessage());
                 // We continue even if database setup fails
                 // The admin can manually set up the database later
             }
             
+            // Send approval email to tenant
+            try {
+                if ($tenant->tenant_email) {
+                    Mail::to($tenant->tenant_email)->send(new TenantApproved($tenant));
+                    Log::info("Approval email sent to tenant: {$tenant->id} at {$tenant->tenant_email}");
+                } else {
+                    Log::warning("Could not send approval email to tenant {$tenant->id} - no email address available");
+                }
+            } catch (\Exception $e) {
+                Log::error("Failed to send tenant approval email: " . $e->getMessage(), [
+                    'tenant_id' => $tenant->id,
+                    'email' => $tenant->tenant_email
+                ]);
+                // Continue even if email sending fails
+            }
+            
             // Log the status change
-            \Log::info('Tenant approved: ' . $id, ['tenant_id' => $id, 'status' => $tenant->status]);
+            Log::info('Tenant approved: ' . $id, ['tenant_id' => $id, 'status' => $tenant->status]);
             
             return redirect()->route('superadmin.tenants.index')
-                ->with('success', 'Tenant approved successfully. Database was automatically set up.')
+                ->with('success', 'Tenant approved successfully. Database was automatically set up and approval email was sent.')
                 ->with('tab', 'active');
         } catch(\Exception $e) {
-            \Log::error('Failed to approve tenant: ' . $e->getMessage(), ['tenant_id' => $id]);
+            Log::error('Failed to approve tenant: ' . $e->getMessage(), ['tenant_id' => $id]);
             return redirect()->route('superadmin.tenants.index')
                 ->with('error', 'Failed to approve tenant: ' . $e->getMessage());
         }
@@ -247,7 +273,7 @@ class TenantsController extends Controller
             $tenant->refresh();
             
             // Log the subscription change
-            \Log::info('Tenant subscription updated: ' . $id, [
+            Log::info('Tenant subscription updated: ' . $id, [
                 'tenant_id' => $id, 
                 'old_plan' => $oldPlan,
                 'new_plan' => $request->subscription_plan
@@ -256,7 +282,7 @@ class TenantsController extends Controller
             return redirect()->route('superadmin.tenants.show', $tenant->id)
                 ->with('success', 'Tenant subscription updated to ' . ucfirst($request->subscription_plan) . ' successfully.');
         } catch(\Exception $e) {
-            \Log::error('Failed to update tenant subscription: ' . $e->getMessage(), ['tenant_id' => $id]);
+            Log::error('Failed to update tenant subscription: ' . $e->getMessage(), ['tenant_id' => $id]);
             return redirect()->route('superadmin.tenants.show', $id)
                 ->with('error', 'Failed to update tenant subscription: ' . $e->getMessage());
         }

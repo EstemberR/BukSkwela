@@ -15,6 +15,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\TenantRegistrationController;
 use App\Http\Controllers\Requirements\RequirementsController;
+use App\Http\Controllers\Requirement\RequirementController;
 use Illuminate\Support\Facades\Route;
 use Google\Client;
 use App\Http\Controllers\SuperAdmin\PaymentController;

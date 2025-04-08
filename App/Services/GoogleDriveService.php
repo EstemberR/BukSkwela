@@ -503,7 +503,7 @@ class GoogleDriveService
             }
         }
     }
-    public function uploadFile($file, $folderId = null)
+    public function uploadFile($file, $folderId = null, $customFilename = null)
     {
         try {
             // Validate file
@@ -532,14 +532,18 @@ class GoogleDriveService
                 }
             }
 
+            // Use custom filename if provided, otherwise use original filename
+            $filename = $customFilename ?: $file->getClientOriginalName();
+
             // Prepare file metadata
             $fileMetadata = new DriveFile([
-                'name' => $file->getClientOriginalName(),
+                'name' => $filename,
                 'parents' => [$folderId ?: $this->rootFolderId]
             ]);
 
             Log::info('Starting file upload', [
-                'filename' => $file->getClientOriginalName(),
+                'filename' => $filename,
+                'original_filename' => $file->getClientOriginalName(),
                 'size' => $file->getSize(),
                 'mime_type' => $file->getMimeType(),
                 'folder_id' => $folderId ?: $this->rootFolderId

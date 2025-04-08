@@ -134,17 +134,24 @@ Route::prefix('courses')->name('courses.')->group(function () {
 
 Route::middleware(['web', 'tenant'])->group(function () {
     // Admin routes
-    Route::prefix('admin')->name('tenant.admin.')->group(function () {
+    Route::prefix('admin')->name('tenant.admin.')->middleware(['auth:admin'])->group(function () {
         // Requirements management routes
         Route::prefix('requirements')->name('requirements.')->group(function () {
-            Route::get('/', 'RequirementsController@index')->name('index');
-            Route::post('/folder/create', 'RequirementsController@createFolder')->name('folder.create');
-            Route::post('/folder/{folderId}/rename', 'RequirementsController@renameFolder')->name('folder.rename');
-            Route::delete('/folder/{folderId}', 'RequirementsController@deleteFolder')->name('folder.delete');
-            Route::get('/folder/{folderId?}', 'RequirementsController@listFolderContents')->name('folder.contents');
-            Route::post('/folder/{folderId}/upload', 'RequirementsController@uploadFile')->name('folder.upload');
-            Route::get('/file/{fileId}/download', 'RequirementsController@downloadFile')->name('file.download');
-            Route::delete('/file/{fileId}', 'RequirementsController@deleteFile')->name('file.delete');
+            try {
+                Route::get('/', [\App\Http\Controllers\Requirements\RequirementsController::class, 'index'])->name('index')->middleware('auth:admin');
+                Route::post('/folder/create', [\App\Http\Controllers\Requirements\RequirementsController::class, 'createFolder'])->name('folder.create')->middleware('auth:admin');
+                Route::post('/folder/{folderId}/rename', [\App\Http\Controllers\Requirements\RequirementsController::class, 'renameFolder'])->name('folder.rename')->middleware('auth:admin');
+                Route::delete('/folder/{folderId}', [\App\Http\Controllers\Requirements\RequirementsController::class, 'deleteFolder'])->name('folder.delete')->middleware('auth:admin');
+                Route::get('/folder/{folderId?}', [\App\Http\Controllers\Requirements\RequirementsController::class, 'listFolderContents'])->name('folder.contents')->middleware('auth:admin');
+                Route::post('/folder/{folderId}/upload', [\App\Http\Controllers\Requirements\RequirementsController::class, 'uploadFile'])->name('folder.upload')->middleware('auth:admin');
+                Route::get('/file/{fileId}/download', [\App\Http\Controllers\Requirements\RequirementsController::class, 'downloadFile'])->name('file.download')->middleware('auth:admin');
+                Route::delete('/file/{fileId}', [\App\Http\Controllers\Requirements\RequirementsController::class, 'deleteFile'])->name('file.delete')->middleware('auth:admin');
+            } catch (\Exception $e) {
+                \Log::error('Requirements routes error', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
         });
     });
 });

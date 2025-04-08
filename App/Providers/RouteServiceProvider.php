@@ -33,7 +33,6 @@ class RouteServiceProvider extends ServiceProvider
     {
         Route::bind('student', function ($value) {
             return \App\Models\Student\Student::where('id', $value)
-                ->where('tenant_id', tenant('id'))
                 ->firstOrFail();
         });
 
@@ -85,7 +84,6 @@ class RouteServiceProvider extends ServiceProvider
     {
         Route::middleware(['web'])
              ->namespace($this->namespace)
-             ->domain('{tenant}.' . env('CENTRAL_DOMAIN'))
              ->group(base_path('routes/tenant.php'));
     }
 }

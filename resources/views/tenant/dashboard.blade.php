@@ -143,7 +143,7 @@
                                 </div>
                                 <div class="user__content">
                                     <div class="text">
-                                        <span class="name" style="font-size: 0.85em;">{{ $course->title }}</span>
+                                        <span class="name" style="font-size: 0.85em;">{{ $course->name }}</span>
                                         <div class="d-flex align-items-center gap-2" style="font-size: 0.75em; margin: 0;">
                                             <span class="badge bg-{{ $course->status === 'active' ? 'success' : 'secondary' }} rounded-pill" style="font-size: 0.65em; padding: 0.25em 0.5em;">
                                                 {{ ucfirst($course->status) }}

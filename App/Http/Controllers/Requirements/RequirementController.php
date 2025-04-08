@@ -25,7 +25,6 @@ class RequirementController extends Controller
         $students = Student::with(['requirements' => function ($query) {
             $query->withPivot(['status', 'file_path', 'remarks']);
         }])
-        ->where('tenant_id', tenant('id'))
         ->get()
         ->groupBy('status'); // Group by student status (Probation, Irregular, Regular)
 

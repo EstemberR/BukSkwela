@@ -1,4 +1,3 @@
-
 @extends('tenant.layouts.app')
 
 @section('title', 'Department Dashboard')
@@ -125,7 +124,7 @@
                             </div>
                         @endforelse
                     </div>
-                    <a class="more" href="{{ route('tenant.students.index', ['tenant' => tenant('id')]) }}" style="font-size: 0.85em;">See more</a>
+                    <a class="more" href="{{ route('tenant.students.index') }}" style="font-size: 0.85em;">See more</a>
                 </div>
 
                 <!-- Available Courses Section -->
@@ -143,7 +142,7 @@
                                 </div>
                                 <div class="user__content">
                                     <div class="text">
-                                        <span class="name" style="font-size: 0.85em;">{{ $course->title }}</span>
+                                        <span class="name" style="font-size: 0.85em;">{{ $course->name }}</span>
                                         <div class="d-flex align-items-center gap-2" style="font-size: 0.75em; margin: 0;">
                                             <span class="badge bg-{{ $course->status === 'active' ? 'success' : 'secondary' }} rounded-pill" style="font-size: 0.65em; padding: 0.25em 0.5em;">
                                                 {{ ucfirst($course->status) }}
@@ -152,7 +151,7 @@
                                     </div>
                                     <div style="margin-left: auto; text-align: right;">
                                         <span class="badge bg-info rounded-pill">
-                                            <i class="fas fa-users fa-xs me-1"></i>{{ $course->students_count }}
+                                            <i class="fas fa-users fa-xs me-1"></i>{{ $course->students_count ?? 0 }}
                                         </span>
                                     </div>
                                 </div>
@@ -163,7 +162,7 @@
                             </div>
                         @endforelse
                     </div>
-                    <a class="more" href="{{ route('tenant.courses.index', ['tenant' => tenant('id')]) }}" style="font-size: 0.85em;">See more</a>
+                    <a class="more" href="{{ route('tenant.courses.index') }}" style="font-size: 0.85em;">See more</a>
                 </div>
 
                 <!-- Requirements Submitted Graph -->
@@ -202,7 +201,7 @@
                 <h5 class="modal-title">Add New Requirement</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('tenant.requirements.store', ['tenant' => tenant('id')]) }}" method="POST">
+            <form action="{{ route('tenant.requirements.store') }}" method="POST">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
@@ -275,7 +274,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 function viewRequirements(studentId) {
-    fetch(`/tenant/{{ tenant('id') }}/admin/students/${studentId}/requirements`)
+    fetch(`/admin/students/${studentId}/requirements`)
         .then(response => response.json())
         .then(data => {
             let html = '<div class="list-group">';
@@ -311,7 +310,7 @@ function updateStatus(studentRequirementId, status) {
     const remarks = status === 'rejected' ? prompt('Please enter rejection remarks:') : null;
     if (status === 'rejected' && !remarks) return;
 
-    fetch(`/tenant/{{ tenant('id') }}/admin/student-requirements/${studentRequirementId}/status`, {
+    fetch(`/admin/student-requirements/${studentRequirementId}/status`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',

@@ -27,7 +27,7 @@
                     <!-- Search and filters -->
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <form id="searchForm" action="{{ route('tenant.students.index', ['tenant' => tenant('id')]) }}" method="GET">
+                            <form id="searchForm" action="{{ route('tenant.students.index') }}" method="GET">
                                 <div class="input-group">
                                     <span class="input-group-text">
                                         <i class="fas fa-search"></i>
@@ -43,11 +43,11 @@
                             </form>
                         </div>
                         <div class="col-md-6 text-end">
-                            <select class="form-select d-inline-block w-auto" id="courseFilter" name="course_id">
+                            <select class="form-select d-inline-block w-auto" id="courseFilter" name="course_id" onchange="document.getElementById('searchForm').submit()">
                                 <option value="">All Courses</option>
                                 @foreach($courses ?? [] as $course)
                                     <option value="{{ $course->id }}" {{ request('course_id') == $course->id ? 'selected' : '' }}>
-                                        {{ $course->title }}
+                                        {{ $course->name }}
                                     </option>
                                 @endforeach
                             </select>
@@ -72,7 +72,7 @@
                                 <tr data-student-id="{{ $student->id }}">
                                     <td>{{ $student->student_id }}</td>
                                     <td>{{ $student->name }}</td>
-                                    <td>{{ $student->course->title ?? 'N/A' }}</td>
+                                    <td>{{ $student->course->name ?? 'N/A' }}</td>
                                     <td>{{ $student->email }}</td>
                                     <td>
                                         <span class="badge bg-{{ $student->status === 'active' ? 'success' : 'warning' }}">
@@ -89,7 +89,7 @@
                                         
                                         <!-- Hidden Delete Form -->
                                         <form id="delete-form-{{ $student->id }}" 
-                                              action="{{ route('tenant.students.delete.direct.post', ['tenant' => tenant('id'), 'id' => $student->id]) }}" 
+                                              action="{{ route('tenant.students.delete.direct.post', ['id' => $student->id]) }}" 
                                               method="POST" 
                                               style="display: none;">
                                             @csrf
@@ -128,7 +128,7 @@
                 <h5 class="modal-title">Add New Student</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('tenant.students.store.direct', ['tenant' => tenant('id')]) }}" method="POST">
+            <form action="{{ route('tenant.students.store.direct') }}" method="POST">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
@@ -148,7 +148,7 @@
                         <select class="form-select" name="course_id" required>
                             <option value="">Select Course</option>
                             @foreach($courses ?? [] as $course)
-                                <option value="{{ $course->id }}">{{ $course->title }}</option>
+                                <option value="{{ $course->id }}">{{ $course->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -174,7 +174,7 @@
                 <h5 class="modal-title">Edit Student</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ url('/admin/students/update-direct/' . $student->id) }}" method="POST">
+            <form action="{{ route('tenant.students.update.direct', ['id' => $student->id]) }}" method="POST">
                 @csrf
                 <!-- Hidden ID field to ensure we're editing the right record -->
                 <input type="hidden" name="student_db_id" value="{{ $student->id }}">
@@ -197,9 +197,16 @@
                             <option value="">Select Course</option>
                             @foreach($courses ?? [] as $course)
                                 <option value="{{ $course->id }}" {{ $student->course_id == $course->id ? 'selected' : '' }}>
-                                    {{ $course->title }}
+                                    {{ $course->name }}
                                 </option>
                             @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" name="status" required>
+                            <option value="active" {{ $student->status === 'active' ? 'selected' : '' }}>Active</option>
+                            <option value="inactive" {{ $student->status === 'inactive' ? 'selected' : '' }}>Inactive</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -364,33 +371,8 @@
                     }
                 });
                 
-                // Create a temporary form to submit
-                const form = document.createElement('form');
-                form.method = 'POST';
-                
-                // Use the simple endpoint that doesn't need ID in URL
-                const deleteUrl = '/admin/students/delete-simple';
-                
-                // Create the full URL - this is key to making it work
-                form.action = deleteUrl;
-                
-                // Add CSRF token
-                const csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = '_token';
-                csrfInput.value = document.querySelector('meta[name="csrf-token"]').content;
-                form.appendChild(csrfInput);
-                
-                // Add an explicit student ID field
-                const idInput = document.createElement('input');
-                idInput.type = 'hidden';
-                idInput.name = 'student_id';
-                idInput.value = studentId;
-                form.appendChild(idInput);
-                
-                // Add to body, submit, then remove
-                document.body.appendChild(form);
-                form.submit();
+                // Submit the delete form that's already defined for this student
+                document.getElementById(`delete-form-${studentId}`).submit();
             }
         });
     }
@@ -399,7 +381,6 @@
     document.addEventListener('DOMContentLoaded', function() {
         const searchForm = document.getElementById('searchForm');
         const searchInput = document.getElementById('searchStudent');
-        const courseFilter = document.getElementById('courseFilter');
         let searchTimeout;
 
         // Handle search input with shorter debounce
@@ -408,13 +389,6 @@
             searchTimeout = setTimeout(() => {
                 searchForm.submit();
             }, 300); // Reduced to 300ms for faster response
-        });
-
-        // Handle course filter change
-        courseFilter.addEventListener('change', function() {
-            const url = new URL(window.location.href);
-            url.searchParams.set('course_id', this.value);
-            window.location.href = url.toString();
         });
     });
 </script>
