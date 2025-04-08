@@ -34,7 +34,8 @@
             <!-- Search and filters -->
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <form id="searchForm" action="/admin/courses?tenant={{ tenant('id') }}" method="GET">
+                    <form id="searchForm" action="/admin/courses" method="GET">
+                        <input type="hidden" name="tenant" value="{{ tenant('id') }}">
                         <div class="input-group">
                             <span class="input-group-text">
                                 <i class="fas fa-search"></i>
@@ -118,7 +119,7 @@
                 <h5 class="modal-title">Add New Course</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="/admin/courses?tenant={{ tenant('id') }}" method="POST">
+            <form action="{{ route('tenant.courses.store', ['tenant' => tenant('id')]) }}" method="POST">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
@@ -148,9 +149,8 @@
                 <h5 class="modal-title">Edit Course</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="/admin/courses/{{ $course->id }}?tenant={{ tenant('id') }}" method="POST">
+            <form action="/admin/courses/update-direct/{{ $course->id }}?tenant={{ tenant('id') }}" method="POST">
                 @csrf
-                @method('PUT')
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Title</label>
@@ -178,33 +178,59 @@
 </div>
 @endforeach
 
+<!-- Cannot Delete Course Modal -->
+<div class="modal fade" id="cannotDeleteCourseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Cannot Delete Course</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-exclamation-triangle text-warning fa-4x"></i>
+                </div>
+                <p id="cannotDeleteMessage" class="text-center"></p>
+                <p class="text-center mt-3">Please reassign these students to another course before deleting.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="{{ route('tenant.students.index', ['tenant' => tenant('id')]) }}" class="btn btn-primary">
+                    <i class="fas fa-users me-1"></i> Manage Students
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
 function deleteCourse(courseId) {
     if (confirm('Are you sure you want to delete this course?')) {
-        // Create a form for proper CSRF token submission
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = "/admin/courses/" + courseId + "?tenant={{ tenant('id') }}";
-        
-        // Add CSRF token
-        const csrfToken = document.createElement('input');
-        csrfToken.type = 'hidden';
-        csrfToken.name = '_token';
-        csrfToken.value = '{{ csrf_token() }}';
-        form.appendChild(csrfToken);
-        
-        // Add method spoofing for DELETE request
-        const methodField = document.createElement('input');
-        methodField.type = 'hidden';
-        methodField.name = '_method';
-        methodField.value = 'DELETE';
-        form.appendChild(methodField);
-        
-        // Append form to body, submit it, and then remove it
-        document.body.appendChild(form);
-        form.submit();
-        document.body.removeChild(form);
+        // Create a fetch request to check for enrolled students first
+        fetch(`/admin/courses/delete-direct/${courseId}?tenant={{ tenant('id') }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Course was deleted successfully, reload the page
+                window.location.reload();
+            } else {
+                // Show the modal with the error message
+                document.getElementById('cannotDeleteMessage').textContent = data.message;
+                new bootstrap.Modal(document.getElementById('cannotDeleteCourseModal')).show();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the course. Please try again.');
+        });
     }
 }
 
@@ -221,6 +247,23 @@ document.addEventListener('DOMContentLoaded', function() {
             searchForm.submit();
         }, 300);
     });
+    
+    // Auto-dismiss success messages after 3 seconds
+    const successAlerts = document.querySelectorAll('.alert-success');
+    if (successAlerts.length > 0) {
+        setTimeout(function() {
+            successAlerts.forEach(function(alert) {
+                // Create a fade-out effect
+                alert.style.transition = 'opacity 1s';
+                alert.style.opacity = '0';
+                
+                // Remove the element after the fade-out
+                setTimeout(function() {
+                    alert.remove();
+                }, 1000);
+            });
+        }, 3000); // 3 seconds before starting the fade-out
+    }
 });
 </script>
 @endpush

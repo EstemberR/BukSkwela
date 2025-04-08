@@ -36,6 +36,47 @@ class RouteServiceProvider extends ServiceProvider
                 ->firstOrFail();
         });
 
+        Route::bind('course', function ($value) {
+            try {
+                $tenant = tenant();
+                if (!$tenant) {
+                    throw new \Exception('No tenant found');
+                }
+                
+                $tenantId = $tenant->id;
+                $dbName = 'tenant_' . $tenantId;
+                
+                // Get tenant database credentials
+                $tenantDB = \App\Models\TenantDatabase::where('tenant_id', $tenantId)->first();
+                
+                // Configure the tenant database connection
+                if ($tenantDB) {
+                    \Illuminate\Support\Facades\Config::set('database.connections.tenant.database', $tenantDB->database_name);
+                    \Illuminate\Support\Facades\Config::set('database.connections.tenant.username', $tenantDB->database_username);
+                    \Illuminate\Support\Facades\Config::set('database.connections.tenant.password', $tenantDB->database_password);
+                } else {
+                    // Fallback to default credentials
+                    \Illuminate\Support\Facades\Config::set('database.connections.tenant.database', $dbName);
+                }
+                
+                // Purge and reconnect to ensure new config is used
+                \Illuminate\Support\Facades\DB::purge('tenant');
+                \Illuminate\Support\Facades\DB::reconnect('tenant');
+                
+                // Now query with the configured connection
+                return \App\Models\Course\Course::on('tenant')
+                    ->where('id', $value)
+                    ->firstOrFail();
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Error in course route binding', [
+                    'course_id' => $value,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                abort(404, 'Course not found');
+            }
+        });
+
         parent::boot();
     }
 

@@ -283,9 +283,7 @@
             </div>
             <div class="modal-body">
                 <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb" id="modalFolderPath">
-                        <li class="breadcrumb-item"><a href="#" onclick="loadFolderInModal(null); return false;">Root</a></li>
-                    </ol>
+                  
                 </nav>
                 <div class="mb-3">
                     <form id="uploadFileFormModal" class="d-flex flex-column gap-2">
@@ -299,8 +297,20 @@
                                 <input type="file" class="d-none" id="modalFileUpload" name="file">
                             </div>
                         </div>
+                        <div id="filePreview" class="d-none mt-2 p-3 border rounded bg-light">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-file me-2 text-primary"></i>
+                                <span id="selectedFileName" class="text-truncate me-auto">No file selected</span>
+                                <button type="button" id="removeFile" class="btn btn-sm btn-outline-danger ms-2">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="progress mt-2" style="height: 5px;">
+                                <div id="uploadProgress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
                         <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary" id="modalUploadBtn">
+                            <button type="submit" class="btn btn-primary" id="modalUploadBtn" disabled>
                                 <i class="fas fa-upload" aria-hidden="true"></i> Upload
                             </button>
                         </div>
@@ -328,17 +338,16 @@
                     .drag-drop-zone:hover {
                         background-color: #e9ecef;
                     }
+                    #filePreview {
+                        transition: all 0.3s ease;
+                    }
+                    #selectedFileName {
+                        max-width: 250px;
+                    }
                 </style>
-                <div id="modalFileContents" class="row g-3 d-none">
-                    <div class="col-12 text-center">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <!-- Remove close button from footer -->
             </div>
         </div>
     </div>
@@ -803,7 +812,14 @@
     function loadFolder(folderId = null, page = 1) {
         console.log('Loading folder:', folderId);
         console.log('Current category:', currentCategory);
-        console.log('Current tenant ID:', '{{ tenant("id") }}');
+        const tenantId = '{{ tenant("id") }}';
+        console.log('Current tenant ID:', tenantId);
+        
+        if (!tenantId) {
+            console.error('Tenant ID is missing or undefined');
+            $('#folderContentsTable tbody').html('<tr><td colspan="3" class="text-center text-danger">Error: Could not determine tenant ID. Please refresh the page or contact support.</td></tr>');
+            return;
+        }
         
         currentFolderId = folderId;
         
@@ -820,6 +836,9 @@
         
         // Add page parameter
         url += '&page=' + page;
+        
+        // Add a debug parameter with the tenant ID
+        url += '&debug_tenant=' + encodeURIComponent(tenantId);
         
         console.log('Requesting URL:', url);
         
@@ -1118,13 +1137,13 @@
 
         // Sort files (folders first, then alphabetical)
         try {
-        files.sort((a, b) => {
-            const aIsFolder = a.mimeType === 'application/vnd.google-apps.folder';
-            const bIsFolder = b.mimeType === 'application/vnd.google-apps.folder';
-            
-            if (aIsFolder && !bIsFolder) return -1;
-            if (!aIsFolder && bIsFolder) return 1;
+            files.sort((a, b) => {
+                const aIsFolder = a.mimeType === 'application/vnd.google-apps.folder';
+                const bIsFolder = b.mimeType === 'application/vnd.google-apps.folder';
                 
+                if (aIsFolder && !bIsFolder) return -1;
+                if (!aIsFolder && bIsFolder) return 1;
+                    
                 // Use name as a fallback if it exists
                 const aName = a.name || '';
                 const bName = b.name || '';
@@ -1136,6 +1155,12 @@
 
         let foldersBody = $('#folderContentsTable tbody');
         foldersBody.empty();
+
+        // If we received no files, show appropriate message 
+        if (!files || !Array.isArray(files) || files.length === 0) {
+            foldersBody.html('<tr><td colspan="3" class="text-center">No folders found. Folder list is empty.</td></tr>');
+            return;
+        }
 
         // Get current tenant ID
         const currentTenantId = '{{ tenant("id") }}';
@@ -1191,25 +1216,25 @@
                     normalizedMatch: normalizedFolderTenantId === normalizedCurrentTenantId
                 });
                 
-                // Check for an exact match first
-                let isTenantMatch = folderTenantId === currentTenantId;
+                // Modified tenant matching logic - more permissive
+                let isTenantMatch = false;
                 
-                // If no exact match, try normalized comparison
-                if (!isTenantMatch && normalizedFolderTenantId && normalizedCurrentTenantId) {
-                    isTenantMatch = normalizedFolderTenantId === normalizedCurrentTenantId;
-                    
-                    if (isTenantMatch) {
-                        console.log('Found match using normalized tenant IDs');
-                    }
-                    
-                    // If still no match, check if one contains the other (for partial matches)
-                    if (!isTenantMatch && (
-                        normalizedFolderTenantId.includes(normalizedCurrentTenantId) || 
-                        normalizedCurrentTenantId.includes(normalizedFolderTenantId)
-                    )) {
-                        isTenantMatch = true;
-                        console.log('Found partial tenant ID match');
-                    }
+                // 1. If the folder has no tenant prefix at all, include it
+                if (!folderTenantId) {
+                    isTenantMatch = true;
+                    console.log('Including folder with no tenant prefix:', file.name);
+                } 
+                // 2. Check for an exact match (case insensitive)
+                else if (normalizedFolderTenantId === normalizedCurrentTenantId) {
+                    isTenantMatch = true;
+                    console.log('Found exact match using normalized tenant IDs');
+                }
+                // 3. Check if one tenant ID contains the other (for partial matches)
+                else if (normalizedFolderTenantId && normalizedCurrentTenantId &&
+                    (normalizedFolderTenantId.includes(normalizedCurrentTenantId) || 
+                     normalizedCurrentTenantId.includes(normalizedFolderTenantId))) {
+                    isTenantMatch = true;
+                    console.log('Found partial tenant ID match');
                 }
                 
                 // Skip folders that don't belong to this tenant
@@ -1222,19 +1247,36 @@
             const categoryMatch = file.name.match(/\[(Regular|Irregular|Probation)\]/);
             const folderCategory = categoryMatch ? categoryMatch[1] : 'Regular';
             
-            // Only show folders matching current category
-                const categoryMatches = folderCategory === currentCategory;
-                console.log('Category check:', { 
-                    folderCategory: folderCategory, 
-                    currentCategory: currentCategory,
-                    matches: categoryMatches
-                });
-                
-                const shouldInclude = categoryMatches;
-                console.log(`Final decision for ${file.name}: ${shouldInclude ? 'INCLUDE' : 'EXCLUDE'}`);
-                
-                return shouldInclude;
+            // Only show folders matching current category - more flexible matching
+            let categoryMatches = false;
+            
+            // 1. If the folder has an exact category match
+            if (folderCategory === currentCategory) {
+                categoryMatches = true;
+            }
+            // 2. If no category is specified in the folder name but we're showing Regular
+            else if (!categoryMatch && currentCategory === 'Regular') {
+                categoryMatches = true;
+                console.log('Including folder with no category as Regular:', file.name);
+            }
+            // 3. Case insensitive match
+            else if (folderCategory.toLowerCase() === currentCategory.toLowerCase()) {
+                categoryMatches = true;
+                console.log('Found case-insensitive category match');
+            }
+            
+            console.log('Category check:', { 
+                folderName: file.name,
+                folderCategory: folderCategory, 
+                currentCategory: currentCategory,
+                matches: categoryMatches
             });
+            
+            const shouldInclude = categoryMatches;
+            console.log(`Final decision for ${file.name}: ${shouldInclude ? 'INCLUDE' : 'EXCLUDE'}`);
+            
+            return shouldInclude;
+        });
             
             console.log('Filtered folders for display:', folders.length);
             
@@ -1535,6 +1577,44 @@ function setupModalFileUploadHandler() {
     const uploadForm = document.getElementById('uploadFileFormModal');
     const dragDropZone = document.getElementById('dragDropZone');
     const fileInput = document.getElementById('modalFileUpload');
+    const filePreview = document.getElementById('filePreview');
+    const selectedFileName = document.getElementById('selectedFileName');
+    const uploadBtn = document.getElementById('modalUploadBtn');
+    const removeFileBtn = document.getElementById('removeFile');
+    
+    // Function to update UI when file is selected
+    function updateFileSelection() {
+        if (fileInput.files && fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            selectedFileName.textContent = file.name;
+            filePreview.classList.remove('d-none');
+            uploadBtn.disabled = false;
+            
+            // Change icon based on file type
+            const fileIcon = document.querySelector('#filePreview i.fas');
+            if (fileIcon) {
+                fileIcon.className = 'fas ' + getFileIcon(file.type) + ' me-2 text-primary';
+            }
+        } else {
+            filePreview.classList.add('d-none');
+            uploadBtn.disabled = true;
+        }
+    }
+    
+    // File input change handler
+    if (fileInput) {
+        fileInput.addEventListener('change', updateFileSelection);
+    }
+    
+    // Remove file button handler
+    if (removeFileBtn) {
+        removeFileBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            fileInput.value = '';
+            filePreview.classList.add('d-none');
+            uploadBtn.disabled = true;
+        });
+    }
     
     if (dragDropZone) {
         // Prevent default drag behaviors
@@ -1555,10 +1635,11 @@ function setupModalFileUploadHandler() {
         // Handle dropped files
         dragDropZone.addEventListener('drop', handleDrop, false);
 
-        // Handle click to upload
-        dragDropZone.addEventListener('click', () => {
-            fileInput.click();
-        });
+        // Handle click to upload - prevent direct click on the drag zone to avoid duplicate file selection
+        // We'll let the Browse Files button handle the file selection
+        // dragDropZone.addEventListener('click', () => {
+        //     fileInput.click();
+        // });
     }
     
     if (uploadForm) {
@@ -1583,10 +1664,8 @@ function setupModalFileUploadHandler() {
         const files = dt.files;
         fileInput.files = files;
         
-        // If a file was dropped, trigger the upload
-        if (files.length > 0) {
-            handleUpload(e);
-        }
+        // Update the UI to show selected file
+        updateFileSelection();
     }
 
     async function handleUpload(e) {
@@ -1594,6 +1673,7 @@ function setupModalFileUploadHandler() {
         
         const fileInput = document.getElementById('modalFileUpload');
         const folderId = document.getElementById('modalCurrentFolderId').value;
+        const uploadProgress = document.getElementById('uploadProgress');
         
         if (!fileInput.files || fileInput.files.length === 0) {
             Swal.fire({
@@ -1619,6 +1699,11 @@ function setupModalFileUploadHandler() {
         formData.append('file', fileInput.files[0]);
         formData.append('folderId', folderId);
         
+        // Reset progress bar
+        if (uploadProgress) {
+            uploadProgress.style.width = '0%';
+        }
+        
         // Get CSRF token from meta tag
         const token = document.querySelector('meta[name="csrf-token"]');
         if (!token) {
@@ -1641,34 +1726,52 @@ function setupModalFileUploadHandler() {
 
             console.log('Uploading file to:', uploadUrl);
 
-            const response = await fetch(uploadUrl, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': token.getAttribute('content')
-                },
-                credentials: 'same-origin',
-                body: formData
-            });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    throw new Error('Please log in to continue.');
-                } else if (response.status === 422) {
-                    // Validation errors
-                    const errors = result.message || {};
-                    const errorMessage = Object.values(errors).flat().join('\n');
-                    throw new Error(errorMessage || 'Invalid file or upload data.');
-                } else if (response.status === 400) {
-                    throw new Error(result.message || 'File upload failed. Please try again.');
-                } else {
-                    throw new Error('Server error occurred. Please try again later.');
+            // Create a new XMLHttpRequest to track upload progress
+            const xhr = new XMLHttpRequest();
+            
+            // Track upload progress
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable && uploadProgress) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    uploadProgress.style.width = percentComplete + '%';
                 }
-            }
+            };
+            
+            // Setup promise to handle response
+            const uploadPromise = new Promise((resolve, reject) => {
+                xhr.onload = function() {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            resolve(response);
+                        } catch (e) {
+                            reject(new Error('Invalid JSON response'));
+                        }
+                    } else {
+                        reject(new Error('HTTP Error: ' + xhr.status));
+                    }
+                };
+                
+                xhr.onerror = function() {
+                    reject(new Error('Network Error'));
+                };
+            });
+            
+            // Open and send the request
+            xhr.open('POST', uploadUrl, true);
+            xhr.setRequestHeader('X-CSRF-TOKEN', token.getAttribute('content'));
+            xhr.setRequestHeader('Accept', 'application/json');
+            xhr.send(formData);
+            
+            // Wait for response
+            const result = await uploadPromise;
 
             if (result.success) {
+                // Set progress to 100% to indicate completion
+                if (uploadProgress) {
+                    uploadProgress.style.width = '100%';
+                }
+                
                 Swal.fire({
                     icon: 'success',
                     title: 'File Uploaded',
@@ -1682,6 +1785,7 @@ function setupModalFileUploadHandler() {
                 // Reload the folder contents
                 loadFolderContents(folderId);
                 fileInput.value = '';
+                filePreview.classList.add('d-none');
             } else {
                 throw new Error(result.message || 'Failed to upload file');
             }

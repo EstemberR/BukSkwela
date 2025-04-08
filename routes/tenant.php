@@ -101,6 +101,16 @@ Route::middleware(['web', 'tenant', 'auth:admin'])
                 ->name('tenant.courses.update');
             Route::delete('/courses/{course}', [CourseController::class, 'destroy'])
                 ->name('tenant.courses.destroy');
+            // Alternative formats for course deletion to support various client implementations
+            Route::post('/courses/{course}/delete', [CourseController::class, 'destroy'])
+                ->name('tenant.courses.delete');
+            Route::get('/courses/{course}/delete', [CourseController::class, 'destroy'])
+                ->name('tenant.courses.delete.get');
+            Route::post('/courses/delete-direct/{id}', [CourseController::class, 'destroyDirect'])
+                ->name('tenant.courses.delete.direct');
+            // Direct update route without model binding
+            Route::post('/courses/update-direct/{id}', [CourseController::class, 'updateDirect'])
+                ->name('tenant.courses.update.direct');
             Route::get('/requirements', [RequirementController::class, 'index'])
                 ->name('tenant.requirements.index');
             Route::post('/requirements', [RequirementController::class, 'store'])
