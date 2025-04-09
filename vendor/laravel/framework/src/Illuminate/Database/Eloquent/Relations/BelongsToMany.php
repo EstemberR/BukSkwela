@@ -20,7 +20,6 @@ use InvalidArgumentException;
 /**
  * @template TRelatedModel of \Illuminate\Database\Eloquent\Model
  * @template TDeclaringModel of \Illuminate\Database\Eloquent\Model
- * @template TPivotModel of \Illuminate\Database\Eloquent\Relations\Pivot
  *
  * @extends \Illuminate\Database\Eloquent\Relations\Relation<TRelatedModel, TDeclaringModel, \Illuminate\Database\Eloquent\Collection<int, TRelatedModel>>
  */
@@ -129,7 +128,7 @@ class BelongsToMany extends Relation
     /**
      * The class name of the custom pivot model to use for the relationship.
      *
-     * @var class-string<TPivotModel>
+     * @var string
      */
     protected $using;
 
@@ -317,7 +316,7 @@ class BelongsToMany extends Relation
     /**
      * Get the class being used for pivot models.
      *
-     * @return class-string<TPivotModel>
+     * @return string
      */
     public function getPivotClass()
     {
@@ -327,7 +326,7 @@ class BelongsToMany extends Relation
     /**
      * Specify the custom pivot model to use for the relationship.
      *
-     * @param  class-string<TPivotModel>  $class
+     * @param  string  $class
      * @return $this
      */
     public function using($class)
@@ -869,8 +868,8 @@ class BelongsToMany extends Relation
     public function getResults()
     {
         return ! is_null($this->parent->{$this->parentKey})
-            ? $this->get()
-            : $this->related->newCollection();
+                ? $this->get()
+                : $this->related->newCollection();
     }
 
     /** @inheritDoc */
@@ -925,14 +924,11 @@ class BelongsToMany extends Relation
      */
     protected function aliasedPivotColumns()
     {
-        return (new BaseCollection([
-            $this->foreignPivotKey,
-            $this->relatedPivotKey,
-            ...$this->pivotColumns,
-        ]))
-            ->map(fn ($column) => $this->qualifyPivotColumn($column).' as pivot_'.$column)
-            ->unique()
-            ->all();
+        $defaults = [$this->foreignPivotKey, $this->relatedPivotKey];
+
+        return (new BaseCollection(array_merge($defaults, $this->pivotColumns)))->map(function ($column) {
+            return $this->qualifyPivotColumn($column).' as pivot_'.$column;
+        })->unique()->all();
     }
 
     /**
@@ -1655,7 +1651,7 @@ class BelongsToMany extends Relation
         }
 
         return str_contains($column, '.')
-            ? $column
-            : $this->table.'.'.$column;
+                    ? $column
+                    : $this->table.'.'.$column;
     }
 }

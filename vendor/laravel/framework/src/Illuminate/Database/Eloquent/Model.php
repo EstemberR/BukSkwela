@@ -1095,8 +1095,7 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
             // us to recurse into all of these nested relations for the model instance.
             foreach ($this->relations as $models) {
                 $models = $models instanceof Collection
-                    ? $models->all()
-                    : [$models];
+                    ? $models->all() : [$models];
 
                 foreach (array_filter($models) as $model) {
                     if (! $model->push()) {

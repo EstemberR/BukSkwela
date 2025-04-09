@@ -131,31 +131,33 @@
             <form id="addStudentForm" action="{{ route('tenant.students.store.direct') }}" method="POST">
                 @csrf
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Student ID</label>
-                        <input type="text" class="form-control" name="student_id" id="new_student_id" required>
-                        <div class="invalid-feedback" id="student_id_error"></div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" name="name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-control" name="email" id="new_student_email" required>
-                        <div class="invalid-feedback" id="student_email_error"></div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Course</label>
-                        <select class="form-select" name="course_id" required>
-                            <option value="">Select Course</option>
-                            @foreach($courses ?? [] as $course)
-                                <option value="{{ $course->id }}">{{ $course->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="alert alert-info">
-                        <small><i class="fas fa-info-circle"></i> A secure password will be automatically generated and sent to the student's email.</small>
+                    <div id="addStudentFormContent">
+                        <div class="mb-3">
+                            <label class="form-label">Student ID</label>
+                            <input type="text" class="form-control" name="student_id" id="new_student_id" required>
+                            <div class="invalid-feedback" id="student_id_error"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Name</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="email" id="new_student_email" required>
+                            <div class="invalid-feedback" id="student_email_error"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Course</label>
+                            <select class="form-select" name="course_id" required>
+                                <option value="">Select Course</option>
+                                @foreach($courses ?? [] as $course)
+                                    <option value="{{ $course->id }}">{{ $course->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="alert alert-info">
+                            <small><i class="fas fa-info-circle"></i> A secure password will be automatically generated and sent to the student's email.</small>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -166,6 +168,39 @@
         </div>
     </div>
 </div>
+
+<!-- Full Screen Loader Overlay -->
+<div id="fullScreenLoader" class="full-screen-loader d-none">
+    <div class="loader-container">
+        @include('Loaders.Loaders')
+    </div>
+</div>
+
+<style>
+.full-screen-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loader-container {
+    transform: scale(2); /* Make the loader twice as big */
+}
+
+.loader {
+    position: relative;
+    width: 2.5em;
+    height: 2.5em;
+    transform: rotate(165deg);
+}
+</style>
 
 <!-- Edit Student Modals -->
 @foreach($students ?? [] as $student)
@@ -230,6 +265,9 @@
 </div>
 @endforeach
 
+<!-- Include Success Modal Component -->
+@include('Modals.SuccessModal')
+
 @endsection
 
 @push('scripts')
@@ -243,14 +281,7 @@
         const warningMessage = document.getElementById('warning-message');
 
         if (successMessage) {
-            Swal.fire({
-                title: 'Success!',
-                text: successMessage.value,
-                icon: 'success',
-                timer: 3000,
-                timerProgressBar: true,
-                showConfirmButton: false
-            });
+            showSuccessModal('Success!', successMessage.value);
         }
 
         if (errorMessage) {
@@ -284,6 +315,7 @@
         const studentIdError = document.getElementById('student_id_error');
         const studentEmailError = document.getElementById('student_email_error');
         const addStudentBtn = document.getElementById('addStudentBtn');
+        const fullScreenLoader = document.getElementById('fullScreenLoader');
         
         if (!addStudentForm) return;
         
@@ -302,9 +334,6 @@
                 if (email) existingEmails.push(email);
             }
         });
-        
-        console.log('Existing Student IDs:', existingStudentIds);
-        console.log('Existing Emails:', existingEmails);
         
         // Function to check for duplicates
         function checkDuplicates() {
@@ -350,6 +379,10 @@
                     text: 'Please correct the errors before submitting',
                     icon: 'error'
                 });
+            } else {
+                // Show full screen loader
+                fullScreenLoader.classList.remove('d-none');
+                addStudentBtn.disabled = true;
             }
         });
         
@@ -362,6 +395,8 @@
                 studentIdError.textContent = '';
                 studentEmailError.textContent = '';
                 addStudentBtn.disabled = false;
+                // Hide loader if it's visible
+                fullScreenLoader.classList.add('d-none');
             });
         }
     }
@@ -377,6 +412,7 @@
                 
                 const studentId = this.id.replace('delete-form-', '');
                 const formAction = this.action;
+                const fullScreenLoader = document.getElementById('fullScreenLoader');
                 
                 // Create a new XMLHttpRequest instead of fetch for more control
                 const xhr = new XMLHttpRequest();
@@ -389,6 +425,9 @@
                 const formData = new FormData(this);
                 
                 xhr.onload = function() {
+                    // Hide the loader
+                    fullScreenLoader.classList.add('d-none');
+                    
                     if (xhr.status >= 200 && xhr.status < 300) {
                         try {
                             const data = JSON.parse(xhr.responseText);
@@ -400,13 +439,7 @@
                                     row.remove();
                                 }
                                 
-                                Swal.fire({
-                                    title: 'Deleted!',
-                                    text: data.message || 'Student deleted successfully',
-                                    icon: 'success',
-                                    timer: 2000,
-                                    showConfirmButton: false
-                                });
+                                showSuccessModal('Deleted!', data.message || 'Student deleted successfully');
                             } else {
                                 Swal.fire({
                                     title: 'Error!',
@@ -431,6 +464,9 @@
                 };
                 
                 xhr.onerror = function() {
+                    // Hide the loader
+                    fullScreenLoader.classList.add('d-none');
+                    
                     Swal.fire({
                         title: 'Error!',
                         text: 'Network error occurred',
@@ -455,18 +491,11 @@
             cancelButtonText: 'Cancel'
         }).then((result) => {
             if (result.isConfirmed) {
-                // Show loading state
-                Swal.fire({
-                    title: 'Deleting...',
-                    text: 'Please wait',
-                    allowOutsideClick: false,
-                    showConfirmButton: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
+                // Show the full screen loader
+                const fullScreenLoader = document.getElementById('fullScreenLoader');
+                fullScreenLoader.classList.remove('d-none');
                 
-                // Submit the delete form that's already defined for this student
+                // Submit the delete form
                 document.getElementById(`delete-form-${studentId}`).submit();
             }
         });

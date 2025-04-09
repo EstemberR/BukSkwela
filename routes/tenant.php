@@ -22,6 +22,7 @@ use App\Http\Controllers\Staff\StaffController;
 use App\Http\Controllers\Course\CourseController;
 use App\Http\Controllers\Requirement\RequirementController;
 use App\Http\Controllers\Report\ReportController;
+use App\Http\Controllers\Profile\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['web'])
@@ -126,6 +127,7 @@ Route::prefix('staff')->group(function () {
     Route::get('/login', [StaffAuthController::class, 'showLoginForm'])->name('staff.login');
     Route::post('/login', [StaffAuthController::class, 'login'])->name('staff.login.post');
     Route::post('/logout', [StaffAuthController::class, 'logout'])->name('staff.logout');
+    Route::get('/tenant-logout', [StaffAuthController::class, 'tenantLogout'])->name('staff.tenant.logout');
 
     // Protected staff routes
     Route::middleware(['auth:staff'])->group(function () {
@@ -165,3 +167,8 @@ Route::middleware(['web', 'tenant'])->group(function () {
         });
     });
 });
+
+// Profile Routes
+Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
+Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');

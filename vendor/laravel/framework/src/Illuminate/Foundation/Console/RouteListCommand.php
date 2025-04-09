@@ -114,10 +114,9 @@ class RouteListCommand extends Command
      */
     protected function getRoutes()
     {
-        $routes = (new Collection($this->router->getRoutes()))
-            ->map(fn ($route) => $this->getRouteInformation($route))
-            ->filter()
-            ->all();
+        $routes = (new Collection($this->router->getRoutes()))->map(function ($route) {
+            return $this->getRouteInformation($route);
+        })->filter()->all();
 
         if (($sort = $this->option('sort')) !== null) {
             $routes = $this->sortRoutes($sort, $routes);
@@ -209,9 +208,9 @@ class RouteListCommand extends Command
      */
     protected function getMiddleware($route)
     {
-        return (new Collection($this->router->gatherRouteMiddleware($route)))
-            ->map(fn ($middleware) => $middleware instanceof Closure ? 'Closure' : $middleware)
-            ->implode("\n");
+        return (new Collection($this->router->gatherRouteMiddleware($route)))->map(function ($middleware) {
+            return $middleware instanceof Closure ? 'Closure' : $middleware;
+        })->implode("\n");
     }
 
     /**
@@ -302,7 +301,7 @@ class RouteListCommand extends Command
      */
     protected function getColumns()
     {
-        return array_map(strtolower(...), $this->headers);
+        return array_map('strtolower', $this->headers);
     }
 
     /**
@@ -323,7 +322,7 @@ class RouteListCommand extends Command
             }
         }
 
-        return array_map(strtolower(...), $results);
+        return array_map('strtolower', $results);
     }
 
     /**

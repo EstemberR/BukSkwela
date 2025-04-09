@@ -1,4 +1,3 @@
-
 @extends('tenant.layouts.app')
 
 @section('title', 'Department Dashboard')

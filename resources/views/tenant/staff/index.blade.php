@@ -4,23 +4,14 @@
 
 @section('content')
 <div class="container">
-    <!-- Messages -->
     @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+        <input type="hidden" id="success-message" value="{{ session('success') }}">
     @endif
-
-    @if($errors->any())
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <ul class="mb-0">
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+    @if(session('error'))
+        <input type="hidden" id="error-message" value="{{ session('error') }}">
+    @endif
+    @if(session('warning'))
+        <input type="hidden" id="warning-message" value="{{ session('warning') }}">
     @endif
 
     <div class="row">
@@ -49,6 +40,7 @@
                                            value="{{ request('search') }}"
                                            autocomplete="off">
                                 </div>
+                            </form>
                             </div>
                             <div class="col-md-6 text-end">
                                 <select class="form-select d-inline-block w-auto" id="roleFilter" name="role" onchange="document.getElementById('searchForm').submit()">
@@ -57,7 +49,6 @@
                                     <option value="admin" {{ request('role') == 'admin' ? 'selected' : '' }}>Admin</option>
                                     <option value="staff" {{ request('role') == 'staff' ? 'selected' : '' }}>Staff</option>
                                 </select>
-                            </div>
                         </div>
                     </div>
 
@@ -77,7 +68,7 @@
                             </thead>
                             <tbody>
                                 @forelse($staffMembers ?? [] as $staff)
-                                <tr>
+                                <tr data-staff-id="{{ $staff->id }}">
                                     <td>{{ $staff->staff_id }}</td>
                                     <td>{{ $staff->name }}</td>
                                     <td>{{ $staff->email }}</td>
@@ -92,9 +83,18 @@
                                         <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editStaffModal{{ $staff->id }}">
                                             Edit
                                         </button>
-                                        <button class="btn btn-sm btn-danger" onclick="deleteStaff({{ $staff->id }})">
+                                        <button class="btn btn-sm btn-danger" onclick="showDeleteConfirmation('{{ $staff->id }}')">
                                             Delete
                                         </button>
+                                        
+                                        <!-- Hidden Delete Form -->
+                                        <form id="delete-form-{{ $staff->id }}" 
+                                              action="{{ route('tenant.staff.destroy', ['tenant' => tenant('id'), 'staff' => $staff->id]) }}" 
+                                              method="POST" 
+                                              style="display: none;">
+                                            @csrf
+                                            @method('DELETE')
+                                        </form>
                                     </td>
                                 </tr>
                                 @empty
@@ -164,6 +164,7 @@
                     <div class="mb-3">
                         <label class="form-label">Department</label>
                         <input type="text" class="form-control" name="department" required>
+                        <div class="form-text">Enter the department name (e.g., General, Administration, Academic)</div>
                     </div>
                     <div class="alert alert-info">
                         <small><i class="fas fa-info-circle"></i> A secure password will be automatically generated and sent to the staff member's email.</small>
@@ -178,243 +179,81 @@
     </div>
 </div>
 
-<!-- Edit Staff Modal -->
-@foreach($staffMembers ?? [] as $staff)
-<div class="modal fade" id="editStaffModal{{ $staff->id }}" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Edit Staff Member</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="{{ route('tenant.staff.update', ['tenant' => tenant('id'), 'staff' => $staff->id]) }}" method="POST">
-                @csrf
-                @method('PUT')
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Staff ID</label>
-                        <input type="text" class="form-control" name="staff_id" value="{{ $staff->staff_id }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" name="name" value="{{ $staff->name }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-control" name="email" value="{{ $staff->email }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Role</label>
-                        <select class="form-select" name="role" required>
-                            <option value="">Select Role</option>
-                            <option value="instructor" {{ $staff->role === 'instructor' ? 'selected' : '' }}>Instructor</option>
-                            <option value="admin" {{ $staff->role === 'admin' ? 'selected' : '' }}>Admin</option>
-                            <option value="staff" {{ $staff->role === 'staff' ? 'selected' : '' }}>Staff</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Department</label>
-                        <input type="text" class="form-control" name="department" value="{{ optional($staff->department)->name ?? 'N/A' }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Status</label>
-                        <select class="form-select" name="status" required>
-                            <option value="active" {{ $staff->status === 'active' ? 'selected' : '' }}>Active</option>
-                            <option value="inactive" {{ $staff->status === 'inactive' ? 'selected' : '' }}>Inactive</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Password (leave blank to keep current)</label>
-                        <input type="password" class="form-control" name="password">
-                        <div class="form-text">Enter a new password only if you want to change it.</div>
-                    </div>
-                    <div class="alert alert-info">
-                        <small><i class="fas fa-info-circle"></i> Changing the password will send an email notification to the staff member.</small>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Update Staff Member</button>
-                </div>
-            </form>
-        </div>
+<!-- Full Screen Loader Overlay -->
+<div id="fullScreenLoader" class="full-screen-loader d-none">
+    <div class="loader-container">
+        @include('Loaders.Loaders')
     </div>
 </div>
-@endforeach
+
+<style>
+.full-screen-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loader-container {
+    transform: scale(2); /* Make the loader twice as big */
+}
+
+.loader {
+    position: relative;
+    width: 2.5em;
+    height: 2.5em;
+    transform: rotate(165deg);
+}
+</style>
+
+<!-- Include Success Modal Component -->
+@include('Modals.SuccessModal')
 
 @endsection
 
 @push('scripts')
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Add SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // Auto-dismiss success and error alerts after 3 seconds
+    // Show success/error messages using SweetAlert2
     document.addEventListener('DOMContentLoaded', function() {
-        // Select all success and error alerts
-        const alerts = document.querySelectorAll('.alert-success, .alert-danger');
-        
-        // Set a timeout to fade them out after 3 seconds
-        if (alerts.length > 0) {
-            setTimeout(function() {
-                alerts.forEach(function(alert) {
-                    // Add fade-out transition
-                    alert.style.transition = 'opacity 1s';
-                    alert.style.opacity = '0';
-                    
-                    // Remove from DOM after fade completes
-                    setTimeout(function() {
-                        alert.remove();
-                    }, 1000);
-                });
-            }, 3000);
+        const successMessage = document.getElementById('success-message');
+        const errorMessage = document.getElementById('error-message');
+        const warningMessage = document.getElementById('warning-message');
+
+        if (successMessage) {
+            showSuccessModal('Success!', successMessage.value);
         }
 
-        // Handle staff form submission
-        $('#addStaffForm').on('submit', function(e) {
-            e.preventDefault();
-            
-            // Clear previous errors
-            $('.is-invalid').removeClass('is-invalid');
-            $('.invalid-feedback').text('');
-            
-            // Get form data
-            const formData = $(this).serialize();
-            
-            // Disable submit button
-            $('#addStaffBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Adding...');
-            
-            // Submit form via AJAX
-            $.ajax({
-                url: $(this).attr('action'),
-                method: 'POST',
-                data: formData,
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(response) {
-                    if (response.success) {
-                        // Show success message
-                        const successAlert = $('<div class="alert alert-success alert-dismissible fade show" role="alert">' +
-                            response.message +
-                            '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
-                            '</div>');
-                        
-                        // Insert alert at the top of the page
-                        $('.container').prepend(successAlert);
-                        
-                        // Close modal
-                        $('#addStaffModal').modal('hide');
-                        
-                        // Reset form
-                        $('#addStaffForm')[0].reset();
-                        
-                        // Reload page after a short delay
-                        setTimeout(function() {
-                            window.location.reload();
-                        }, 1500);
-                    } else {
-                        // Show error message
-                        const errorAlert = $('<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
-                            response.error +
-                            '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
-                            '</div>');
-                        
-                        // Insert alert at the top of the page
-                        $('.container').prepend(errorAlert);
-                    }
-                },
-                error: function(xhr) {
-                    // Show error message
-                    const errorAlert = $('<div class="alert alert-danger alert-dismissible fade show" role="alert">' +
-                        'An error occurred while adding the staff member. Please try again.' +
-                        '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
-                        '</div>');
-                    
-                    // Insert alert at the top of the page
-                    $('.container').prepend(errorAlert);
-                    
-                    // Handle validation errors
-                    if (xhr.status === 422) {
-                        const errors = xhr.responseJSON.errors;
-                        for (const field in errors) {
-                            $(`#${field}_error`).text(errors[field][0]);
-                            $(`[name="${field}"]`).addClass('is-invalid');
-                        }
-                    }
-                },
-                complete: function() {
-                    // Re-enable submit button
-                    $('#addStaffBtn').prop('disabled', false).text('Add Staff Member');
-                }
+        if (errorMessage) {
+            Swal.fire({
+                title: 'Error!',
+                text: errorMessage.value,
+                icon: 'error'
             });
-        });
-    });
-
-    // Delete staff function
-    function deleteStaff(staffId) {
-        if (confirm('Are you sure you want to delete this staff member?')) {
-            // Create a form for proper CSRF token submission
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = "{{ route('tenant.staff.destroy', ['tenant' => tenant('id'), 'staff' => ':staffId']) }}".replace(':staffId', staffId);
-            
-            // Add CSRF token
-            const csrfToken = document.createElement('input');
-            csrfToken.type = 'hidden';
-            csrfToken.name = '_token';
-            csrfToken.value = '{{ csrf_token() }}';
-            form.appendChild(csrfToken);
-            
-            // Add method spoofing for DELETE request
-            const methodField = document.createElement('input');
-            methodField.type = 'hidden';
-            methodField.name = '_method';
-            methodField.value = 'DELETE';
-            form.appendChild(methodField);
-            
-            // Append form to body, submit it, and then remove it
-            document.body.appendChild(form);
-            form.submit();
-            document.body.removeChild(form);
         }
-    }
 
-    // Wait for document to be ready
-    $(document).ready(function() {
-        const searchForm = document.getElementById('searchForm');
-        const searchInput = document.getElementById('searchStaff');
-        let searchTimeout;
-
-        // Handle search input with debounce
-        $("#searchStaff").on("keyup", function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                searchForm.submit();
-            }, 300);
-        });
-        
-        // Proper form validation
-        $('form').on('submit', function(e) {
-            let isValid = true;
-            
-            // Check all required fields
-            $(this).find('input[required], select[required]').each(function() {
-                if ($(this).val() === '') {
-                    $(this).addClass('is-invalid');
-                    isValid = false;
-                } else {
-                    $(this).removeClass('is-invalid');
-                }
+        if (warningMessage) {
+            Swal.fire({
+                title: 'Warning!',
+                text: warningMessage.value,
+                icon: 'warning'
             });
-            
-            // Prevent form submission if validation fails
-            if (!isValid) {
-                e.preventDefault();
-                // Focus on the first invalid field
-                $(this).find('.is-invalid').first().focus();
-            }
-        });
+        }
+        
+        // Setup delete form submission with AJAX
+        setupDeleteForms();
+        
+        // Setup duplicate checking for staff add form
+        setupStaffAddForm();
     });
-
+    
     // Function to check for duplicate staff IDs and emails
     function setupStaffAddForm() {
         const addStaffForm = document.getElementById('addStaffForm');
@@ -423,6 +262,7 @@
         const staffIdError = document.getElementById('staff_id_error');
         const staffEmailError = document.getElementById('staff_email_error');
         const addStaffBtn = document.getElementById('addStaffBtn');
+        const fullScreenLoader = document.getElementById('fullScreenLoader');
         
         if (!addStaffForm) return;
         
@@ -431,7 +271,7 @@
         const existingEmails = [];
         
         document.querySelectorAll('table tbody tr').forEach(row => {
-            if (row.cells && row.cells.length >= 4) {
+            if (row.cells && row.cells.length >= 3) {
                 // Staff ID is in the first column
                 const staffId = row.cells[0].textContent.trim();
                 if (staffId) existingStaffIds.push(staffId);
@@ -486,6 +326,10 @@
                     text: 'Please correct the errors before submitting',
                     icon: 'error'
                 });
+            } else {
+                // Show full screen loader
+                fullScreenLoader.classList.remove('d-none');
+                addStaffBtn.disabled = true;
             }
         });
         
@@ -498,14 +342,125 @@
                 staffIdError.textContent = '';
                 staffEmailError.textContent = '';
                 addStaffBtn.disabled = false;
+                // Hide loader if it's visible
+                fullScreenLoader.classList.add('d-none');
             });
         }
     }
+    
+    function setupDeleteForms() {
+        // Get all delete forms
+        const deleteForms = document.querySelectorAll('form[id^="delete-form-"]');
+        
+        // Add submit handler to each form
+        deleteForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const staffId = this.id.replace('delete-form-', '');
+                const formAction = this.action;
+                const fullScreenLoader = document.getElementById('fullScreenLoader');
+                
+                // Create a new XMLHttpRequest
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', formAction, true);
+                xhr.setRequestHeader('X-CSRF-TOKEN', document.querySelector('meta[name="csrf-token"]').content);
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                xhr.setRequestHeader('Accept', 'application/json');
+                
+                // Get form data
+                const formData = new FormData(this);
+                
+                xhr.onload = function() {
+                    // Hide the loader
+                    fullScreenLoader.classList.add('d-none');
+                    
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            const data = JSON.parse(xhr.responseText);
+                            
+                            if (data.success) {
+                                // Remove the row from the table
+                                const row = document.querySelector(`tr[data-staff-id="${staffId}"]`);
+                                if (row) {
+                                    row.remove();
+                                }
+                                
+                                showSuccessModal('Deleted!', data.message || 'Staff member deleted successfully');
+                            } else {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: data.message || 'Failed to delete staff member',
+                                    icon: 'error'
+                                });
+                            }
+                        } catch (e) {
+                            Swal.fire({
+                                title: 'Error!',
+                                text: 'Error processing server response',
+                                icon: 'error'
+                            });
+                        }
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: `Server error: ${xhr.status}`,
+                            icon: 'error'
+                        });
+                    }
+                };
+                
+                xhr.onerror = function() {
+                    // Hide the loader
+                    fullScreenLoader.classList.add('d-none');
+                    
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Network error occurred',
+                        icon: 'error'
+                    });
+                };
+                
+                xhr.send(formData);
+            });
+        });
+    }
 
-    // Initialize the staff form validation when the document is ready
+    function showDeleteConfirmation(staffId) {
+        Swal.fire({
+            title: 'Delete Staff Member',
+            text: "Are you sure you want to delete this staff member? This action cannot be undone.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, delete',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show the full screen loader
+                const fullScreenLoader = document.getElementById('fullScreenLoader');
+                fullScreenLoader.classList.remove('d-none');
+                
+                // Submit the delete form
+                document.getElementById(`delete-form-${staffId}`).submit();
+            }
+        });
+    }
+
+    // Search and filter functionality
     document.addEventListener('DOMContentLoaded', function() {
-        setupStaffAddForm();
-        // ... existing code ...
+        const searchForm = document.getElementById('searchForm');
+        const searchInput = document.getElementById('searchStaff');
+        let searchTimeout;
+
+        // Handle search input with debounce
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                searchForm.submit();
+            }, 300);
+        });
     });
 </script>
 @endpush 

@@ -19,10 +19,7 @@
                     </div>
                     <div class="mt-4">
                         <a href="{{ request()->getSchemeAndHttpHost() }}/dashboard" class="btn btn-primary">Try Again</a>
-                        <form action="{{ request()->getSchemeAndHttpHost() }}/staff/logout" method="POST" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-outline-secondary ml-2">Logout</button>
-                        </form>
+                        <a href="http://127.0.0.1:8000/login" class="btn btn-outline-secondary ml-2">Back to Main Site</a>
                     </div>
                 </div>
             </div>

@@ -192,9 +192,6 @@ abstract class MultipleInstanceManager
      *
      * @param  string  $name
      * @param  \Closure  $callback
-     *
-     * @param-closure-this  $this  $callback
-     *
      * @return $this
      */
     public function extend($name, Closure $callback)

@@ -168,8 +168,7 @@ abstract class HasOneOrManyThrough extends Relation
         $this->whereInEager(
             $whereIn,
             $this->getQualifiedFirstKeyName(),
-            $this->getKeys($models, $this->localKey),
-            $this->getRelationQuery(),
+            $this->getKeys($models, $this->localKey)
         );
     }
 
