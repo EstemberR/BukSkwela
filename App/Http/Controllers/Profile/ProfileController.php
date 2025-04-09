@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\TenantAdmin;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 
 class ProfileController extends Controller
 {
@@ -42,6 +45,18 @@ class ProfileController extends Controller
             $user->id = 0;
         }
         
+        // Check if URL has upgraded parameter
+        if (request()->has('upgraded')) {
+            // Set session variable for premium status
+            session(['is_premium' => true]);
+        }
+        
+        // Check if tenant is premium from database and set session
+        $tenant = tenant();
+        if ($tenant && isset($tenant->subscription_plan) && $tenant->subscription_plan === 'premium') {
+            session(['is_premium' => true]);
+        }
+        
         // Debug variables
         $debug = [
             'auth_check' => $authCheck,
@@ -50,7 +65,9 @@ class ProfileController extends Controller
             'session_id' => session()->getId(),
             'tenant_id' => tenant('id'),
             'admin_guard' => Auth::guard('admin')->check() ? 'Yes' : 'No',
-            'web_guard' => Auth::guard('web')->check() ? 'Yes' : 'No'
+            'web_guard' => Auth::guard('web')->check() ? 'Yes' : 'No',
+            'is_premium_session' => session('is_premium') ? 'Yes' : 'No',
+            'tenant_subscription' => $tenant ? ($tenant->subscription_plan ?? 'None') : 'None'
         ];
         
         // Pass everything to the view
@@ -127,5 +144,154 @@ class ProfileController extends Controller
 
         return redirect()->route('profile.index', ['tenant' => tenant('id')])
             ->with('success', 'Password updated successfully');
+    }
+
+    /**
+     * Update the tenant's subscription plan
+     */
+    public function updateSubscription(Request $request)
+    {
+        try {
+            // Ensure subscription_requests table exists
+            $this->ensureSubscriptionTablesExist();
+            
+            $tenant = tenant();
+            $tenantId = $tenant ? $tenant->id : null;
+            
+            if (!$tenant) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tenant not found'
+                ], 404);
+            }
+            
+            // Validate request data
+            $request->validate([
+                'subscription_plan' => 'required|string|in:basic,premium,enterprise',
+                'user_name' => 'nullable|string',
+                'user_email' => 'nullable|email',
+                'message' => 'nullable|string',
+                'set_session' => 'nullable|boolean'
+            ]);
+            
+            // Create a subscription request record - with try/catch for safety
+            try {
+                DB::table('subscription_requests')->insert([
+                    'tenant_id' => $tenantId,
+                    'user_id' => $request->user_id ?? Auth::guard('admin')->id(),
+                    'current_plan' => $tenant->subscription_plan ?? 'basic',
+                    'requested_plan' => $request->subscription_plan,
+                    'user_name' => $request->user_name,
+                    'user_email' => $request->user_email,
+                    'message' => $request->message,
+                    'status' => 'approved', // Set to approved directly
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Exception $e) {
+                // Log the error but continue
+                \Log::error('Error creating subscription request', [
+                    'error' => $e->getMessage(), 
+                    'tenant_id' => $tenantId
+                ]);
+            }
+            
+            // Set session variable for premium status if requested
+            if ($request->has('set_session') && $request->set_session) {
+                session(['is_premium' => true]);
+            }
+            
+            // Update the subscription plan in the tenants table
+            // This ensures the change persists across page refreshes
+            DB::table('tenants')
+                ->where('id', $tenantId)
+                ->update([
+                    'subscription_plan' => $request->subscription_plan,
+                    'updated_at' => now()
+                ]);
+            
+            // Also update the data JSON field to ensure consistency
+            $data = $tenant->data ?? [];
+            $data['subscription_plan'] = $request->subscription_plan;
+            
+            DB::table('tenants')
+                ->where('id', $tenantId)
+                ->update([
+                    'data' => json_encode($data),
+                    'updated_at' => now()
+                ]);
+            
+            // Record this activity for admin tracking - with try/catch for safety
+            try {
+                DB::table('tenant_activities')->insert([
+                    'tenant_id' => $tenantId,
+                    'user_id' => $request->user_id ?? Auth::guard('admin')->id(),
+                    'activity' => 'subscription_change',
+                    'description' => 'Subscription plan updated from ' . 
+                                    ($tenant->subscription_plan ?? 'basic') . 
+                                    ' to ' . $request->subscription_plan,
+                    'created_at' => now()
+                ]);
+            } catch (\Exception $e) {
+                // Log the error but continue
+                \Log::error('Error creating tenant activity', [
+                    'error' => $e->getMessage(), 
+                    'tenant_id' => $tenantId
+                ]);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Subscription updated successfully',
+                'data' => [
+                    'tenant_id' => $tenantId,
+                    'subscription_plan' => $request->subscription_plan,
+                    'session_status' => session('is_premium')
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating subscription plan',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Ensure that the required tables exist
+     */
+    private function ensureSubscriptionTablesExist()
+    {
+        // Check if subscription_requests table exists
+        if (!Schema::hasTable('subscription_requests')) {
+            Schema::create('subscription_requests', function (Blueprint $table) {
+                $table->id();
+                $table->string('tenant_id');
+                $table->unsignedBigInteger('user_id')->nullable();
+                $table->string('current_plan')->default('basic');
+                $table->string('requested_plan');
+                $table->string('user_name')->nullable();
+                $table->string('user_email')->nullable();
+                $table->text('message')->nullable();
+                $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+                $table->timestamps();
+            });
+        }
+        
+        // Check if tenant_activities table exists
+        if (!Schema::hasTable('tenant_activities')) {
+            Schema::create('tenant_activities', function (Blueprint $table) {
+                $table->id();
+                $table->string('tenant_id');
+                $table->unsignedBigInteger('user_id')->nullable();
+                $table->string('activity');
+                $table->text('description')->nullable();
+                $table->json('metadata')->nullable();
+                $table->timestamp('created_at')->useCurrent();
+                $table->timestamp('updated_at')->nullable();
+            });
+        }
     }
 } 

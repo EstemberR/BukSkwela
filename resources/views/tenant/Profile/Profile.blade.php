@@ -56,6 +56,145 @@
     }
 }
 
+/* Premium Badge Styles */
+.premium-badge {
+    display: inline-flex;
+    align-items: center;
+    color: rgb(193, 163, 98) !important;
+    border: 1px solid rgb(193, 163, 98) !important;
+    border-radius: 25px;
+    background-color: transparent !important;
+    padding: 4px 10px;
+    font-weight: 600;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+    font-size: 0.75rem;
+}
+
+.premium-badge::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 30px;
+    height: 30px;
+    border-radius: inherit;
+    scale: 0;
+    z-index: -1;
+    background-color: rgb(193, 163, 98) !important;
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+.premium-badge i {
+    margin-right: 0.3rem;
+    font-size: 0.75rem;
+    position: relative;
+    z-index: 1;
+    color: rgb(193, 163, 98) !important;
+}
+
+.premium-badge:hover {
+    color: #212121 !important;
+    scale: 1.1;
+    box-shadow: 0 0px 20px rgba(193, 163, 98, 0.4) !important;
+}
+
+.premium-badge:hover i {
+    color: #212121 !important;
+}
+
+.premium-badge:active {
+    scale: 1;
+}
+
+.premium-badge:hover::before {
+    scale: 3;
+}
+
+.premium-badge:hover span {
+    color: #212121 !important;
+}
+
+/* Premium Button Styles */
+.premium-button {
+  cursor: pointer;
+  position: relative;
+  padding: 6px 16px;
+  font-size: 14px;
+  color: rgb(193, 163, 98) !important;
+  border: 2px solid rgb(193, 163, 98) !important;
+  border-radius: 25px;
+  background-color: transparent !important;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+  overflow: hidden;
+  margin: 0.3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.premium-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 40px;
+  height: 40px;
+  border-radius: inherit;
+  scale: 0;
+  z-index: -1;
+  background-color: rgb(193, 163, 98) !important;
+  transition: all 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+.premium-button:hover::before {
+  scale: 3;
+}
+
+.premium-button:hover {
+  color: #212121 !important;
+  scale: 1.1;
+  box-shadow: 0 0px 20px rgba(193, 163, 98, 0.4) !important;
+  text-decoration: none;
+}
+
+.premium-button:active {
+  scale: 1;
+}
+
+.premium-button i {
+  margin-right: 6px;
+  font-size: 14px;
+  color: rgb(193, 163, 98) !important;
+  transition: all 0.3s ease;
+}
+
+.premium-button:hover i {
+  color: #212121 !important;
+}
+
+.premium-button.btn-lg {
+  padding: 8px 20px;
+  font-size: 16px;
+}
+
+.premium-button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.premium-button .fa-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* Subscription Plan Card Styles */
 .plan-card {
   background: #fff;
@@ -91,33 +230,39 @@
 
 .etiquet-price {
   position: relative;
-  background: #fdbd4a;
-  width: 14.46rem;
+  background-color: transparent !important;
+  border: 1px solid rgb(193, 163, 98) !important;
+  color: rgb(193, 163, 98) !important;
+  width: 13rem;
   margin-left: -0.65rem;
-  padding: .2rem 1.2rem;
+  padding: .15rem 1rem;
   border-radius: 5px 0 0 5px;
+  transition: all 0.3s ease;
 }
 
 .etiquet-price p {
   margin: 0;
-  padding-top: .4rem;
+  padding-top: .3rem;
   display: flex;
-  font-size: 1.9rem;
+  font-size: 1.6rem;
   font-weight: 500;
+  color: rgb(193, 163, 98) !important;
 }
 
 .etiquet-price p:before {
   content: "$";
-  margin-right: 5px;
-  font-size: 15px;
+  margin-right: 4px;
+  font-size: 13px;
   font-weight: 300;
+  color: rgb(193, 163, 98) !important;
 }
 
 .etiquet-price p:after {
   content: "/ account";
-  margin-left: 5px;
-  font-size: 15px;
+  margin-left: 4px;
+  font-size: 13px;
   font-weight: 300;
+  color: rgb(193, 163, 98) !important;
 }
 
 .etiquet-price div {
@@ -126,7 +271,7 @@
   right: 0px;
   width: 0;
   height: 0;
-  border-top: 13px solid #c58102;
+  border-top: 13px solid rgb(193, 163, 98);
   border-bottom: 10px solid transparent;
   border-right: 13px solid transparent;
   z-index: -6;
@@ -162,39 +307,115 @@
 .button-get-plan {
   display: flex;
   justify-content: center;
-  margin-top: 1.2rem;
+  margin-top: 1rem;
 }
 
 .button-get-plan a {
-  display: flex;
-  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  padding: 6px 16px;
+  font-size: 14px;
+  color: rgb(193, 163, 98) !important;
+  border: 1px solid rgb(193, 163, 98) !important;
+  border-radius: 25px;
+  background-color: transparent !important;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+  overflow: hidden;
+  display: inline-flex;
   align-items: center;
-  background: #000446;
-  color: #fff;
-  padding: 10px 15px;
-  border-radius: 5px;
+  justify-content: center;
   text-decoration: none;
-  font-size: .8rem;
-  letter-spacing: .05rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
 }
 
-.button-get-plan a:hover {
-  transform: translateY(-3%);
-  box-shadow: 0 3px 10px rgba(207, 212, 222, 0.9);
+.button-get-plan a::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 35px;
+  height: 35px;
+  border-radius: inherit;
+  scale: 0;
+  z-index: -1;
+  background-color: rgb(193, 163, 98) !important;
+  transition: all 0.6s cubic-bezier(0.23, 1, 0.320, 1);
 }
 
 .button-get-plan .svg-rocket {
-  margin-right: 10px;
-  width: .9rem;
-  fill: currentColor;
+  margin-right: 6px;
+  width: .7rem;
+  fill: rgb(193, 163, 98) !important;
+  transition: all 0.3s ease;
+}
+
+.button-get-plan a:hover::before {
+  scale: 3;
+}
+
+.button-get-plan a:hover {
+  color: #212121 !important;
+  scale: 1.1;
+  box-shadow: 0 0px 20px rgba(193, 163, 98, 0.4) !important;
+  text-decoration: none;
+}
+
+.button-get-plan a:hover .svg-rocket {
+  fill: #212121 !important;
 }
 </style>
 @endsection
 
+<!-- Fast Check For Premium Status Before Page Loads -->
+<script>
+    // Function to get cookie value by name
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+    
+    // Function to enable premium features immediately if cookie is set
+    window.applyPremiumStatus = function() {
+        // Check for premium status in localStorage or cookies
+        if (localStorage.getItem('isPremium') === 'true' || getCookie('is_premium') === 'true') {
+            console.log('Premium status detected, applying immediately');
+            
+            // Add premium class to body for CSS targeting
+            document.body.classList.add('premium-account');
+            
+            // This will be picked up by the DOMContentLoaded event handler
+            window.forcePremium = true;
+        }
+    };
+    
+    // Apply premium status immediately
+    applyPremiumStatus();
+</script>
+
 @section('content')
 <div class="container-fluid py-4">
+    @php
+        // Check for premium status from multiple sources
+        $tenantData = tenant();
+        $isPremiumFromTenant = $tenantData && isset($tenantData->subscription_plan) && $tenantData->subscription_plan === 'premium';
+        
+        // Check if we have a session variable indicating premium
+        $isPremiumFromSession = session('is_premium') === true;
+        
+        // Check if there's a cookie indicating premium
+        $isPremiumFromCookie = isset($_COOKIE['is_premium']) && $_COOKIE['is_premium'] === 'true';
+        
+        // Use any source
+        $isPremium = $isPremiumFromTenant || $isPremiumFromSession || $isPremiumFromCookie;
+        
+        // If premium from any source, set session to ensure consistency
+        if ($isPremium && !session('is_premium')) {
+            session(['is_premium' => true]);
+        }
+    @endphp
+    
     <div class="row">
         <div class="col-12">
             <div class="card border-0 shadow-sm mb-4">
@@ -239,22 +460,26 @@
                                 
                                 <!-- Check if premium -->
                                 @php
-                                    // Get the tenant's subscription plan - basic users can't edit profile
-                                    // Add null check to prevent "Attempt to read property on null" error
-                                    $tenantData = tenant();
-                                    $isPremium = $tenantData && isset($tenantData->subscription_plan) && $tenantData->subscription_plan === 'premium';
+                                    // Already computed $isPremium at the top of the file
                                 @endphp
                                 
                                 <div class="mt-2">
-                                    <span class="badge bg-{{ $isPremium ? 'info' : 'secondary' }} rounded-pill px-3 py-2">
-                                        {{ $isPremium ? 'Premium' : 'Basic' }}
+                                    @if($isPremium)
+                                    <div class="premium-badge">
+                                        <i class="fas fa-crown"></i>
+                                        <span>Premium</span>
+                                    </div>
+                                    @else
+                                    <span class="badge bg-secondary rounded-pill px-3 py-2" data-subscription-status>
+                                        Basic
                                     </span>
+                                    @endif
                                 </div>
                                 
                                 @if(!$isPremium)
                                 <div class="mt-3">
-                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#subscriptionModal">
-                                        <i class="fas fa-crown me-1"></i> Upgrade to Premium
+                                    <button type="button" class="premium-button" data-bs-toggle="modal" data-bs-target="#subscriptionModal">
+                                        <i class="fas fa-crown"></i>Upgrade to Premium
                                     </button>
                                 </div>
                                 @endif
@@ -328,8 +553,8 @@
                                             </button>
                                             
                                             @if(!$isPremium)
-                                            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#subscriptionModal">
-                                                <i class="fas fa-crown me-2"></i>Upgrade to Edit
+                                            <button type="button" class="premium-button" data-bs-toggle="modal" data-bs-target="#subscriptionModal">
+                                                <i class="fas fa-crown"></i>Upgrade to Edit
                                             </button>
                                             @endif
                                         </div>
@@ -380,8 +605,8 @@
                                             </button>
                                             
                                             @if(!$isPremium)
-                                            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#subscriptionModal">
-                                                <i class="fas fa-crown me-2"></i>Upgrade to Edit
+                                            <button type="button" class="premium-button" data-bs-toggle="modal" data-bs-target="#subscriptionModal">
+                                                <i class="fas fa-crown"></i>Upgrade to Edit
                                             </button>
                                             @endif
                                         </div>
@@ -479,8 +704,8 @@
                                 </ul>
                             </div>
                             <div class="card-footer bg-white text-center py-3 border-0">
-                                <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#contactSupportModal" data-bs-dismiss="modal">
-                                    <i class="fas fa-rocket me-2"></i>Upgrade Now
+                                <button type="button" class="premium-button btn-lg" id="upgradeNowBtn" data-bs-toggle="modal" data-bs-target="#contactSupportModal" data-bs-dismiss="modal">
+                                    <i class="fas fa-rocket"></i>Upgrade Now
                                 </button>
                             </div>
                         </div>
@@ -500,72 +725,72 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="contactSupportModalLabel">
-                    <i class="fas fa-headset me-2"></i>Contact Support
+                    <i class="fas fa-crown text-warning me-2"></i><span id="contactModalTitle">Upgrade Subscription</span>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="text-center mb-4">
-                    <i class="fas fa-crown text-warning fa-3x mb-3"></i>
-                    <h4>Ready to Upgrade?</h4>
-                    <p class="text-muted">Contact our support team to upgrade your account to Premium.</p>
+            <div class="modal-body" id="contactModalBody">
+                <!-- Success message content (initially hidden) -->
+                <div id="successMessage" class="text-center py-4" style="display: none;">
+                    <i class="fas fa-check-circle text-success fa-5x mb-4"></i>
+                    <h4>Upgrade Successful!</h4>
+                    <p class="text-muted mb-0">Your account has been upgraded to Premium.</p>
+                    <p class="text-muted mb-3">You can now edit your profile information.</p>
                 </div>
                 
-                <div class="card border-0 shadow-sm mb-3">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="rounded-circle p-2 bg-primary bg-opacity-10 me-3">
-                                <i class="fas fa-envelope text-primary"></i>
+                <!-- Form content (initially shown) -->
+                <div id="contactFormContent">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-crown text-warning fa-3x mb-3"></i>
+                        <h4>Confirm Subscription Upgrade</h4>
+                        <p class="text-muted">You're about to upgrade to our Premium plan. Click the button below to confirm.</p>
+                    </div>
+                    
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="rounded-circle p-2 bg-success bg-opacity-10 me-3">
+                                    <i class="fas fa-check-circle text-success"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Immediate Access</h6>
+                                    <p class="mb-0 small text-muted">Your account will be upgraded instantly</p>
+                                </div>
                             </div>
-                            <div>
-                                <h6 class="mb-1">Email Support</h6>
-                                <p class="mb-0 small text-muted">support@bukskwela.com</p>
+                            
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="rounded-circle p-2 bg-primary bg-opacity-10 me-3">
+                                    <i class="fas fa-unlock text-primary"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Premium Features</h6>
+                                    <p class="mb-0 small text-muted">Edit profile, change password, and more</p>
+                                </div>
                             </div>
-                        </div>
-                        
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="rounded-circle p-2 bg-success bg-opacity-10 me-3">
-                                <i class="fas fa-phone-alt text-success"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-1">Phone Support</h6>
-                                <p class="mb-0 small text-muted">+1 (234) 567-8900</p>
-                            </div>
-                        </div>
-                        
-                        <div class="d-flex align-items-center">
-                            <div class="rounded-circle p-2 bg-info bg-opacity-10 me-3">
-                                <i class="fas fa-comment text-info"></i>
-                            </div>
-                            <div>
-                                <h6 class="mb-1">Live Chat</h6>
-                                <p class="mb-0 small text-muted">Available 24/7</p>
+                            
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle p-2 bg-info bg-opacity-10 me-3">
+                                    <i class="fas fa-headset text-info"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">Premium Support</h6>
+                                    <p class="mb-0 small text-muted">Get priority customer service</p>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    
+                    <form id="contactForm">
+                        <input type="hidden" id="fullName" value="{{ $user->name }}">
+                        <input type="hidden" id="email" value="{{ $user->email }}">
+                        <input type="hidden" id="message" value="Upgrading to Premium plan">
+                    </form>
                 </div>
-                
-                <form>
-                    <div class="mb-3">
-                        <label for="fullName" class="form-label">Full Name</label>
-                        <input type="text" class="form-control" id="fullName" value="{{ $user->name }}" readonly>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="email" value="{{ $user->email }}" readonly>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="message" class="form-label">Message</label>
-                        <textarea class="form-control" id="message" rows="3" placeholder="I'd like to upgrade to the Premium plan..."></textarea>
-                    </div>
-                </form>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer" id="contactModalFooter">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="sendSupportRequest">
-                    <i class="fas fa-paper-plane me-2"></i>Send Request
+                <button type="button" class="premium-button" id="sendSupportRequest">
+                    <i class="fas fa-crown"></i>Upgrade Now
                 </button>
             </div>
         </div>
@@ -600,12 +825,53 @@
     
     // For non-premium users, show subscription modal when trying to interact with disabled fields
     document.addEventListener('DOMContentLoaded', function() {
-        // Check if premium with proper null checks
+        // Check if premium with proper null checks or from localStorage or forced premium
         @php
             $tenantData = tenant();
             $isPremiumJs = $tenantData && isset($tenantData->subscription_plan) && $tenantData->subscription_plan === 'premium';
+            $isPremiumJs = $isPremium; // Use our comprehensive check from above
         @endphp
-        const isPremium = {{ $isPremiumJs ? 'true' : 'false' }};
+        let isPremium = {{ $isPremiumJs ? 'true' : 'false' }};
+        
+        // Check if window.forcePremium is set by our early script
+        if (window.forcePremium === true) {
+            console.log('Forced premium mode detected');
+            isPremium = true;
+        }
+        
+        // Check localStorage for premium status - this handles cases where the tenant() function
+        // doesn't immediately reflect database changes after a refresh
+        if (!isPremium && (localStorage.getItem('isPremium') === 'true' || getCookie('is_premium') === 'true')) {
+            console.log('Premium status detected in storage, enabling premium features');
+            isPremium = true;
+            
+            // Update the UI immediately to reflect premium status
+            const premiumBadge = document.querySelector('.badge[data-subscription-status]');
+            if (premiumBadge) {
+                // Create new premium badge with gold styling
+                const newBadge = document.createElement('div');
+                newBadge.className = 'premium-badge';
+                newBadge.innerHTML = '<i class="fas fa-crown"></i><span>Premium</span>';
+                
+                // Replace old badge with new one
+                premiumBadge.parentNode.replaceChild(newBadge, premiumBadge);
+            }
+            
+            // Remove warning alerts
+            const warningAlerts = document.querySelectorAll('.alert-warning');
+            warningAlerts.forEach(alert => {
+                alert.style.display = 'none';
+            });
+            
+            // Remove upgrade buttons
+            const upgradeButtons = document.querySelectorAll('button[data-bs-target="#subscriptionModal"]');
+            upgradeButtons.forEach(button => {
+                button.style.display = 'none';
+            });
+            
+            // Enable form inputs
+            enableProfileEditing();
+        }
         
         if (!isPremium) {
             // Add listeners to form fields in profile tab
@@ -660,36 +926,201 @@
                 }
             });
         }
-    });
-    
-    // Handle support form submission
-    document.getElementById('sendSupportRequest')?.addEventListener('click', function() {
-        // Get the message
-        const message = document.getElementById('message').value.trim();
         
-        if (!message) {
-            alert('Please enter a message for the support team.');
-            return;
+        // Auto-show success on clicking Upgrade Now button
+        document.getElementById('upgradeNowBtn')?.addEventListener('click', function(e) {
+            // The modal transition will be handled more carefully
+            // No immediate actions here - let the modal open naturally
+        });
+        
+        // Handle subscription upgrade confirmation
+        document.getElementById('sendSupportRequest')?.addEventListener('click', function() {
+            // Start by showing a processing state
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>Processing...';
+            
+            // Process the upgrade with a slight delay to show the spinner
+            setTimeout(function() {
+                // Update the subscription plan via AJAX
+                updateSubscriptionPlan();
+            }, 800);
+        });
+        
+        // Function to update subscription plan via AJAX
+        function updateSubscriptionPlan() {
+            // Get CSRF token from meta tag
+            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            
+            // Disable the upgrade button and show loading state
+            const upgradeButton = document.getElementById('sendSupportRequest');
+            if (upgradeButton) {
+                upgradeButton.disabled = true;
+                upgradeButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>Processing...';
+            }
+            
+            // Send AJAX request to update subscription plan
+            fetch('{{ route("profile.update-subscription", ["tenant" => tenant("id")]) }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': token
+                },
+                body: JSON.stringify({
+                    subscription_plan: 'premium',
+                    user_id: '{{ $user->id }}',
+                    user_name: '{{ $user->name }}',
+                    user_email: '{{ $user->email }}',
+                    message: document.getElementById('message').value || 'Upgraded to Premium plan',
+                    set_session: true // Add flag to set session variable
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Server endpoint not found. Please try refreshing the page.');
+                    }
+                    throw new Error('Server returned status ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Subscription update response:', data);
+                
+                // If the update was successful, update both database fields and session
+                if (data.success) {
+                    // Update the local storage to indicate premium status
+                    localStorage.setItem('isPremium', 'true');
+                    localStorage.setItem('subscriptionPlan', 'premium');
+                    
+                    // Set a cookie to maintain state across page refreshes
+                    document.cookie = "is_premium=true; path=/; max-age=86400";
+                    
+                    // Enable all form fields immediately
+                    enableProfileEditing();
+                    
+                    // Show success message with a delay to ensure modal transition is complete
+                    setTimeout(() => {
+                        showSuccessMessage();
+                        
+                        // Update UI to show premium status
+                        const premiumBadge = document.querySelector('.badge[data-subscription-status]');
+                        if (premiumBadge) {
+                            // Create new premium badge with gold styling
+                            const newBadge = document.createElement('div');
+                            newBadge.className = 'premium-badge';
+                            newBadge.innerHTML = '<i class="fas fa-crown"></i><span>Premium</span>';
+                            
+                            // Replace old badge with new one
+                            premiumBadge.parentNode.replaceChild(newBadge, premiumBadge);
+                        }
+                        
+                        // Remove upgrade buttons
+                        const upgradeButtons = document.querySelectorAll('button[data-bs-target="#subscriptionModal"]');
+                        upgradeButtons.forEach(button => {
+                            button.style.display = 'none';
+                        });
+                        
+                        // Force reload after successful update to reflect changes server-side
+                        setTimeout(() => {
+                            // Add a query parameter to force a fresh load
+                            window.location.href = window.location.pathname + '?upgraded=true&t=' + new Date().getTime();
+                        }, 3000);
+                    }, 1000);
+                } else {
+                    showErrorMessage(data.message || 'Failed to upgrade subscription.');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating subscription:', error);
+                showErrorMessage(error.message || 'Failed to connect to server. Please try again.');
+                
+                // Still enable editing if we have localStorage premium status despite the error
+                if (localStorage.getItem('isPremium') === 'true') {
+                    enableProfileEditing();
+                    showSuccessMessage();
+                }
+            });
         }
         
-        // Show success message within the modal
-        const modal = document.getElementById('contactSupportModal');
-        const modalBody = modal.querySelector('.modal-body');
-        const modalFooter = modal.querySelector('.modal-footer');
+        // Function to enable profile editing
+        function enableProfileEditing() {
+            // Remove readonly and disabled attributes from all inputs
+            const allInputs = document.querySelectorAll('input[readonly], input[disabled], textarea[readonly], textarea[disabled], button[disabled]');
+            allInputs.forEach(input => {
+                if(input.id !== 'sendSupportRequest') {
+                    input.removeAttribute('readonly');
+                    input.removeAttribute('disabled');
+                }
+            });
+            
+            // Remove all warning alerts about basic plan
+            const warningAlerts = document.querySelectorAll('.alert-warning');
+            warningAlerts.forEach(alert => {
+                alert.style.display = 'none';
+            });
+        }
         
-        modalBody.innerHTML = `
-            <div class="text-center py-4">
-                <i class="fas fa-check-circle text-success fa-5x mb-4"></i>
-                <h4>Request Sent Successfully!</h4>
-                <p class="text-muted mb-0">Our team will contact you shortly about upgrading your account.</p>
-            </div>
-        `;
+        // Function to show error message in the modal
+        function showErrorMessage(message) {
+            // Reset the upgrade button
+            const upgradeButton = document.getElementById('sendSupportRequest');
+            if (upgradeButton) {
+                upgradeButton.disabled = false;
+                upgradeButton.innerHTML = '<i class="fas fa-crown"></i>Upgrade Now';
+            }
+            
+            // Create alert element
+            const errorAlert = document.createElement('div');
+            errorAlert.className = 'alert alert-danger';
+            errorAlert.innerHTML = `<i class="fas fa-exclamation-circle me-2"></i>${message}`;
+            
+            // Find the form content area and add the alert
+            const formContent = document.getElementById('contactFormContent');
+            if (formContent) {
+                // Remove any existing error alerts
+                const existingAlerts = formContent.querySelectorAll('.alert-danger');
+                existingAlerts.forEach(alert => alert.remove());
+                
+                // Add the new alert at the top
+                formContent.prepend(errorAlert);
+                
+                // Make sure the form content is visible
+                formContent.style.display = 'block';
+            }
+        }
         
-        modalFooter.innerHTML = `
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        `;
-        
-        // You would typically send an AJAX request to the server here
+        // Function to show success message
+        function showSuccessMessage() {
+            // Update modal content
+            document.getElementById('contactModalTitle').textContent = 'Upgrade Complete';
+            document.getElementById('contactFormContent').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'block';
+            
+            // Update footer with option to close or continue to edit profile
+            document.getElementById('contactModalFooter').innerHTML = `
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="premium-button" id="continueToProfile" data-bs-dismiss="modal">
+                    <i class="fas fa-user-edit"></i>Edit Profile Now
+                </button>
+            `;
+            
+            // Add click handler to focus on profile tab after closing
+            setTimeout(() => {
+                document.getElementById('continueToProfile')?.addEventListener('click', function() {
+                    // Focus on the profile tab
+                    document.getElementById('profile-tab').click();
+                    // Focus on the name field
+                    setTimeout(() => document.getElementById('name').focus(), 300);
+                });
+            }, 100);
+            
+            // Force a refresh after 3 minutes to ensure all changes are reflected
+            setTimeout(() => {
+                if (localStorage.getItem('isPremium') === 'true') {
+                    window.location.reload();
+                }
+            }, 180000); // 3 minutes
+        }
     });
 </script>
 @endsection

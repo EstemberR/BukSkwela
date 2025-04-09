@@ -41,4 +41,12 @@ class TenantAdmin extends Authenticatable
         
         return $this->tenant->status === 'approved';
     }
+    
+    /**
+     * Get the admin's settings
+     */
+    public function settings()
+    {
+        return $this->morphOne(UserSettings::class, 'user');
+    }
 }

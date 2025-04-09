@@ -7,6 +7,7 @@ use Illuminate\Notifications\Notifiable;
 use App\Models\Course\Course;
 use App\Models\Student\Student;
 use App\Models\Department;
+use App\Models\UserSettings;
 use App\Traits\HasTenantConnection;
 
 class Staff extends Authenticatable
@@ -61,6 +62,14 @@ class Staff extends Authenticatable
         } catch (\Exception $e) {
             return null;
         }
+    }
+    
+    /**
+     * Get the staff member's settings
+     */
+    public function settings()
+    {
+        return $this->morphOne(UserSettings::class, 'user');
     }
     
     // Boot method to ensure tenant_id is set

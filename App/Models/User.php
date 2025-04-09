@@ -22,4 +22,12 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+    
+    /**
+     * Get the user's settings
+     */
+    public function settings()
+    {
+        return $this->morphOne(UserSettings::class, 'user');
+    }
 }

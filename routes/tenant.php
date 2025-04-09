@@ -172,3 +172,14 @@ Route::middleware(['web', 'tenant'])->group(function () {
 Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
 Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+
+// Settings Routes - Protected with the auth:admin,staff middleware
+Route::middleware(['auth:admin,staff'])->group(function () {
+    Route::get('/settings', [\App\Http\Controllers\Settings\SettingsController::class, 'index'])->name('tenant.settings');
+    Route::post('/settings/save', [\App\Http\Controllers\Settings\SettingsController::class, 'saveSettings'])->name('tenant.settings.save');
+});
+
+// Subscription update route - now inside middleware group
+Route::middleware(['web', 'tenant'])->group(function () {
+    Route::post('/update-subscription', [ProfileController::class, 'updateSubscription'])->name('profile.update-subscription');
+});
