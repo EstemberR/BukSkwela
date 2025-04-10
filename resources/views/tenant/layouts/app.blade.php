@@ -3068,7 +3068,7 @@
                 
                 <ul class="nav flex-column px-3 flex-grow-1">
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('tenant.dashboard') ? 'active' : '' }}" 
+                        <a class="nav-link {{ request()->routeIs('tenant.dashboard') || request()->routeIs('tenant.dashboard.*') ? 'active' : '' }}" 
                            href="{{ route('tenant.dashboard', ['tenant' => tenant('id')]) }}">
                             <i class="fas fa-home"></i> <span>Dashboard</span>
                         </a>
@@ -3098,6 +3098,40 @@
                         </a>
                     </li>
                     <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {{ request()->routeIs('tenant.dashboard') || request()->routeIs('tenant.dashboard.*') ? 'active' : '' }}" 
+                           href="#"
+                           data-bs-toggle="dropdown" 
+                           aria-expanded="false">
+                            <div class="nav-content">
+                                <i class="fas fa-home"></i>
+                                <span>Dashboard</span>
+                            </div>
+                            <i class="fas fa-chevron-down dropdown-icon"></i>
+                        </a>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item {{ request()->routeIs('tenant.dashboard') && !request()->routeIs('tenant.dashboard.*') ? 'active' : '' }}" 
+                               href="{{ route('tenant.dashboard', ['tenant' => tenant('id')]) }}">
+                                <i class="fas fa-th-large"></i>
+                                <span>Default</span>
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('tenant.dashboard.standard') ? 'active' : '' }}" 
+                               href="{{ route('tenant.dashboard.standard', ['tenant' => tenant('id')]) }}">
+                                <i class="fas fa-columns"></i>
+                                <span>Standard Layout</span>
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('tenant.dashboard.compact') ? 'active' : '' }}" 
+                               href="{{ route('tenant.dashboard.compact', ['tenant' => tenant('id')]) }}">
+                                <i class="fas fa-compress"></i>
+                                <span>Compact Layout</span>
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('tenant.dashboard.modern') ? 'active' : '' }}" 
+                               href="{{ route('tenant.dashboard.modern', ['tenant' => tenant('id')]) }}">
+                                <i class="fas fa-tv"></i>
+                                <span>Modern Layout</span>
+                            </a>
+                        </div>
+                    </li>
+                    <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ request()->routeIs('tenant.reports.*') ? 'active' : '' }}" 
                            href="#"
                            data-bs-toggle="dropdown" 
@@ -3123,11 +3157,6 @@
                                href="{{ route('tenant.reports.courses', ['tenant' => tenant('id')]) }}">
                                 <i class="fas fa-book-open"></i>
                                 <span>Course Reports</span>
-                            </a>
-                            <a class="dropdown-item" 
-                               href="{{ route('tenant.reports.requirements', ['tenant' => tenant('id')]) }}">
-                                <i class="fas fa-tasks"></i>
-                                <span>Requirements Reports</span>
                             </a>
                         </div>
                     </li>

@@ -152,6 +152,11 @@ Route::middleware(['web'])
                 Route::get('/staff', [App\Http\Controllers\Reports\ReportsController::class, 'staff'])->name('staff');
                 Route::get('/courses', [App\Http\Controllers\Reports\ReportsController::class, 'courses'])->name('courses');
                 Route::get('/requirements', [App\Http\Controllers\Reports\ReportsController::class, 'requirements'])->name('requirements');
+                
+                // PDF Download Routes
+                Route::get('/students/pdf', [App\Http\Controllers\Reports\ReportsPdfController::class, 'downloadStudentsPdf'])->name('students.pdf');
+                Route::get('/staff/pdf', [App\Http\Controllers\Reports\ReportsPdfController::class, 'downloadStaffPdf'])->name('staff.pdf');
+                Route::get('/courses/pdf', [App\Http\Controllers\Reports\ReportsPdfController::class, 'downloadCoursesPdf'])->name('courses.pdf');
             });
         });
 

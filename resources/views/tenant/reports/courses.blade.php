@@ -6,7 +6,12 @@
 <div class="container">
     <div class="card">
         <div class="card-header">
-            <h4>Course Reports</h4>
+            <h4>Courses Reports</h4>
+            <div class="mt-2">
+                <a href="{{ route('tenant.reports.courses.pdf', ['tenant' => tenant('id')]) }}" class="btn btn-danger">
+                    <i class="fas fa-file-pdf me-1"></i> Download PDF
+                </a>
+            </div>
         </div>
         <div class="card-body">
             @if($courses->isEmpty())
@@ -15,207 +20,314 @@
                 </div>
             @else
                 <div class="row mb-4">
-                    <div class="col-md-4">
-                        <div class="card shadow-sm">
-                            <div class="card-header">
-                                <h5>Students per Course</h5>
+                    <div class="col-md-6">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Students Enrolled Distribution</h5>
                             </div>
-                            <div class="card-body">
-                                <canvas id="studentsPerCourseChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card shadow-sm">
-                            <div class="card-header">
-                                <h5>Course Status Distribution</h5>
-                            </div>
-                            <div class="card-body">
-                                <canvas id="courseStatusChart"></canvas>
+                            <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 350px;">
+                                <div style="position: relative; height: 100%; width: 100%;">
+                                    <canvas id="studentsPerCourseChart"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="card shadow-sm">
-                            <div class="card-header">
-                                <h5>Instructor Assignment</h5>
+                    <div class="col-md-6">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Active vs Inactive Courses</h5>
                             </div>
-                            <div class="card-body">
-                                <canvas id="instructorAssignmentChart"></canvas>
+                            <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 350px;">
+                                <div style="position: relative; height: 100%; width: 100%;">
+                                    <canvas id="courseStatusChart"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 
+                <h4 class="mt-5 mb-4">Individual Course Enrollment</h4>
+                
                 <div class="row">
-                    <div class="col-md-12">
-                        <div class="card shadow-sm">
-                            <div class="card-header">
-                                <h5>Course Details</h5>
+                    @foreach($courses as $course)
+                    <div class="col-md-4 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">{{ $course->code ?? '' }} {{ $course->name ?? 'Untitled Course' }}</h5>
                             </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th>Course Code</th>
-                                                <th>Title</th>
-                                                <th>Description</th>
-                                                <th>Instructor</th>
-                                                <th>Students</th>
-                                                <th>Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach($courses as $course)
-                                            <tr>
-                                                <td>{{ $course->code }}</td>
-                                                <td>{{ $course->title }}</td>
-                                                <td>{{ $course->description }}</td>
-                                                <td>{{ $course->staff->name ?? 'No Instructor Assigned' }}</td>
-                                                <td>{{ $course->students->count() }}</td>
-                                                <td>
-                                                    <span class="badge bg-{{ $course->status == 'active' ? 'success' : 'warning' }}">
-                                                        {{ ucfirst($course->status) }}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
+                            <div class="card-body d-flex flex-column">
+                                <div class="mb-3">
+                                    <span class="badge bg-{{ $course->status == 'active' ? 'success' : 'warning' }}">
+                                        {{ ucfirst($course->status ?? 'unknown') }}
+                                    </span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-center flex-grow-1" style="min-height: 250px;">
+                                    <div style="position: relative; height: 100%; width: 100%;">
+                                        <canvas id="courseChart{{ $course->id }}"></canvas>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    @endforeach
                 </div>
             @endif
         </div>
     </div>
 </div>
 
-@push('scripts')
+<!-- Move the Chart.js scripts directly into the content section -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     @if(!$courses->isEmpty())
-    // Students per Course Chart
-    const studentsPerCourseCtx = document.getElementById('studentsPerCourseChart').getContext('2d');
+    // Define a professional color palette for the charts
+    const colorPalette = [
+        '#4e73df', // Primary blue
+        '#1cc88a', // Success green
+        '#36b9cc', // Info teal
+        '#f6c23e', // Warning yellow
+        '#e74a3b', // Danger red
+        '#6f42c1', // Purple
+        '#fd7e14', // Orange
+        '#20c9a6', // Teal variant
+        '#5a5c69', // Gray
+        '#858796', // Light gray
+        '#2e59d9', // Royal blue
+        '#17a673', // Forest green
+    ];
+
+    const studentsPerCourseCtx = document.getElementById('studentsPerCourseChart');
+    const courseLabels = [
+        @foreach($courses as $course)
+            "{{ ($course->code ?? '') }} {{ substr(($course->name ?? 'Untitled Course'), 0, 20) }}{{ strlen($course->name ?? '') > 20 ? '...' : '' }}",
+        @endforeach
+    ];
+    
+    const studentCounts = [
+        @foreach($courses as $course)
+            {{ $course->students->count() }},
+        @endforeach
+    ];
+    
+    // Students per Course Chart - Professional configuration
     const studentsPerCourseChart = new Chart(studentsPerCourseCtx, {
         type: 'pie',
         data: {
-            labels: [
-                @foreach($courses as $course)
-                    "{{ $course->code ?? 'Unknown' }} - {{ $course->title ?? 'Untitled' }}",
-                @endforeach
-            ],
+            labels: courseLabels,
             datasets: [{
-                data: [
-                    @foreach($courses as $course)
-                        {{ $course->students->count() }},
-                    @endforeach
-                ],
-                backgroundColor: [
-                    @foreach($courses as $index => $course)
-                        'hsl({{ ($index * 360 / max(1, count($courses))) }}, 70%, 60%)',
-                    @endforeach
-                ],
-                borderWidth: 1
+                data: studentCounts,
+                backgroundColor: colorPalette.slice(0, courseLabels.length),
+                borderColor: '#ffffff',
+                borderWidth: 2,
+                hoverBackgroundColor: colorPalette.map(color => {
+                    // Make hover colors slightly brighter
+                    return color.replace(/\d+(?=\))/g, m => Math.min(255, parseInt(m) + 20));
+                }),
+                hoverBorderColor: '#ffffff',
+                hoverBorderWidth: 3
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: 20
+            },
             plugins: {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        boxWidth: 12
+                        padding: 20,
+                        boxWidth: 12,
+                        font: {
+                            size: 11,
+                            weight: 'bold'
+                        },
+                        usePointStyle: true,
+                        pointStyle: 'circle'
                     }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    padding: 15,
+                    cornerRadius: 5,
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return `${label}: ${value} students (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            animation: {
+                animateScale: true,
+                animateRotate: true,
+                duration: 1000,
+                easing: 'easeInOutQuart'
+            },
+            elements: {
+                arc: {
+                    borderWidth: 2
                 }
             }
         }
     });
 
-    // Course Status Chart
-    const statusCounts = {
-        @php
-            $statuses = $courses->groupBy('status')->map->count();
-            $statusArray = [];
-            foreach($statuses as $status => $count) {
-                $statusArray[] = "'" . ($status ?? 'Unknown') . "': " . $count;
-            }
-            echo implode(', ', $statusArray);
-        @endphp
-    };
-
-    const courseStatusCtx = document.getElementById('courseStatusChart').getContext('2d');
+    // Course Status Chart - Professional configuration
+    const courseStatusCtx = document.getElementById('courseStatusChart');
+    const activeCount = {{ $courses->where('status', 'active')->count() }};
+    const inactiveCount = {{ $courses->count() - $courses->where('status', 'active')->count() }};
+    
     const courseStatusChart = new Chart(courseStatusCtx, {
         type: 'pie',
         data: {
-            labels: Object.keys(statusCounts).map(status => status.charAt(0).toUpperCase() + status.slice(1)),
+            labels: ['Active Courses', 'Inactive Courses'],
             datasets: [{
-                data: Object.values(statusCounts),
-                backgroundColor: [
-                    'hsl(120, 70%, 60%)', 
-                    'hsl(40, 70%, 60%)', 
-                    'hsl(0, 70%, 60%)',
-                    'hsl(200, 70%, 60%)'
-                ],
-                borderWidth: 1
+                data: [activeCount, inactiveCount],
+                backgroundColor: ['#1cc88a', '#e74a3b'],
+                borderColor: '#ffffff',
+                borderWidth: 2,
+                hoverBackgroundColor: ['#25e6a1', '#ff5b4c'],
+                hoverBorderColor: '#ffffff',
+                hoverBorderWidth: 3
             }]
         },
         options: {
             responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            }
-        }
-    });
-
-    // Instructor Assignment Chart
-    const instructorAssignmentCtx = document.getElementById('instructorAssignmentChart').getContext('2d');
-    const instructorCounts = {
-        @php
-            $instructors = $courses->groupBy(function($course) {
-                return $course->staff ? $course->staff->name : 'No Instructor Assigned';
-            })->map->count();
-            $instructorArray = [];
-            foreach($instructors as $instructor => $count) {
-                $instructorArray[] = "'" . ($instructor ?? 'Unknown') . "': " . $count;
-            }
-            echo implode(', ', $instructorArray);
-        @endphp
-    };
-
-    const instructorAssignmentChart = new Chart(instructorAssignmentCtx, {
-        type: 'pie',
-        data: {
-            labels: Object.keys(instructorCounts),
-            datasets: [{
-                data: Object.values(instructorCounts),
-                backgroundColor: [
-                    @foreach($instructors as $index => $count)
-                        'hsl({{ (200 + $index * 40) % 360 }}, 70%, 60%)',
-                    @endforeach
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: 20
+            },
             plugins: {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        boxWidth: 12
+                        padding: 20,
+                        boxWidth: 12,
+                        font: {
+                            size: 11,
+                            weight: 'bold'
+                        },
+                        usePointStyle: true,
+                        pointStyle: 'circle'
                     }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    padding: 15,
+                    cornerRadius: 5,
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            animation: {
+                animateScale: true,
+                animateRotate: true,
+                duration: 1000,
+                easing: 'easeInOutQuart'
+            },
+            elements: {
+                arc: {
+                    borderWidth: 2
                 }
             }
         }
     });
+    
+    // Individual Course Enrollment Charts
+    @foreach($courses as $course)
+    (function() {
+        const courseCtx = document.getElementById('courseChart{{ $course->id }}');
+        const studentCount = {{ $course->students->count() }};
+        
+        const courseChart = new Chart(courseCtx, {
+            type: 'pie',
+            data: {
+                labels: studentCount > 0 ? ['Enrolled Students'] : ['No Students'],
+                datasets: [{
+                    data: studentCount > 0 ? [studentCount] : [1],
+                    backgroundColor: studentCount > 0 ? ['#1cc88a'] : ['#e74a3b'],
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                    padding: 10
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: {
+                                size: 11,
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        callbacks: {
+                            label: function(context) {
+                                if (studentCount > 0) {
+                                    return `Enrolled Students: ${studentCount}`;
+                                } else {
+                                    return 'No students enrolled';
+                                }
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: studentCount > 0 ? `${studentCount} Students Enrolled` : 'No Students Enrolled',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            top: 10,
+                            bottom: 20
+                        },
+                        color: studentCount > 0 ? '#1cc88a' : '#e74a3b'
+                    }
+                },
+                animation: {
+                    animateScale: true,
+                    animateRotate: true,
+                    duration: 800
+                }
+            }
+        });
+    })();
+    @endforeach
     @endif
 });
 </script>
-@endpush
 @endsection 

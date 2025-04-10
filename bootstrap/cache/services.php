@@ -40,6 +40,7 @@
     36 => 'App\\Providers\\TenancyServiceProvider',
     37 => 'App\\Providers\\TenancyHelperServiceProvider',
     38 => 'Stancl\\Tenancy\\TenancyServiceProvider',
+    39 => 'Barryvdh\\DomPDF\\ServiceProvider',
   ),
   'eager' => 
   array (
@@ -68,6 +69,7 @@
     22 => 'App\\Providers\\TenancyServiceProvider',
     23 => 'App\\Providers\\TenancyHelperServiceProvider',
     24 => 'Stancl\\Tenancy\\TenancyServiceProvider',
+    25 => 'Barryvdh\\DomPDF\\ServiceProvider',
   ),
   'deferred' => 
   array (
