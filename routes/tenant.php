@@ -41,6 +41,26 @@ Route::middleware(['web', 'tenant', 'auth:admin'])
         // Main dashboard route
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->name('tenant.dashboard');
+            
+        // Layout-specific dashboard routes
+        Route::get('/dashboard-standard', function () {
+            // Pass the same data that DashboardController provides
+            $controller = new DashboardController();
+            $data = $controller->getDashboardData();
+            return view('tenant.dashboard-standard', $data);
+        })->name('tenant.dashboard.standard');
+        
+        Route::get('/dashboard-compact', function () {
+            $controller = new DashboardController();
+            $data = $controller->getDashboardData();
+            return view('tenant.dashboard-compact', $data);
+        })->name('tenant.dashboard.compact');
+        
+        Route::get('/dashboard-modern', function () {
+            $controller = new DashboardController();
+            $data = $controller->getDashboardData();
+            return view('tenant.dashboard-modern', $data);
+        })->name('tenant.dashboard.modern');
 
         Route::prefix('admin')->group(function () {
             // Remove the admin dashboard route since we're using the main one
@@ -177,6 +197,12 @@ Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->n
 Route::middleware(['auth:admin,staff'])->group(function () {
     Route::get('/settings', [\App\Http\Controllers\Settings\SettingsController::class, 'index'])->name('tenant.settings');
     Route::post('/settings/save', [\App\Http\Controllers\Settings\SettingsController::class, 'saveSettings'])->name('tenant.settings.save');
+    Route::post('/settings/save-layout', [\App\Http\Controllers\Settings\SettingsController::class, 'saveLayout'])->name('tenant.settings.saveLayout');
+});
+
+// Public route for getting layout settings (accessible to all authenticated users)
+Route::middleware(['web', 'tenant'])->group(function () {
+    Route::get('/settings/get-layout', [\App\Http\Controllers\Settings\SettingsController::class, 'getLayout'])->name('tenant.settings.getLayout');
 });
 
 // Subscription update route - now inside middleware group

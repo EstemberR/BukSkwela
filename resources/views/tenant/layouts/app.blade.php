@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -136,6 +136,263 @@
             z-index: 1000;
             overflow: hidden;
             transition: all 0.3s ease;
+        }
+        
+        /* Compact mode sidebar */
+        body.compact-sidebar .sidebar {
+            width: 70px;
+            overflow: visible;
+            z-index: 1060;
+        }
+        
+        body.compact-sidebar .sidebar:hover {
+            width: 250px;
+            z-index: 1060;
+        }
+        
+        body.compact-sidebar .content-wrapper {
+            margin-left: 70px;
+            max-width: calc(100% - 70px);
+        }
+        
+        /* Fix icon alignment in compact mode */
+        body.compact-sidebar .sidebar .nav-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 46px; /* Consistent height for all nav items */
+            position: relative;
+        }
+        
+        body.compact-sidebar .sidebar .nav-link {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0.75rem;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        body.compact-sidebar .sidebar:hover .nav-link {
+            justify-content: flex-start;
+            padding: 0.75rem 1rem;
+        }
+        
+        body.compact-sidebar .sidebar .nav-link i {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            margin: 0;
+            font-size: 1.25rem;
+            line-height: 1;
+            position: absolute;
+            left: 23px; /* Fixed position for icons */
+            transform: translateX(-50%); /* Center the icon */
+        }
+        
+        body.compact-sidebar .sidebar:hover .nav-link i {
+            margin-right: 0;
+            position: absolute;
+            left: 20px; /* Fixed position when hovered */
+            transform: translateX(0); /* No centering needed when hovered */
+        }
+        
+        body.compact-sidebar .sidebar .nav-link span,
+        body.compact-sidebar .sidebar .tenant-name,
+        body.compact-sidebar .sidebar .upgrade-btn span {
+            opacity: 0;
+            transform: translateX(10px);
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            display: inline-block;
+            line-height: 1;
+            margin-left: 35px; /* Fixed distance from the left edge */
+        }
+        
+        body.compact-sidebar .sidebar:hover .nav-link span,
+        body.compact-sidebar .sidebar:hover .tenant-name,
+        body.compact-sidebar .sidebar:hover .upgrade-btn span {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        /* Adjust dropdown items */
+        body.compact-sidebar .sidebar .nav-item.dropdown {
+            height: 46px;
+        }
+        
+        body.compact-sidebar .sidebar .nav-item.dropdown .nav-link.dropdown-toggle {
+            justify-content: center;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        body.compact-sidebar .sidebar:hover .nav-item.dropdown .nav-link.dropdown-toggle {
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+        }
+        
+        body.compact-sidebar .sidebar .nav-item.dropdown .nav-content {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100%;
+            width: 100%;
+            position: relative;
+        }
+        
+        body.compact-sidebar .sidebar .nav-item.dropdown .nav-content i {
+            position: absolute;
+            left: 23px;
+            transform: translateX(-50%);
+        }
+        
+        body.compact-sidebar .sidebar:hover .nav-item.dropdown .nav-content i {
+            position: absolute;
+            left: 20px;
+            transform: translateX(0);
+        }
+        
+        body.compact-sidebar .sidebar .nav-item.dropdown .nav-content span {
+            margin-left: 35px;
+        }
+        
+        body.compact-sidebar .sidebar:hover .nav-item.dropdown .nav-content {
+            justify-content: flex-start;
+        }
+        
+        body.compact-sidebar .sidebar .dropdown-icon {
+            display: none;
+            position: absolute;
+            right: 15px;
+        }
+        
+        body.compact-sidebar .sidebar:hover .dropdown-icon {
+            display: inline-block;
+        }
+        
+        /* Upgrade button and premium indicator */
+        body.compact-sidebar .sidebar .upgrade-btn,
+        body.compact-sidebar .sidebar .premium-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 46px;
+            padding: 0;
+            margin: 0.5rem 0.5rem;
+            position: relative;
+        }
+        
+        body.compact-sidebar .sidebar:hover .upgrade-btn,
+        body.compact-sidebar .sidebar:hover .premium-indicator {
+            padding: 0.75rem 1rem;
+            justify-content: flex-start;
+        }
+        
+        body.compact-sidebar .sidebar .upgrade-btn i,
+        body.compact-sidebar .sidebar .premium-indicator i {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            position: absolute;
+            left: 23px;
+            transform: translateX(-50%);
+        }
+        
+        body.compact-sidebar .sidebar:hover .upgrade-btn i,
+        body.compact-sidebar .sidebar:hover .premium-indicator i {
+            position: absolute;
+            left: 20px;
+            transform: translateX(0);
+        }
+        
+        body.compact-sidebar .sidebar .upgrade-btn span,
+        body.compact-sidebar .sidebar .premium-indicator span {
+            margin-left: 35px;
+        }
+        
+        body.compact-sidebar .sidebar .logo-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 1rem;
+            gap: 0.5rem;
+        }
+        
+        body.compact-sidebar .sidebar .logo-container img {
+            max-width: 40px;
+            max-height: 40px;
+            transition: all 0.3s ease;
+        }
+        
+        body.compact-sidebar .sidebar:hover .logo-container img {
+            max-width: 100%;
+            max-height: 60px;
+        }
+        
+        body.compact-sidebar .sidebar .nav-link {
+            padding: 0.75rem;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        body.compact-sidebar .sidebar:hover .nav-link {
+            padding: 0.75rem 1rem;
+            justify-content: flex-start;
+        }
+        
+        body.compact-sidebar .sidebar .nav-link i {
+            margin-right: 0;
+            width: 20px;
+            font-size: 1.25rem;
+            transition: all 0.3s ease;
+        }
+        
+        body.compact-sidebar .sidebar:hover .nav-link i {
+            margin-right: 0.75rem;
+        }
+        
+        body.compact-sidebar .sidebar .dropdown-menu {
+            left: 70px;
+            top: 0;
+        }
+        
+        body.compact-sidebar .sidebar:hover .dropdown-menu {
+            left: 100%;
+        }
+        
+        /* Fix for dropdown in compact mode */
+        body.compact-sidebar .sidebar .nav-item.dropdown .nav-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+        
+        body.compact-sidebar .sidebar:hover .nav-item.dropdown .nav-content {
+            justify-content: flex-start;
+        }
+        
+        body.compact-sidebar .sidebar .dropdown-icon {
+            display: none;
+        }
+        
+        body.compact-sidebar .sidebar:hover .dropdown-icon {
+            display: inline-block;
+        }
+        
+        /* Auto-compact for layout-compact */
+        body.layout-compact {
+            /* This will be toggled by JavaScript */
         }
         
         .sidebar .nav-link {
@@ -331,7 +588,11 @@
             overflow-x: hidden;
             scrollbar-width: none; /* Firefox */
             -ms-overflow-style: none; /* IE and Edge */
-            width: 250px;
+            width: 100%;
+        }
+        
+        .sidebar-content::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
         }
 
         .nav.flex-column {
@@ -392,6 +653,7 @@
             flex-direction: column;
             overflow: hidden;
             max-width: calc(100% - 250px);
+            transition: all 0.3s ease;
         }
 
         /* Top navbar styles */
@@ -534,17 +796,18 @@
 
         /* Logo container styles */
         .logo-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
             padding: 1rem;
-            text-align: center;
-            width: 100%;
+            gap: 0.5rem;
         }
 
         .logo-container img {
-            width: 200px;
-            height: auto;
-            margin-bottom: 0.75rem;
-            object-fit: contain;
             max-width: 100%;
+            height: auto;
+            max-height: 60px;
         }
 
         .logo-container h4 {
@@ -657,92 +920,70 @@
 
         /* Sidebar dropdown styles */
         .sidebar .dropdown-menu {
-            position: absolute !important;
-            left: 0 !important;
-            top: 100% !important;
-            transform: none !important;
-            margin-top: 0 !important;
-            width: calc(100% - 2rem);
-            min-width: unset;
-            background: #fff;
-            border: none;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            border-radius: 0.5rem;
-            z-index: 1100;
             display: none;
+            left: 100%;
+            position: absolute;
+            top: 0;
+            margin-top: 0;
+            margin-left: 0;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+            z-index: 1100;
+            transition: none;
+            min-width: 220px;
         }
-
+        
         .sidebar .dropdown-menu.show {
             display: block;
         }
-
+        
         .sidebar .nav-item.dropdown {
-            position: relative !important;
+            position: relative;
         }
-
+        
         .sidebar .nav-link.dropdown-toggle::after {
             display: none;
         }
-
+        
         .sidebar .dropdown-item {
             padding: 0.75rem 1rem;
-            color: rgb(0, 0, 0);
-            transition: all 0.2s ease;
+            color: #4b5563;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
         }
-
+        
         .sidebar .dropdown-item:hover {
-            background: rgb(3, 1, 43);
-            color: #fff;
+            background-color: var(--primary-color);
+            color: #ffffff;
         }
-
+        
         .sidebar .dropdown-item i {
+            margin-right: 0.75rem;
             width: 20px;
             text-align: center;
             color: var(--sidebar-icon-color);
             transition: all 0.3s ease;
         }
-
+        
         .sidebar .dropdown-item:hover i {
             color: #ffffff;
         }
-
+        
         /* Update the nav-link styles for the Reports dropdown */
         .sidebar .nav-link.dropdown-toggle {
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            width: 100%;
-            background: none;
-            border: none;
-            text-align: left;
-            padding: 0.75rem 1rem;
+            align-items: center;
+            padding-right: 2rem;
         }
-
-        .sidebar .nav-link.dropdown-toggle:focus {
-            outline: none;
-        }
-
-        .sidebar .nav-link.dropdown-toggle.show {
-            background: rgb(3, 1, 43);
-            color: #fff;
-        }
-
-        .sidebar .nav-link .nav-content {
+        
+        .sidebar .nav-link.dropdown-toggle .nav-content {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
         }
-
-        .sidebar .nav-link .dropdown-icon {
-            font-size: 0.75rem;
-            transition: transform 0.2s;
-        }
-
-        .sidebar .nav-link.show .dropdown-icon {
-            transform: rotate(180deg);
+        
+        .sidebar .nav-link.dropdown-toggle:focus {
+            box-shadow: none;
         }
 
         /* Navbar specific dropdown styles */
@@ -1422,6 +1663,84 @@
             font-size: 12px;
         }
 
+        /* Navbar dark mode toggle styles */
+        .navbar-dark-mode-toggle {
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .theme-switch {
+            display: inline-block;
+            position: relative;
+            width: 50px;
+            height: 24px;
+            margin-bottom: 0;
+        }
+
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .theme-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 5px;
+        }
+
+        .theme-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        .theme-slider-icon {
+            font-size: 12px;
+            color: white;
+            z-index: 0;
+        }
+
+        .light-icon {
+            margin-right: auto;
+            color: #FFB300;
+        }
+
+        .dark-icon {
+            margin-left: auto;
+            color: #5C6BC0;
+        }
+
+        input:checked + .theme-slider {
+            background-color: #375A7F;
+        }
+
+        input:focus + .theme-slider {
+            box-shadow: 0 0 1px #375A7F;
+        }
+
+        input:checked + .theme-slider:before {
+            transform: translateX(26px);
+        }
+
         /* More specific dark mode element styling */
         body.dark-mode .logo-container img {
             filter: var(--logo-filter);
@@ -1734,15 +2053,91 @@
         }
 
         .dark-mode .toast {
-            background-color: var(--toast-bg, #252525);
-            color: var(--text-color, #e0e0e0);
-            border-color: var(--border-color, #444);
+            background-color: var(--modal-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
         .dark-mode .toast-header {
-            background-color: var(--toast-header-bg, #2c2c2c);
-            color: var(--text-color, #e0e0e0);
-            border-bottom-color: var(--border-color, #444);
+            background-color: var(--card-header-bg);
+            color: var(--text-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .dark-mode .toast-body {
+            background-color: var(--modal-bg);
+            color: var(--text-color);
+        }
+
+        .dark-mode .toast .close {
+            color: var(--text-color);
+            text-shadow: none;
+        }
+        
+        .dark-mode .toast .btn-close-white {
+            opacity: 0.8;
+        }
+        
+        .dark-mode .toast .btn-close-white:hover {
+            opacity: 1;
+        }
+        
+        .dark-mode .toast-container {
+            z-index: 1060;
+        }
+        
+        .dark-mode #themeToast {
+            background-color: var(--accent-color);
+        }
+        
+        .dark-mode #themeToast .toast-body {
+            background-color: transparent;
+            color: #212529;
+        }
+
+        /* Settings modal styles for dark mode */
+        .dark-mode .settings-modal .modal-content {
+            background-color: var(--modal-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .dark-mode .settings-modal .modal-header {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .dark-mode .settings-modal .modal-footer {
+            border-top: 1px solid var(--border-color);
+        }
+
+        .dark-mode .settings-list .settings-item {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .dark-mode .settings-list .settings-item:last-child {
+            border-bottom: none;
+        }
+
+        .dark-mode .settings-list .settings-label {
+            color: var(--text-color);
+        }
+
+        .dark-mode .settings-list .settings-description {
+            color: var(--text-secondary);
+        }
+
+        /* Switch toggle for dark mode */
+        .dark-mode .switch-toggle {
+            background-color: var(--border-color);
+        }
+
+        .dark-mode .switch-toggle.checked {
+            background-color: var(--accent-color);
+        }
+
+        .dark-mode .switch-toggle .toggle-handle {
+            background-color: white;
         }
 
         .dark-mode .tooltip .tooltip-inner {
@@ -1770,26 +2165,25 @@
         }
 
         .dark-mode .modal-content {
-            background-color: var(--modal-bg, #252525);
-            border-color: var(--border-color, #444);
+            background-color: var(--buk-dark-bg-secondary);
+            color: var(--buk-light-text-color);
+            border: 1px solid var(--buk-dark-border-color);
         }
 
-        .dark-mode .modal-header,
+        .dark-mode .modal-header {
+            border-bottom: 1px solid var(--buk-dark-border-color);
+        }
+
         .dark-mode .modal-footer {
-            background-color: var(--modal-header-bg, #2c2c2c);
-            border-color: var(--border-color, #444);
-        }
-
-        .dark-mode .modal-title {
-            color: var(--text-color, #e0e0e0);
+            border-top: 1px solid var(--buk-dark-border-color);
         }
 
         .dark-mode .close {
-            color: var(--text-color, #e0e0e0);
+            color: var(--buk-light-text-color);
         }
 
-        .dark-mode .close:hover {
-            color: var(--close-hover-color, #fff);
+        .dark-mode .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
         }
 
         /* Progress bars and loaders */
@@ -2109,10 +2503,560 @@
         .etiquet-price p:after {
           color: rgb(193, 163, 98) !important;
         }
+
+        /* Dark mode styles for logo, avatar, badges, and modals */
+        .dark-mode .logo-container img {
+            filter: var(--logo-filter);
+        }
+        
+        .dark-mode .tenant-name {
+            color: var(--buk-text-color);
+        }
+        
+        .dark-mode .user-avatar {
+            border: 2px solid var(--avatar-border);
+        }
+        
+        .dark-mode .badge {
+            background-color: var(--badge-bg);
+            color: var(--badge-color);
+        }
+        
+        .dark-mode .subscription-modal .modal-content {
+            background-color: var(--modal-bg);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        
+        .dark-mode .plan-card {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+        }
+        
+        .dark-mode .dropdown-header {
+            color: var(--text-muted);
+            border-bottom-color: var(--border-color);
+        }
+        
+        .dark-mode .dropdown-divider {
+            border-color: var(--border-color);
+        }
+        
+        .dark-mode .card-footer {
+            background-color: rgba(31, 41, 55, 0.5);
+            border-top-color: var(--border-color);
+        }
+        
+        /* Dark mode styles for tables, content sections, buttons, and form elements */
+        .dark-mode .table {
+            color: var(--text-color);
+        }
+        
+        .dark-mode .table thead th {
+            background-color: rgba(31, 41, 55, 0.7);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        
+        .dark-mode .table td, 
+        .dark-mode .table th {
+            border-color: var(--border-color);
+        }
+        
+        .dark-mode .content-section {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+        }
+        
+        .dark-mode .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .dark-mode .btn-primary:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+        
+        .dark-mode .btn-secondary {
+            background-color: #4B5563;
+            border-color: #4B5563;
+            color: #ffffff;
+        }
+        
+        .dark-mode .btn-secondary:hover {
+            background-color: #374151;
+            border-color: #374151;
+        }
+        
+        .dark-mode .form-control,
+        .dark-mode .form-select {
+            background-color: var(--input-bg);
+            border-color: var(--input-border);
+            color: var(--text-color);
+        }
+        
+        .dark-mode .form-control:focus,
+        .dark-mode .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+        }
+        
+        .dark-mode .pagination .page-link {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            color: var(--text-color);
+        }
+        
+        .dark-mode .pagination .page-link:hover {
+            background-color: var(--hover-bg);
+            border-color: var(--border-color);
+        }
+        
+        .dark-mode .pagination .page-item.active .page-link {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: #ffffff;
+        }
+        
+        /* Card examples - preserved light appearance in dark mode */
+        .dark-mode .card-examples-wrapper {
+            background-color: #ffffff !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+            border: 1px solid #e5e7eb !important;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+        
+        .dark-mode .card-example {
+            background-color: #ffffff !important;
+            color: #111827 !important;
+            border-color: #e5e7eb !important;
+        }
+        
+        .dark-mode .card-example i,
+        .dark-mode .card-example h5,
+        .dark-mode .card-example .card-title {
+            color: #111827 !important;
+        }
+        
+        .dark-mode .card-example-glass {
+            background-color: rgba(255, 255, 255, 0.8) !important;
+            backdrop-filter: blur(10px) !important;
+            -webkit-backdrop-filter: blur(10px) !important;
+        }
+
+        /* List group styles for dark mode */
+        .dark-mode .list-group-item {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            color: var(--text-color);
+        }
+
+        .dark-mode .list-group-item-action:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .dark-mode .list-group-item.active {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        /* Nav pills and tabs for dark mode */
+        .dark-mode .nav-pills .nav-link {
+            color: var(--text-color);
+        }
+
+        .dark-mode .nav-pills .nav-link.active {
+            background-color: var(--primary-color);
+            color: #ffffff;
+        }
+
+        .dark-mode .nav-tabs {
+            border-color: var(--border-color);
+        }
+
+        .dark-mode .nav-tabs .nav-link {
+            color: var(--text-color);
+            border-color: transparent;
+        }
+
+        .dark-mode .nav-tabs .nav-link:hover {
+            border-color: var(--border-color);
+            background-color: var(--hover-bg);
+        }
+
+        .dark-mode .nav-tabs .nav-link.active {
+            color: var(--text-color);
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            border-bottom-color: var(--card-bg);
+        }
+
+        /* Tooltip styles for dark mode */
+        .dark-mode .tooltip .tooltip-inner {
+            background-color: var(--dropdown-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .dark-mode .tooltip .tooltip-arrow::before {
+            border-top-color: var(--dropdown-bg);
+        }
+
+        /* Progress bar styles for dark mode */
+        .dark-mode .progress {
+            background-color: var(--input-bg);
+        }
+
+        .dark-mode .progress-bar {
+            background-color: var(--primary-color);
+        }
+
+        /* Card special styles for dark mode */
+        .dark-mode .card-header {
+            background-color: rgba(31, 41, 55, 0.6);
+            border-bottom-color: var(--border-color);
+        }
+
+        /* Breadcrumb styles for dark mode */
+        .dark-mode .breadcrumb {
+            background-color: var(--card-bg);
+        }
+
+        .dark-mode .breadcrumb-item {
+            color: var(--text-muted);
+        }
+
+        .dark-mode .breadcrumb-item.active {
+            color: var(--text-color);
+        }
+
+        .dark-mode .breadcrumb-item + .breadcrumb-item::before {
+            color: var(--text-muted);
+        }
+
+        /* Code and pre blocks for dark mode */
+        .dark-mode code, .dark-mode pre {
+            background-color: #2d3748;
+            color: #e2e8f0;
+            border-color: var(--border-color);
+        }
+
+        /* Adjustments for specific tenant UI elements */
+        .dark-mode .tenant-logo img {
+            filter: var(--logo-filter);
+        }
+
+        .dark-mode .tenant-info {
+            color: var(--text-color);
+        }
+
+        .dark-mode .stats-card {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            box-shadow: 0 4px 6px var(--shadow-color);
+        }
+
+        .dark-mode .stats-card .stats-icon {
+            color: var(--primary-color);
+        }
+
+        .dark-mode .stats-card .stats-value {
+            color: var(--text-color);
+        }
+
+        .dark-mode .stats-card .stats-label {
+            color: var(--text-muted);
+        }
+
+        .dark-mode .subscription-modal .subscription-content {
+            background-color: var(--modal-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .dark-mode .subscription-modal .close-modal {
+            color: var(--text-color);
+            background-color: var(--btn-bg);
+        }
+
+        .dark-mode .subscription-modal .close-modal:hover {
+            background-color: var(--btn-hover);
+        }
+
+        .dark-mode .plan-card {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .dark-mode .plan-card h2 {
+            color: var(--accent-color);
+        }
+
+        .dark-mode .plan-card h2 span {
+            color: var(--text-secondary);
+        }
+
+        .dark-mode .benefits-list ul li {
+            color: var(--text-color);
+        }
+
+        .dark-mode .benefits-list ul li svg {
+            fill: var(--accent-color);
+        }
+
+        .dark-mode .button-get-plan a {
+            background-color: var(--btn-primary);
+            color: white;
+        }
+
+        .dark-mode .button-get-plan a:hover {
+            background-color: var(--btn-primary-hover);
+        }
+
+        /* Pagination styles for dark mode */
+        .dark-mode .pagination {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+        }
+
+        .dark-mode .pagination label {
+            color: var(--text-color);
+        }
+
+        .dark-mode .pagination label:hover:not(.disabled):not(.active) {
+            background-color: var(--btn-hover);
+        }
+
+        .dark-mode .pagination label.active {
+            background-color: var(--btn-primary);
+            color: white;
+        }
+
+        .dark-mode .pagination label.disabled {
+            color: var(--text-secondary);
+        }
+
+        .dark-mode .table-display {
+            color: var(--text-secondary);
+        }
+
+        /* Tooltip styles for dark mode */
+        .dark-mode .tooltip .tooltip-inner {
+            background-color: var(--dropdown-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        
+        /* Toast notification styles for dark mode */
+        .dark-mode .toast {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border-color: var(--border-color);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.3);
+        }
+        
+        .dark-mode .toast-header {
+            background-color: rgba(31, 41, 55, 0.7);
+            color: var(--text-color);
+            border-bottom-color: var(--border-color);
+        }
+        
+        .dark-mode .toast-body {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+        
+        .dark-mode .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+        
+        .dark-mode #themeToast .toast-body {
+            background-color: var(--card-bg);
+        }
+        
+        .dark-mode .toast-container {
+            z-index: 1090;
+        }
+
+        /* Dark Mode for Subscription Modal */
+        .dark-mode .subscription-modal {
+            background-color: rgba(0, 0, 0, 0.85);
+        }
+
+        .dark-mode .subscription-content {
+            background-color: var(--buk-card-bg);
+            color: var(--buk-text-color);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .dark-mode .close-modal {
+            color: var(--buk-text-color);
+            background-color: rgba(40, 40, 40, 0.7);
+        }
+
+        .dark-mode .close-modal:hover {
+            background-color: rgba(60, 60, 60, 0.9);
+        }
+
+        .dark-mode .plan-card {
+            background-color: var(--buk-card-bg);
+            color: var(--buk-text-color);
+            border: 1px solid var(--buk-border-color);
+        }
+
+        .dark-mode .plan-card h2 {
+            color: var(--buk-text-color);
+        }
+
+        .dark-mode .plan-card h2 span {
+            color: var(--buk-text-color-secondary);
+        }
+
+        .dark-mode .benefits-list {
+            color: var(--buk-text-color);
+        }
+
+        .dark-mode .benefits-list ul li {
+            color: var(--buk-text-color);
+            border-bottom: 1px solid var(--buk-border-color);
+        }
+
+        .dark-mode .benefits-list ul li svg {
+            fill: var(--accent-color);
+        }
+
+        .dark-mode .button-get-plan a {
+            background-color: var(--accent-color);
+            color: var(--buk-card-bg);
+        }
+
+        .dark-mode .button-get-plan a:hover {
+            background-color: var(--accent-color-hover);
+        }
+
+        .dark-mode #toastMessage {
+            color: inherit;
+        }
+
+        /* Common Toast Styling for Dark Mode */
+        .dark-mode .toast {
+            background-color: var(--buk-card-bg);
+            color: var(--buk-text-color);
+            border: 1px solid var(--buk-border-color);
+        }
+
+        .dark-mode .toast-header {
+            background-color: rgba(30, 30, 30, 0.9);
+            color: var(--buk-text-color);
+            border-bottom: 1px solid var(--buk-border-color);
+        }
+
+        .dark-mode .toast .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+
+        .dark-mode #themeToast {
+            border: 1px solid var(--buk-border-color);
+        }
+
+        .dark-mode .toast-container {
+            z-index: 9999;
+        }
+
+        /* Font style success modal specific styles */
+        .dark-mode #fontStyleSuccessModal .modal-body {
+            background-color: var(--buk-dark-bg-secondary);
+        }
+
+        .dark-mode #fontStyleSuccessModal .font-preview {
+            background-color: var(--buk-dark-bg-primary);
+            border-color: var(--buk-dark-border-color);
+            color: var(--buk-light-text-color);
+        }
+
+        .dark-mode #fontStyleSuccessModal .modal-footer .btn-primary {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: #fff;
+        }
+
+        .dark-mode #fontStyleSuccessModal .modal-footer .btn-primary:hover {
+            background-color: var(--accent-hover-color, #0056b3);
+            border-color: var(--accent-hover-color, #0056b3);
+        }
+
+        /* Glass card style for dashboard components */
+        .card-style-glass .card, 
+        .card-style-glass .settings-card,
+        .card-style-glass .stat-card,
+        .card-style-glass .content-card {
+            background: rgba(255, 255, 255, 0.7) !important;
+            backdrop-filter: blur(10px) !important;
+            -webkit-backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        /* Glass effect for dark mode */
+        .dark-mode .card-style-glass .card,
+        .dark-mode .card-style-glass .settings-card,
+        .dark-mode .card-style-glass .stat-card,
+        .dark-mode .card-style-glass .content-card {
+            background: rgba(31, 41, 55, 0.7) !important;
+            backdrop-filter: blur(10px) !important;
+            -webkit-backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+            color: var(--buk-light-text-color) !important;
+        }
+
+        /* Additional styles for glass elements in dark mode */
+        .dark-mode .card-style-glass .card-header,
+        .dark-mode .card-style-glass .card-footer {
+            background: rgba(31, 41, 55, 0.8) !important;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .dark-mode .card-style-glass .stat-card .card-body,
+        .dark-mode .card-style-glass .content-card .card-body {
+            background: transparent !important;
+        }
+
+        /* Background gradient for glass effect */
+        .card-style-glass {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%), var(--buk-bg-primary);
+        }
+
+        .dark-mode.card-style-glass {
+            background: linear-gradient(135deg, rgba(30,41,59,0.1) 0%, rgba(30,41,59,0.05) 100%), var(--buk-dark-bg-primary);
+        }
+
+        /* Additional glass effect for inputs and buttons */
+        .card-style-glass .form-control,
+        .card-style-glass .form-select,
+        .card-style-glass .input-group-text {
+            background-color: rgba(255, 255, 255, 0.7);
+            border-color: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .dark-mode.card-style-glass .form-control,
+        .dark-mode.card-style-glass .form-select,
+        .dark-mode.card-style-glass .input-group-text {
+            background-color: rgba(30, 41, 59, 0.7);
+            border-color: rgba(255, 255, 255, 0.1);
+            color: var(--buk-light-text-color);
+        }
     </style>
     @stack('styles')
 </head>
-<body>
+<body class="{{ isset($settings) && $settings->dark_mode ? 'dark-mode' : '' }}" 
+      data-card-style="{{ isset($settings) && $settings->card_style ? $settings->card_style : 'square' }}">
     <div x-data="{ isSidebarOpen: false }" class="layout-wrapper">
     <!-- Sidebar -->
         <div class="sidebar" :class="{ 'show': isSidebarOpen }">
@@ -2120,40 +3064,37 @@
                 <div class="logo-container">
                     <img src="{{ asset('assets/images/logo.png') }}" 
                          alt="BukSkwela Logo">
-                    <h4 class="tenant-name">
-                        <span class="tenant-buk">{{ substr(tenant('id'), 0, 3) }}</span>{{ substr(tenant('id'), 3) }}
-                    </h4>
                 </div>
                 
                 <ul class="nav flex-column px-3 flex-grow-1">
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('tenant.dashboard') ? 'active' : '' }}" 
                            href="{{ route('tenant.dashboard', ['tenant' => tenant('id')]) }}">
-                            <i class="fas fa-home"></i> Dashboard
+                            <i class="fas fa-home"></i> <span>Dashboard</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('tenant.students.*') ? 'active' : '' }}" 
                            href="{{ route('tenant.students.index', ['tenant' => tenant('id')]) }}">
-                            <i class="fas fa-users"></i> Students
+                            <i class="fas fa-users"></i> <span>Students</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('tenant.staff.*') ? 'active' : '' }}" 
                            href="{{ route('tenant.staff.index', ['tenant' => tenant('id')]) }}">
-                            <i class="fas fa-chalkboard-teacher"></i> Staff
+                            <i class="fas fa-chalkboard-teacher"></i> <span>Staff</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('tenant.courses.*') ? 'active' : '' }}" 
                            href="{{ route('tenant.courses.index', ['tenant' => tenant('id')]) }}">
-                            <i class="fas fa-book"></i> Courses
+                            <i class="fas fa-book"></i> <span>Courses</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('tenant.admin.requirements.*') ? 'active' : '' }}" 
                            href="{{ route('tenant.admin.requirements.index', ['tenant' => tenant('id')]) }}">
-                            <i class="fas fa-clipboard-list"></i> Requirements
+                            <i class="fas fa-clipboard-list"></i> <span>Requirements</span>
                         </a>
                     </li>
                     <li class="nav-item dropdown">
@@ -2211,11 +3152,11 @@
                     
                     @if(!$isPremium)
                     <button class="upgrade-btn w-100" onclick="openSubscriptionModal()">
-                        <i class="fas fa-crown me-2"></i> Upgrade to Pro
+                        <i class="fas fa-crown me-2"></i> <span>Upgrade to Pro</span>
                     </button>
                     @else
                     <div class="premium-indicator">
-                        <i class="fas fa-crown"></i> Premium Account
+                        <i class="fas fa-crown"></i> <span>Premium Account</span>
                     </div>
                     @endif
                 </div>
@@ -2258,6 +3199,17 @@
                                 Free Trial
                             </span>
                             @endif
+                        </div>
+
+                        <!-- Dark Mode Toggle -->
+                        <div class="navbar-dark-mode-toggle me-3">
+                            <label class="theme-switch" title="Toggle Dark Mode">
+                                <input type="checkbox" id="navbarDarkModeToggle">
+                                <span class="theme-slider">
+                                    <i class="fas fa-sun theme-slider-icon light-icon"></i>
+                                    <i class="fas fa-moon theme-slider-icon dark-icon"></i>
+                                </span>
+                            </label>
                         </div>
 
                         <!-- User menu -->
@@ -2311,6 +3263,34 @@
             if (savedDarkMode === 'enabled') {
                 document.body.classList.add('dark-mode');
             }
+            
+            // Check for dark mode flash message from backend
+            @if(session()->has('dark_mode_preference'))
+                const darkModePreference = "{{ session('dark_mode_preference') }}";
+                console.log('Dark mode preference received from backend:', darkModePreference);
+                
+                if (darkModePreference === 'enabled') {
+                    document.body.classList.add('dark-mode');
+                    localStorage.setItem('darkMode', 'enabled');
+                    
+                    // Update toggle if it exists
+                    const navbarToggle = document.getElementById('navbarDarkModeToggle');
+                    if (navbarToggle) navbarToggle.checked = true;
+                    
+                    const settingsToggle = document.getElementById('darkModeToggle');
+                    if (settingsToggle) settingsToggle.checked = true;
+                } else if (darkModePreference === 'disabled') {
+                    document.body.classList.remove('dark-mode');
+                    localStorage.setItem('darkMode', 'disabled');
+                    
+                    // Update toggle if it exists
+                    const navbarToggle = document.getElementById('navbarDarkModeToggle');
+                    if (navbarToggle) navbarToggle.checked = false;
+                    
+                    const settingsToggle = document.getElementById('darkModeToggle');
+                    if (settingsToggle) settingsToggle.checked = false;
+                }
+            @endif
             
             // Listen for dark mode toggle events
             document.addEventListener('darkModeToggled', function(e) {
@@ -2384,28 +3364,214 @@
                 return new bootstrap.Popover(popoverTriggerEl);
             });
 
-            // Apply current settings on page load
-            $(function() {
-                // Apply dark mode if enabled
-                if($('#darkModeToggle').is(':checked')) {
-                    $('body').addClass('dark-mode');
+            // Initialize navbar dark mode toggle
+            const navbarDarkModeToggle = document.getElementById('navbarDarkModeToggle');
+            if (navbarDarkModeToggle) {
+                // Check if dark mode is enabled in localStorage
+                const savedDarkMode = localStorage.getItem('darkMode');
+                if (savedDarkMode === 'enabled') {
+                    navbarDarkModeToggle.checked = true;
                 }
                 
-                // Ensure tenant name is visible in sidebar
-                const tenantNameEl = document.querySelector('.tenant-name');
-                if (tenantNameEl) {
-                    // Force visibility of tenant name, especially on the settings page
-                    tenantNameEl.style.display = 'block';
-                    tenantNameEl.style.visibility = 'visible';
-                    tenantNameEl.style.opacity = '1';
+                // Add event listener for toggle
+                navbarDarkModeToggle.addEventListener('change', function() {
+                    if (this.checked) {
+                        document.body.classList.add('dark-mode');
+                        localStorage.setItem('darkMode', 'enabled');
+                        
+                        // Sync with settings page toggle if it exists
+                        const settingsToggle = document.getElementById('darkModeToggle');
+                        if (settingsToggle) {
+                            settingsToggle.checked = true;
+                        }
+                        
+                        // Dispatch event for other components to listen
+                        document.dispatchEvent(new CustomEvent('darkModeToggled', { 
+                            detail: { isDarkMode: true } 
+                        }));
+                        
+                        // Send preference to server if user is logged in
+                        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                        const tenantId = "{{ tenant('id') }}";
+                        
+                        fetch(`/${tenantId}/settings/save`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': token,
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                dark_mode: true,
+                                tenant_id: tenantId
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Dark mode preference saved:', data);
+                            
+                            // Show toast notification
+                            const toast = document.getElementById('themeToast');
+                            if (toast) {
+                                // Set toast properties for dark mode
+                                toast.className = 'toast align-items-center text-white bg-dark border-0';
+                                
+                                // Update toast message
+                                const toastMessage = document.getElementById('toastMessage');
+                                if (toastMessage) {
+                                    toastMessage.textContent = 'Dark mode enabled and preference saved';
+                                }
+                                
+                                // Show the toast
+                                const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+                                bsToast.show();
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error saving dark mode preference:', error);
+                        });
+                    } else {
+                        document.body.classList.remove('dark-mode');
+                        localStorage.setItem('darkMode', 'disabled');
+                        
+                        // Sync with settings page toggle if it exists
+                        const settingsToggle = document.getElementById('darkModeToggle');
+                        if (settingsToggle) {
+                            settingsToggle.checked = false;
+                        }
+                        
+                        // Dispatch event for other components to listen
+                        document.dispatchEvent(new CustomEvent('darkModeToggled', { 
+                            detail: { isDarkMode: false } 
+                        }));
+                        
+                        // Send preference to server if user is logged in
+                        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                        const tenantId = "{{ tenant('id') }}";
+                        
+                        fetch(`/${tenantId}/settings/save`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': token,
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                dark_mode: false,
+                                tenant_id: tenantId
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Dark mode preference saved:', data);
+                            
+                            // Show toast notification
+                            const toast = document.getElementById('themeToast');
+                            if (toast) {
+                                // Set toast properties for light mode
+                                toast.className = 'toast align-items-center text-dark bg-light border-0';
+                                
+                                // Update toast message
+                                const toastMessage = document.getElementById('toastMessage');
+                                if (toastMessage) {
+                                    toastMessage.textContent = 'Light mode enabled and preference saved';
+                                }
+                                
+                                // Show the toast
+                                const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+                                bsToast.show();
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error saving dark mode preference:', error);
+                        });
+                    }
+                });
+            }
+
+            // Apply current settings on page load - wrapped in try-catch
+            try {
+                if (typeof $ === 'function') {
+                    $(function() {
+                        try {
+                            // Apply dark mode if enabled
+                            if($('#darkModeToggle').is(':checked')) {
+                                $('body').addClass('dark-mode');
+                            }
+                            
+                            // Apply saved dashboard layout if available
+                            const savedLayout = localStorage.getItem('selectedDashboardLayout');
+                            if (savedLayout) {
+                                // Apply the layout class
+                                if (savedLayout === 'compact') {
+                                    $('body').addClass('compact-sidebar');
+                                    console.log('Applied compact layout from localStorage');
+                                } else if (savedLayout === 'modern') {
+                                    $('body').addClass('layout-modern');
+                                    console.log('Applied modern layout from localStorage');
+                                } else {
+                                    // Default to standard
+                                    $('body').removeClass('compact-sidebar layout-modern');
+                                    console.log('Applied standard layout from localStorage');
+                                }
+                            }
+                            
+                            // Ensure tenant name is visible in sidebar
+                            const tenantNameEl = document.querySelector('.tenant-name');
+                            if (tenantNameEl) {
+                                // Force visibility of tenant name, especially on the settings page
+                                tenantNameEl.style.display = 'block';
+                                tenantNameEl.style.visibility = 'visible';
+                                tenantNameEl.style.opacity = '1';
+                                
+                                // Add special highlight when on settings page
+                                if (window.location.href.includes('/settings')) {
+                                    tenantNameEl.style.color = '#FF9900';
+                                    tenantNameEl.style.fontSize = '1.25rem';
+                                }
+                            }
+                        } catch (innerError) {
+                            console.error('Error in jQuery ready function:', innerError);
+                        }
+                    });
+                } else {
+                    // Fallback to vanilla JS if jQuery is not available
+                    console.warn('jQuery not available, using vanilla JS for page initialization');
                     
-                    // Add special highlight when on settings page
-                    if (window.location.href.includes('/settings')) {
-                        tenantNameEl.style.color = '#FF9900';
-                        tenantNameEl.style.fontSize = '1.25rem';
+                    // Apply dark mode if toggle is checked
+                    const darkModeToggle = document.getElementById('darkModeToggle');
+                    if (darkModeToggle && darkModeToggle.checked) {
+                        document.body.classList.add('dark-mode');
+                    }
+                    
+                    // Apply saved dashboard layout
+                    const savedLayout = localStorage.getItem('selectedDashboardLayout');
+                    if (savedLayout) {
+                        if (savedLayout === 'compact') {
+                            document.body.classList.add('compact-sidebar');
+                        } else if (savedLayout === 'modern') {
+                            document.body.classList.add('layout-modern');
+                        } else {
+                            document.body.classList.remove('compact-sidebar', 'layout-modern');
+                        }
+                    }
+                    
+                    // Handle tenant name visibility
+                    const tenantNameEl = document.querySelector('.tenant-name');
+                    if (tenantNameEl) {
+                        tenantNameEl.style.display = 'block';
+                        tenantNameEl.style.visibility = 'visible';
+                        tenantNameEl.style.opacity = '1';
+                        
+                        if (window.location.href.includes('/settings')) {
+                            tenantNameEl.style.color = '#FF9900';
+                            tenantNameEl.style.fontSize = '1.25rem';
+                        }
                     }
                 }
-            });
+            } catch (error) {
+                console.error('Error initializing page UI:', error);
+            }
         });
     </script>
     @stack('scripts')
@@ -2618,6 +3784,164 @@
             window.location.href = '/tenant_logout.html';
             return false; // Prevent default link behavior
         }
+    </script>
+    
+    <!-- Toast container for notifications -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="themeToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <span id="toastMessage">Theme preference saved</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar compact mode script -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if we should apply compact sidebar mode (for compact layout)
+        function checkCompactMode() {
+            // If we're in a compact layout page, auto-enable compact sidebar
+            if (document.querySelector('.layout-compact')) {
+                document.body.classList.add('compact-sidebar');
+                console.log('Compact layout detected, enabling compact sidebar');
+            }
+        }
+        
+        // Add toggle button to navbar if it doesn't exist
+        const navbar = document.querySelector('.top-navbar .container-fluid');
+        if (navbar && !document.getElementById('toggleSidebar')) {
+            const toggleBtn = document.createElement('button');
+            toggleBtn.id = 'toggleSidebar';
+            toggleBtn.className = 'btn btn-sm btn-outline-secondary me-2';
+            toggleBtn.innerHTML = '<i class="fas fa-bars"></i>';
+            toggleBtn.title = 'Toggle Sidebar';
+            
+            // Insert at the beginning of navbar
+            navbar.insertBefore(toggleBtn, navbar.firstChild);
+            
+            // Add event listener
+            toggleBtn.addEventListener('click', function() {
+                document.body.classList.toggle('compact-sidebar');
+                
+                // Save preference to localStorage
+                if (document.body.classList.contains('compact-sidebar')) {
+                    localStorage.setItem('sidebarMode', 'compact');
+                    showToast('Compact sidebar enabled');
+                } else {
+                    localStorage.setItem('sidebarMode', 'expanded');
+                    showToast('Expanded sidebar enabled');
+                }
+            });
+        }
+        
+        // Function to show toast notification
+        function showToast(message) {
+            const toastEl = document.getElementById('themeToast');
+            if (toastEl) {
+                const toastMessage = document.getElementById('toastMessage');
+                if (toastMessage) {
+                    toastMessage.textContent = message;
+                }
+                const bsToast = new bootstrap.Toast(toastEl);
+                bsToast.show();
+            }
+        }
+        
+        // Apply saved preference from localStorage
+        const savedSidebarMode = localStorage.getItem('sidebarMode');
+        if (savedSidebarMode === 'compact') {
+            document.body.classList.add('compact-sidebar');
+        }
+        
+        // Apply compact mode for compact layout
+        checkCompactMode();
+        
+        // Also check when the window is loaded completely
+        window.addEventListener('load', checkCompactMode);
+    });
+    </script>
+
+    <!-- Global card style application -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Apply card style from localStorage on all pages
+        const cardStyle = localStorage.getItem('selectedCardStyle') || 'square';
+        
+        const applyGlobalCardStyle = () => {
+            console.log('Applying global card style:', cardStyle);
+            
+            // Target all card types across all layouts
+            const cardSelectors = '.card, .enrolled-card, .stat-card, .compact-content-card, .modern-stat-card, .modern-card';
+            
+            // Remove all card style classes first
+            document.querySelectorAll(cardSelectors).forEach(card => {
+                card.classList.remove('card-rounded', 'card-square', 'card-glass');
+                // Add the selected style class
+                card.classList.add(`card-${cardStyle}`);
+            });
+            
+            // If we're on a dashboard page that has its own applyCardStyle function,
+            // it will apply more specific styles later
+        };
+        
+        // Apply global styles
+        applyGlobalCardStyle();
+        
+        // Listen for changes
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'selectedCardStyle') {
+                // Reapply global style
+                applyGlobalCardStyle();
+            }
+        });
+    });
+    </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Apply card style from localStorage if available
+        try {
+            const savedCardStyle = localStorage.getItem('selectedCardStyle');
+            if (savedCardStyle) {
+                applyCardStyle(savedCardStyle);
+                console.log('Applied card style from localStorage:', savedCardStyle);
+            }
+        } catch (e) {
+            console.error('Error applying card style from localStorage:', e);
+        }
+        
+        // Listen for card style changes
+        document.addEventListener('cardStyleChanged', function(e) {
+            const cardStyle = e.detail.cardStyle;
+            applyCardStyle(cardStyle);
+            console.log('Applied card style from event:', cardStyle);
+        });
+        
+        // Listen for storage events (changes from other tabs)
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'selectedCardStyle') {
+                applyCardStyle(e.newValue);
+                console.log('Applied card style from storage event:', e.newValue);
+            }
+        });
+        
+        /**
+         * Apply card style to all dashboard elements
+         */
+        function applyCardStyle(style) {
+            // Remove all style classes first
+            document.body.classList.remove('card-style-square', 'card-style-rounded', 'card-style-glass');
+            
+            // Add the selected style class
+            if (style) {
+                document.body.classList.add('card-style-' + style);
+            }
+        }
+    });
     </script>
 </body>
 </html>

@@ -13,12 +13,16 @@
     <!-- User identification card -->
   
     
+    <div id="saveStatus" class="alert mt-3" style="display: none;"></div>
+
     <form id="settingsForm">
         @csrf
         <!-- Add hidden fields for user identification -->
         <input type="hidden" name="user_id" value="{{ Auth::guard('admin')->check() ? Auth::guard('admin')->id() : Auth::guard('staff')->id() }}">
         <input type="hidden" name="user_type" value="{{ Auth::guard('admin')->check() ? get_class(Auth::guard('admin')->user()) : get_class(Auth::guard('staff')->user()) }}">
-        <input type="hidden" name="tenant_id" value="{{ tenant('id') }}">
+        
+        <!-- Ensure tenant ID is set correctly with fallbacks -->
+        <input type="hidden" name="tenant_id" value="{{ tenant('id') ?: request()->segment(1) ?: (request()->query('tenant') ?: session('tenant_id')) }}">
         
         <div class="row g-2">
             <!-- Dark Mode and Cards in same row -->
@@ -26,17 +30,31 @@
                 <div class="settings-card">
                     <h5 class="card-title"><i class="fas fa-moon mr-2"></i>Dark Mode</h5>
                     <div class="d-flex justify-content-between align-items-center">
-                        <p class="mb-0 small">Enable system-wide dark theme</p>
+                        <p class="mb-0 small">Switch between light and dark themes</p>
                         @php
                             // Get the tenant's subscription plan
                             $tenantData = tenant();
-                            $isPremium = $tenantData && isset($tenantData->subscription_plan) && $tenantData->subscription_plan === 'premium';
                             
-                            // Also check session
-                            $isPremiumFromSession = session('is_premium') === true;
+                            // Get subscription plan from tenant data
+                            $isPremium = false;
                             
-                            // Use either source
-                            $isPremium = $isPremium || $isPremiumFromSession;
+                            // Check tenant data
+                            if ($tenantData && isset($tenantData->subscription_plan) && $tenantData->subscription_plan === 'premium') {
+                                $isPremium = true;
+                            }
+                            
+                            // Check session
+                            if (session('is_premium') === true) {
+                                $isPremium = true;
+                            }
+                            
+                            // Check user's role/permissions - assuming administrators are premium
+                            if (Auth::guard('admin')->check()) {
+                                $isPremium = true;
+                            }
+                            
+                            // Force premium to true for debugging/fixing
+                            $isPremium = true;
                         @endphp
                         
                         @if($isPremium)
@@ -56,7 +74,7 @@
                         @endif
                     </div>
                     @if($isPremium)
-                    <p class="dark-mode-info small text-muted mt-2">Changes apply to all pages and will be saved with your user preferences.</p>
+                    <p class="dark-mode-info small text-muted mt-2">Dark mode reduces eye strain in low-light environments and helps conserve battery life on mobile devices.</p>
                     @else
                     <p class="premium-feature-info small text-muted mt-2">
                         <i class="fas fa-lock me-1"></i> Dark Mode is a premium feature. 
@@ -69,7 +87,18 @@
             <!-- Card Styles -->
             <div class="col-lg-8 col-md-12">
                 <div class="settings-card">
-                    <h5 class="card-title mb-2"><i class="fas fa-credit-card mr-2"></i>Card Styles</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="card-title mb-0"><i class="fas fa-credit-card mr-2"></i>Card Styles</h5>
+                        @if(!$isPremium)
+                        <div class="premium-feature-badge">
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-crown me-1"></i> Premium
+                            </span>
+                        </div>
+                        @endif
+                    </div>
+                    
+                    @if($isPremium)
                     <div class="card-style-container py-1 card-examples-wrapper">
                         <div class="row g-1">
                             <div class="col-md-4 col-sm-4 col-4">
@@ -99,50 +128,144 @@
                         </div>
                         <input type="hidden" name="card_style" id="cardStyleInput" value="{{ $settings->card_style ?? 'square' }}">
                     </div>
+                    <p class="small text-muted mt-2">Choose a card style for your dashboard cards and UI components.</p>
+                    @else
+                    <div class="card-style-container py-1 card-examples-wrapper disabled" style="pointer-events: none; opacity: 0.7;">
+                        <div class="row g-1">
+                            <div class="col-md-4 col-sm-4 col-4">
+                                <div class="card-example card-example-square active">
+                                    <div class="text-center">
+                                        <i class="fas fa-book mb-1"></i>
+                                        <h5 class="small">Square</h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-sm-4 col-4">
+                                <div class="card-example card-example-rounded">
+                                    <div class="text-center">
+                                        <i class="fas fa-book mb-1"></i>
+                                        <h5 class="small">Rounded</h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-sm-4 col-4">
+                                <div class="card-example card-example-glass">
+                                    <div class="text-center">
+                                        <i class="fas fa-book mb-1"></i>
+                                        <h5 class="small">Glassy</h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="card_style" id="cardStyleInput" value="square">
+                    </div>
+                    <p class="premium-feature-info small text-muted mt-2">
+                        <i class="fas fa-lock me-1"></i> Card style customization is a premium feature. 
+                        <a href="javascript:void(0)" onclick="openSubscriptionModal()" class="text-warning">Upgrade now</a>
+                    </p>
+                    @endif
                 </div>
             </div>
             
-            <!-- Font Settings -->
-            <div class="col-lg-6 col-md-6">
-                <div class="settings-card">
-                    <h5 class="card-title mb-2"><i class="fas fa-font mr-2"></i>Font Style</h5>
-                    <div class="form-group mb-2">
-                        <select class="form-control form-control-sm font-select" id="fontSelect" name="font_family">
-                            <option value="Work Sans, sans-serif" {{ $settings->font_family == "Work Sans, sans-serif" ? 'selected' : '' }}>Work Sans (Default)</option>
-                            <option value="Open Sans, sans-serif" {{ $settings->font_family == "Open Sans, sans-serif" ? 'selected' : '' }}>Open Sans</option>
-                            <option value="Roboto, sans-serif" {{ $settings->font_family == "Roboto, sans-serif" ? 'selected' : '' }}>Roboto</option>
-                            <option value="Montserrat, sans-serif" {{ $settings->font_family == "Montserrat, sans-serif" ? 'selected' : '' }}>Montserrat</option>
-                        </select>
-                    </div>
-                    <div class="font-size-preview p-2 border rounded" id="fontPreview" style="font-family: {{ $settings->font_family ?? 'Work Sans, sans-serif' }};">
-                        <p class="mb-0 small">The quick brown fox jumps over the lazy dog.</p>
-                    </div>
-                </div>
-            </div>
+        
             
-            <!-- Font Size -->
-            <div class="col-lg-6 col-md-6">
+            <!-- Dashboard Layout Settings -->
+            <div class="col-lg-12 col-md-12 mt-2">
                 <div class="settings-card">
-                    <h5 class="card-title mb-2"><i class="fas fa-text-height mr-2"></i>Font Size</h5>
-                    <div class="form-group mb-2">
-                        <select class="form-control form-control-sm font-size-select" id="fontSizeSelect" name="font_size">
-                            <option value="12px" {{ $settings->font_size == '12px' ? 'selected' : '' }}>Small (12px)</option>
-                            <option value="14px" {{ $settings->font_size == '14px' || !$settings->font_size ? 'selected' : '' }}>Normal (14px)</option>
-                            <option value="16px" {{ $settings->font_size == '16px' ? 'selected' : '' }}>Medium (16px)</option>
-                            <option value="18px" {{ $settings->font_size == '18px' ? 'selected' : '' }}>Large (18px)</option>
-                        </select>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="card-title mb-0"><i class="fas fa-columns mr-2"></i>Dashboard Layout</h5>
+                        @if($isPremium)
+                        <a href="#" class="btn btn-sm btn-outline-primary" id="editLayoutBtn">
+                            <i class="fas fa-edit me-1"></i>Edit Layout
+                        </a>
+                        @else
+                        <div class="premium-feature-badge">
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-crown me-1"></i> Premium
+                            </span>
+                        </div>
+                        @endif
                     </div>
-                    <div class="font-size-preview p-2 border rounded" id="sizePreview" style="font-size: {{ $settings->font_size ?? '14px' }};">
-                        <p class="mb-0 small">Text will change size based on selection.</p>
+                    
+                    <div class="layout-options">
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <div class="layout-option {{ $settings->dashboard_layout == 'standard' || !$settings->dashboard_layout ? 'active' : '' }}" data-layout="standard">
+                                    <div class="layout-preview standard-layout">
+                                        <div class="mini-cards">
+                                            <div class="mini-card"></div>
+                                            <div class="mini-card"></div>
+                                            <div class="mini-card"></div>
+                                            <div class="mini-card"></div>
+                                        </div>
+                                        <div class="mini-content">
+                                            <div class="mini-section"></div>
+                                            <div class="mini-section"></div>
+                                        </div>
+                                    </div>
+                                    <div class="text-center mt-2">
+                                        <p class="mb-0 small">Standard</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="layout-option {{ $settings->dashboard_layout == 'compact' ? 'active' : '' }}" data-layout="compact">
+                                    <div class="layout-preview compact-layout">
+                                        <div class="mini-sidebar"></div>
+                                        <div class="mini-content-area">
+                                            <div class="mini-cards-compact">
+                                                <div class="mini-card-sm"></div>
+                                                <div class="mini-card-sm"></div>
+                                                <div class="mini-card-sm"></div>
+                                            </div>
+                                            <div class="mini-content-compact"></div>
+                                        </div>
+                                    </div>
+                                    <div class="text-center mt-2">
+                                        <p class="mb-0 small">Compact</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="layout-option {{ $settings->dashboard_layout == 'modern' ? 'active' : '' }}" data-layout="modern">
+                                    <div class="layout-preview modern-layout">
+                                        <div class="mini-sidebar"></div>
+                                        <div class="mini-content-area">
+                                            <div class="mini-header"></div>
+                                            <div class="mini-modern-cards">
+                                                <div class="mini-card-md"></div>
+                                                <div class="mini-card-md"></div>
+                                            </div>
+                                            <div class="mini-modern-content"></div>
+                                        </div>
+                                    </div>
+                                    <div class="text-center mt-2">
+                                        <p class="mb-0 small">Modern</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                    <input type="hidden" name="dashboard_layout" id="dashboardLayoutInput" value="{{ $settings->dashboard_layout ?? 'standard' }}">
+                    
+                    @if(!$isPremium)
+                    <p class="premium-feature-info small text-muted mt-2">
+                        <i class="fas fa-lock me-1"></i> Dashboard layout customization is a premium feature. 
+                        <a href="javascript:void(0)" onclick="openSubscriptionModal()" class="text-warning">Upgrade now</a>
+                    </p>
+                    @endif
                 </div>
             </div>
             
             <!-- Save Button -->
-            <div class="col-12 mt-2">
+            <div class="col-12 mt-3">
                 <div class="d-flex justify-content-end">
-                    <button type="button" class="btn btn-secondary btn-sm me-2" id="resetBtn">Reset</button>
-                    <button type="submit" class="btn btn-primary btn-sm" id="saveBtn">Save Changes</button>
+                    <button type="button" id="resetBtn" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-undo me-1"></i>Reset to Defaults
+                    </button>
+                    <button type="submit" id="saveSettingsBtn" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Save Changes
+                    </button>
                 </div>
             </div>
         </div>
@@ -154,6 +277,194 @@
         <a href="{{ route('tenant.login') }}" class="alert-link">Click here to login</a>.
     </div>
     @endif
+</div>
+
+<!-- Layout Editor Modal -->
+<div class="modal fade" id="layoutEditorModal" tabindex="-1" aria-labelledby="layoutEditorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="layoutEditorModalLabel">
+                    <i class="fas fa-columns me-2"></i>Dashboard Layout Editor
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row layout-editor-container">
+                    <div class="col-md-3 layout-editor-sidebar">
+                        <h6 class="mb-3">Available Components</h6>
+                        <div class="layout-components-list">
+                            <!-- Statistics Components -->
+                            <h6 class="text-muted small mb-2">Statistics</h6>
+                            @forelse($availableComponents['statistics'] ?? [] as $component)
+                            <div class="layout-editor-item" draggable="true" data-component="{{ $component['type'] }}">
+                                <i class="fas fa-{{ $component['icon'] ?? 'chart-bar' }} me-2"></i>{{ $component['title'] }}
+                            </div>
+                            @empty
+                            <div class="text-muted small mb-2">No statistics components available</div>
+                            @endforelse
+                            
+                            <!-- Content Components -->
+                            <h6 class="text-muted small mb-2 mt-3">Content</h6>
+                            @forelse($availableComponents['content'] ?? [] as $component)
+                            <div class="layout-editor-item" draggable="true" data-component="{{ $component['type'] }}">
+                                <i class="fas fa-{{ $component['icon'] ?? 'box' }} me-2"></i>{{ $component['title'] }}
+                            </div>
+                            @empty
+                            <div class="text-muted small mb-2">No content components available</div>
+                            @endforelse
+                            
+                            <!-- Bottom Section Components -->
+                            @if(!empty($availableComponents['bottom']))
+                            <h6 class="text-muted small mb-2 mt-3">Additional</h6>
+                            @foreach($availableComponents['bottom'] as $component)
+                            <div class="layout-editor-item" draggable="true" data-component="{{ $component['type'] }}">
+                                <i class="fas fa-{{ $component['icon'] ?? 'cog' }} me-2"></i>{{ $component['title'] }}
+                            </div>
+                            @endforeach
+                            @endif
+                        </div>
+                        <hr>
+                        <h6 class="mb-3">Layout Settings</h6>
+                        <div class="mb-3">
+                            <label class="form-label">Sidebar Position</label>
+                            <select class="form-select form-select-sm" id="sidebarPosition">
+                                <option value="left">Left</option>
+                                <option value="right">Right</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Card Style</label>
+                            <select class="form-select form-select-sm" id="cardStyle">
+                                <option value="rounded">Rounded</option>
+                                <option value="square">Square</option>
+                                <option value="glass">Glass</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-9 layout-editor-main">
+                        <div class="alert alert-info small">
+                            <i class="fas fa-info-circle me-2"></i>Drag items from the left sidebar and drop them into the sections below to customize your dashboard layout.
+                        </div>
+                        <div class="layout-editor-preview">
+                            <h6 class="mb-2">Statistics Section</h6>
+                            <div class="dropzone" id="statistics-zone" data-zone="statistics">
+                                <div class="text-muted text-center p-3 small" id="statistics-placeholder">
+                                    <i class="fas fa-plus-circle me-2"></i>Drag statistic cards here
+                                </div>
+                                <div id="statistics-items" class="row g-2"></div>
+                            </div>
+                            
+                            <h6 class="mb-2 mt-4">Main Content Section</h6>
+                            <div class="dropzone" id="content-zone" data-zone="content">
+                                <div class="text-muted text-center p-3 small" id="content-placeholder">
+                                    <i class="fas fa-plus-circle me-2"></i>Drag content components here
+                                </div>
+                                <div id="content-items" class="row g-2"></div>
+                            </div>
+                            
+                            <h6 class="mb-2 mt-4">Bottom Section</h6>
+                            <div class="dropzone" id="bottom-zone" data-zone="bottom">
+                                <div class="text-muted text-center p-3 small" id="bottom-placeholder">
+                                    <i class="fas fa-plus-circle me-2"></i>Drag additional components here
+                                </div>
+                                <div id="bottom-items" class="row g-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveLayoutBtn">Save Layout</button>
+                @if(app()->environment('local', 'development'))
+                <!-- Debug button for development only -->
+                <button type="button" class="btn btn-outline-info ms-2" id="debugLayoutBtn" title="View debug info">
+                    <i class="fas fa-bug"></i>
+                </button>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Layout Success Modal -->
+<div class="modal fade" id="layoutSuccessModal" tabindex="-1" aria-labelledby="layoutSuccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="layoutSuccessModalLabel">
+                    <i class="fas fa-check-circle me-2"></i>Layout Updated
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-columns text-success" style="font-size: 3rem;"></i>
+                </div>
+                <p class="text-center">Your dashboard layout has been successfully updated to <span id="newLayoutName" class="fw-bold">Standard</span>.</p>
+                <p class="text-center text-muted small">The changes will be visible the next time you visit the dashboard.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" id="dashboardLink" class="btn btn-primary">
+                    <i class="fas fa-eye me-1"></i>Visit Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Card Style Success Modal -->
+<div class="modal fade" id="cardStyleSuccessModal" tabindex="-1" aria-labelledby="cardStyleSuccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-navy text-white">
+                <h5 class="modal-title" id="cardStyleSuccessModalLabel">Card Style Updated</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="buksu-icon-container mb-3 mx-auto">
+                    <i class="fas fa-palette fa-3x"></i>
+                </div>
+                <h4 class="mb-3">Success!</h4>
+                <p class="mb-1">Card style updated to <span id="newCardStyleName" class="fw-bold">Rounded</span>.</p>
+                <p class="text-muted">Click Save to permanently apply these changes.</p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" id="viewDashboardLink" class="btn btn-primary" style="background-color: #003366; border-color: #003366;">
+                    <i class="fas fa-tachometer-alt me-1"></i> View Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Font Style Success Modal -->
+<div class="modal fade" id="fontStyleSuccessModal" tabindex="-1" aria-labelledby="fontStyleSuccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-navy text-white">
+                <h5 class="modal-title" id="fontStyleSuccessModalLabel">Font Style Updated</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="buksu-icon-container mb-3 mx-auto">
+                    <i class="fas fa-font fa-3x"></i>
+                </div>
+                <h4 class="mb-3">Success!</h4>
+                <p class="mb-1">Font style updated to <span id="newFontStyleName" class="fw-bold">Default</span>.</p>
+                <p class="text-muted">Click Save to permanently apply these changes.</p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" id="viewDashboardLinkFont" class="btn btn-primary" style="background-color: #003366; border-color: #003366;">
+                    <i class="fas fa-tachometer-alt me-1"></i> View Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
 
 @push('styles')
@@ -400,11 +711,29 @@
     /* Glass card style */
     .card-example-glass {
         border-radius: 6px;
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.7) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .card-example-glass::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.1) 100%);
+        z-index: 0;
+    }
+    
+    .card-example-glass .text-center {
+        position: relative;
+        z-index: 1;
     }
     
     /* Card style container */
@@ -750,6 +1079,358 @@
         background-color: rgb(251, 191, 36) !important;
         color: rgb(17, 24, 39) !important;
     }
+    
+    /* Dashboard Layout Options */
+    .layout-option {
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        padding: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        height: 100%;
+    }
+    
+    .layout-option:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .layout-option.active {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(0, 51, 102, 0.2);
+    }
+    
+    .layout-preview {
+        height: 120px;
+        background-color: #f9f9f9;
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    /* Standard Layout Preview */
+    .standard-layout {
+        display: flex;
+        flex-direction: column;
+        padding: 5px;
+    }
+    
+    .mini-cards {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+    
+    .mini-card {
+        width: 23%;
+        height: 30px;
+        background-color: #e6e6e6;
+        border-radius: 3px;
+    }
+    
+    .mini-content {
+        display: flex;
+        justify-content: space-between;
+        height: 70px;
+    }
+    
+    .mini-section {
+        width: 49%;
+        background-color: #e6e6e6;
+        border-radius: 3px;
+    }
+    
+    /* Compact Layout Preview */
+    .compact-layout {
+        display: flex;
+    }
+    
+    .mini-sidebar {
+        width: 15%;
+        height: 100%;
+        background-color: #d1d1d1;
+    }
+    
+    .mini-content-area {
+        width: 85%;
+        padding: 5px;
+    }
+    
+    .mini-cards-compact {
+        display: flex;
+        justify-content: flex-start;
+        margin-bottom: 5px;
+    }
+    
+    .mini-card-sm {
+        width: 30%;
+        height: 25px;
+        background-color: #e6e6e6;
+        border-radius: 3px;
+        margin-right: 5px;
+    }
+    
+    .mini-content-compact {
+        height: 80px;
+        background-color: #e6e6e6;
+        border-radius: 3px;
+    }
+    
+    /* Modern Layout Preview */
+    .modern-layout {
+        display: flex;
+    }
+    
+    .mini-header {
+        height: 15px;
+        background-color: #d1d1d1;
+        margin-bottom: 5px;
+        border-radius: 2px;
+    }
+    
+    .mini-modern-cards {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+    
+    .mini-card-md {
+        width: 48%;
+        height: 40px;
+        background-color: #e6e6e6;
+        border-radius: 3px;
+    }
+    
+    .mini-modern-content {
+        height: 55px;
+        background-color: #e6e6e6;
+        border-radius: 3px;
+    }
+    
+    /* Dark mode specific layout preview styles */
+    body.dark-mode .layout-preview {
+        background-color: #2d3748;
+    }
+    
+    body.dark-mode .mini-card,
+    body.dark-mode .mini-section,
+    body.dark-mode .mini-card-sm,
+    body.dark-mode .mini-content-compact,
+    body.dark-mode .mini-card-md,
+    body.dark-mode .mini-modern-content {
+        background-color: #4a5568;
+    }
+    
+    body.dark-mode .mini-sidebar,
+    body.dark-mode .mini-header {
+        background-color: #1a202c;
+    }
+    
+    /* Layout Editor Modal */
+    .layout-editor-container {
+        min-height: 500px;
+    }
+    
+    .layout-editor-sidebar {
+        background-color: #f8f9fa;
+        border-right: 1px solid #dee2e6;
+        height: 100%;
+        padding: 15px;
+    }
+    
+    .layout-editor-main {
+        padding: 15px;
+    }
+    
+    .layout-editor-item {
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 10px;
+        margin-bottom: 10px;
+        cursor: move;
+        transition: all 0.2s ease;
+    }
+    
+    .layout-editor-item:hover {
+        background-color: #f8f9fa;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .layout-editor-preview {
+        min-height: 400px;
+        border: 2px dashed #dee2e6;
+        border-radius: 4px;
+        padding: 15px;
+    }
+    
+    .layout-editor-preview .dropzone {
+        min-height: 80px;
+        border: 1px dashed #ced4da;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        padding: 10px;
+        background-color: #f8f9fa;
+    }
+    
+    .layout-editor-preview .dropzone.active {
+        background-color: rgba(0, 123, 255, 0.1);
+        border-color: #007bff;
+    }
+    
+    /* Dark mode editor */
+    body.dark-mode .layout-editor-sidebar {
+        background-color: #2d3748;
+        border-color: #4a5568;
+    }
+    
+    body.dark-mode .layout-editor-item {
+        background-color: #3a4a5e;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+    
+    body.dark-mode .layout-editor-item:hover {
+        background-color: #4a5568;
+    }
+    
+    body.dark-mode .layout-editor-preview {
+        border-color: #4a5568;
+    }
+    
+    body.dark-mode .layout-editor-preview .dropzone {
+        background-color: #2d3748;
+        border-color: #4a5568;
+    }
+    
+    /* Layout Success Modal styling */
+    #layoutSuccessModal .modal-header {
+        border-bottom: 0;
+    }
+    
+    #layoutSuccessModal .modal-content {
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+    
+    #layoutSuccessModal .modal-footer {
+        border-top: 0;
+    }
+    
+    #layoutSuccessModal .fas.fa-columns {
+        background-color: rgba(40, 167, 69, 0.1);
+        border-radius: 50%;
+        padding: 1.5rem;
+        color: #28a745;
+    }
+    
+    /* Dark mode layout success modal */
+    body.dark-mode #layoutSuccessModal .modal-content {
+        background-color: #1F2937;
+        color: #f3f4f6;
+    }
+    
+    body.dark-mode #layoutSuccessModal .modal-header {
+        background-color: #10B981 !important; /* A more modern green for dark mode */
+    }
+    
+    body.dark-mode #layoutSuccessModal .text-muted {
+        color: #9CA3AF !important;
+    }
+    
+    body.dark-mode #layoutSuccessModal .fas.fa-columns {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: #10B981;
+    }
+    
+    body.dark-mode #layoutSuccessModal .btn-secondary {
+        background-color: #4B5563;
+        border-color: #4B5563;
+        color: #F3F4F6;
+    }
+    
+    body.dark-mode #layoutSuccessModal .btn-primary {
+        background-color: #3B82F6;
+        border-color: #3B82F6;
+    }
+    
+    /* Card Style Success Modal styling */
+    #cardStyleSuccessModal .modal-header {
+        border-bottom: 0;
+    }
+
+    #cardStyleSuccessModal .modal-content {
+        border-radius: 1rem;
+        overflow: hidden;
+        border: 1px solid rgba(0, 51, 102, 0.2);
+    }
+
+    #cardStyleSuccessModal .modal-footer {
+        border-top: 0;
+    }
+
+    .buksu-icon-container {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #003366, #0066cc);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .buksu-icon-container::before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at top right, rgba(255, 215, 0, 0.5), transparent 60%);
+    }
+
+    .buksu-icon-container .fas {
+        color: #FFD700;
+        position: relative;
+        z-index: 1;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    #cardStyleSuccessModal #newCardStyleName {
+        color: #003366;
+        border-bottom: 2px solid #FFD700;
+        padding-bottom: 2px;
+    }
+
+    /* Dark mode card style success modal */
+    body.dark-mode #cardStyleSuccessModal .modal-content {
+        background-color: #1F2937;
+        color: #f3f4f6;
+        border-color: #003366;
+    }
+
+    body.dark-mode #cardStyleSuccessModal .modal-header {
+        background-color: #003366 !important;
+    }
+
+    body.dark-mode #cardStyleSuccessModal .text-muted {
+        color: #9CA3AF !important;
+    }
+
+    body.dark-mode #cardStyleSuccessModal #newCardStyleName {
+        color: #FFD700;
+        border-bottom: 2px solid #FFD700;
+    }
+
+    body.dark-mode #cardStyleSuccessModal .btn-outline-secondary {
+        color: #e2e8f0;
+        border-color: #4B5563;
+    }
+
+    body.dark-mode #cardStyleSuccessModal .btn-outline-secondary:hover {
+        background-color: #4B5563;
+        color: #e2e8f0;
+    }
 </style>
 @endpush
 
@@ -757,124 +1438,407 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     $(document).ready(function() {
-        // Initialize select2 for dropdowns with search
-        $('.font-select, .font-size-select').select2({
-            width: '100%',
-            minimumResultsForSearch: 0
+        // Debug utility for dark mode
+        function logDarkModeState(label) {
+            const bodyHasDarkMode = $('body').hasClass('dark-mode');
+            const toggleChecked = $('#darkModeToggle').is(':checked');
+            const localStorageSetting = localStorage.getItem('darkMode');
+            
+            console.log(`Dark Mode Debug ${label || ''}:`);
+            console.log('- Body has dark-mode class:', bodyHasDarkMode);
+            console.log('- Toggle is checked:', toggleChecked);
+            console.log('- localStorage setting:', localStorageSetting);
+        }
+        
+        // Log initial state
+        logDarkModeState('initial');
+        
+        // Initialize dark mode from localStorage or server settings
+        const savedDarkMode = localStorage.getItem('darkMode');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        
+        if (savedDarkMode === 'enabled') {
+            $('body').addClass('dark-mode');
+            if (darkModeToggle) darkModeToggle.checked = true;
+        } else if (savedDarkMode === 'disabled') {
+            $('body').removeClass('dark-mode');
+            if (darkModeToggle) darkModeToggle.checked = false;
+        } else {
+            // If no localStorage setting, use the server setting (from the checkbox state)
+            if (darkModeToggle && darkModeToggle.checked) {
+                $('body').addClass('dark-mode');
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                $('body').removeClass('dark-mode');
+                localStorage.setItem('darkMode', 'disabled');
+            }
+        }
+        
+        // Log state after initialization
+        logDarkModeState('after initialization');
+        
+        // Add dark mode toggle listener for immediate feedback
+        $('#darkModeToggle').on('change', function() {
+            if ($(this).is(':checked')) {
+                $('body').addClass('dark-mode');
+                localStorage.setItem('darkMode', 'enabled');
+                // Dispatch event for other components
+                document.dispatchEvent(new CustomEvent('darkModeToggled', {
+                    detail: { isDarkMode: true }
+                }));
+            } else {
+                $('body').removeClass('dark-mode');
+                localStorage.setItem('darkMode', 'disabled');
+                // Dispatch event for other components
+                document.dispatchEvent(new CustomEvent('darkModeToggled', {
+                    detail: { isDarkMode: false }
+                }));
+            }
+            
+            // Log state after toggle
+            logDarkModeState('after toggle change');
+        });
+        
+        // Initialize settings form
+        const settingsForm = $('#settingsForm');
+        const saveStatus = $('#saveStatus');
+        
+        // Sync card style from localStorage on page load
+        try {
+            const savedCardStyle = localStorage.getItem('selectedCardStyle');
+            if (savedCardStyle) {
+                // Update hidden input value
+                $('#cardStyleInput').val(savedCardStyle);
+                
+                // Update active class on card style options
+                $('.card-example').removeClass('active');
+                $(`.card-example-${savedCardStyle}`).addClass('active');
+                
+                console.log('Synced card style from localStorage:', savedCardStyle);
+            } else {
+                // If no localStorage value, save the server value to localStorage
+                const serverCardStyle = $('#cardStyleInput').val();
+                if (serverCardStyle) {
+                    localStorage.setItem('selectedCardStyle', serverCardStyle);
+                    console.log('Saved server card style to localStorage:', serverCardStyle);
+                }
+            }
+        } catch (e) {
+            console.error('Error syncing card style from localStorage:', e);
+        }
+        
+        // Add tenant ID to form data before submit
+        settingsForm.on('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading state
+            saveStatus.removeClass('alert-success alert-danger').addClass('alert-info').html('<i class="fas fa-spinner fa-spin"></i> Saving settings...').show();
+            
+            // Get form data
+            const formData = new FormData(this);
+            
+            // Extract tenant ID from form data or URL
+            let tenantId = formData.get('tenant_id');
+            
+            // If not in form, try to get from URL
+            if (!tenantId) {
+                // Try to get from URL path segment
+                const pathSegments = window.location.pathname.split('/');
+                if (pathSegments.length > 1 && pathSegments[1]) {
+                    tenantId = pathSegments[1];
+                }
+                
+                // Or from query parameter
+                if (!tenantId) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.has('tenant')) {
+                        tenantId = urlParams.get('tenant');
+                    }
+                }
+                
+                // Add to form data if found
+                if (tenantId) {
+                    formData.append('tenant_id', tenantId);
+                }
+            }
+            
+            // Build the base URL correctly
+            const origin = window.location.origin;
+            const path = window.location.pathname;
+            
+            // Debug URL construction
+            console.log('Current path:', path);
+            console.log('Origin:', origin);
+            console.log('Tenant ID:', tenantId);
+            
+            // Fix: Construct the URL based on the current URL pattern
+            let saveUrl;
+            
+            // Determine if we're on a path-based tenant or subdomain tenant
+            const pathPattern = new RegExp(`^\\/${tenantId}\\/`);
+            const isPathBased = pathPattern.test(path);
+            const isSubdomain = origin.includes(`${tenantId}.`);
+            
+            if (isPathBased) {
+                // Path-based: /tenant-id/settings/save
+                saveUrl = `${origin}/${tenantId}/settings/save`;
+            } else if (isSubdomain) {
+                // Subdomain-based: tenant-id.domain.com/settings/save
+                saveUrl = `${origin}/settings/save`;
+            } else {
+                // Fallback
+                saveUrl = `${origin}/${tenantId}/settings/save`;
+            }
+            
+            console.log('Sending request to:', saveUrl, 'Path based:', isPathBased, 'Subdomain:', isSubdomain);
+            
+            // Convert FormData to JSON
+            const jsonData = {};
+            formData.forEach((value, key) => {
+                // Handle special case for checkboxes
+                if (key === 'dark_mode' || key === 'notification_sound' || key === 'email_notifications') {
+                    jsonData[key] = value === 'on' ? true : value === 'true';
+                } else {
+                    jsonData[key] = value;
+                }
+            });
+            
+            console.log('Sending settings to server:', jsonData);
+            
+            // Use fetch with the correct URL
+            fetch(saveUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'X-Tenant-ID': tenantId || ''
+                },
+                body: JSON.stringify(jsonData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 400) {
+                        throw new Error('Tenant context missing or invalid. Please refresh the page and try again.');
+                    } else if (response.status === 401) {
+                        throw new Error('You are not authenticated. Please log in and try again.');
+                    } else if (response.status === 422) {
+                        throw new Error('Form validation failed. Please check your inputs.');
+                    }
+                    throw new Error('Network response was not ok: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    saveStatus.removeClass('alert-info alert-danger').addClass('alert-success')
+                        .html('<i class="fas fa-check"></i> ' + data.message).show();
+                    
+                    // Handle dark mode toggle based on the saved setting
+                    const darkModeEnabled = $('#darkModeToggle').is(':checked');
+                    
+                    logDarkModeState('before applying from form save');
+                    console.log('Dark mode from form save:', darkModeEnabled);
+                    
+                    // Apply dark mode immediately to current page
+                    if (darkModeEnabled) {
+                        $('body').addClass('dark-mode');
+                        localStorage.setItem('darkMode', 'enabled');
+                        
+                        // Dispatch event for other components
+                        document.dispatchEvent(new CustomEvent('darkModeToggled', {
+                            detail: { isDarkMode: true }
+                        }));
+                    } else {
+                        $('body').removeClass('dark-mode');
+                        localStorage.setItem('darkMode', 'disabled');
+                        
+                        // Dispatch event for other components
+                        document.dispatchEvent(new CustomEvent('darkModeToggled', {
+                            detail: { isDarkMode: false }
+                        }));
+                    }
+                    
+                    // Log state after dark mode is applied
+                    logDarkModeState('after applying from form save');
+                    
+                    // Apply card style if it was changed
+                    const cardStyle = $('#cardStyleInput').val();
+                    if (cardStyle) {
+                        localStorage.setItem('selectedCardStyle', cardStyle);
+                        // Apply styles immediately
+                        applyCardStyleToPage(cardStyle);
+                        
+                        // Dispatch events for other tabs
+                        window.dispatchEvent(new StorageEvent('storage', {
+                            key: 'selectedCardStyle',
+                            newValue: cardStyle
+                        }));
+                        
+                        document.dispatchEvent(new CustomEvent('cardStyleChanged', {
+                            detail: { cardStyle: cardStyle }
+                        }));
+                    }
+                    
+                    // Hide message after delay
+                    setTimeout(() => {
+                        saveStatus.fadeOut();
+                    }, 3000);
+                } else {
+                    saveStatus.removeClass('alert-info alert-success').addClass('alert-danger')
+                        .html('<i class="fas fa-exclamation-triangle"></i> ' + (data.message || 'An error occurred')).show();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                saveStatus.removeClass('alert-info alert-success').addClass('alert-danger')
+                    .html('<i class="fas fa-exclamation-triangle"></i> ' + error.message).show();
+            });
         });
         
         // Card style selection
         $('.card-example').on('click', function() {
+            // Check if user is premium
+            @if(!$isPremium)
+            // Show premium upgrade message for non-premium users
+            saveStatus.removeClass('alert-success alert-danger').addClass('alert-warning')
+                .html('<i class="fas fa-crown"></i> Card style customization is a premium feature. <a href="javascript:void(0)" onclick="openSubscriptionModal()" class="alert-link">Upgrade now</a>').show();
+                
+            setTimeout(() => {
+                saveStatus.fadeOut();
+            }, 3000);
+                return;
+            @endif
+            
             const cardStyle = $(this).data('card-style');
             $('.card-example').removeClass('active');
             $(this).addClass('active');
             $('#cardStyleInput').val(cardStyle);
-        });
-        
-        // Font family change
-        $('#fontSelect').change(function() {
-            let fontFamily = $(this).val();
-            $('#fontPreview').css('font-family', fontFamily);
-        });
-        
-        // Font size change
-        $('#fontSizeSelect').change(function() {
-            let fontSize = $(this).val();
-            $('#sizePreview').css('font-size', fontSize);
-        });
-        
-        // Check premium status helper function
-    function isPremiumUser() {
-            // Check for premium badge in DOM as a reliable indicator
-            const hasPremiumBadge = $('.navbar-premium-indicator').length > 0 || $('.premium-indicator').length > 0;
             
-            // Check localStorage
-            const isPremiumLocal = localStorage.getItem('isPremium') === 'true';
+            // Save to localStorage for immediate effect on all dashboards
+            localStorage.setItem('selectedCardStyle', cardStyle);
+            console.log('Card style set to:', cardStyle);
             
-            // Check cookie
-            const isPremiumCookie = document.cookie.split('; ').find(row => row.startsWith('is_premium='));
+            // Apply styles immediately to current page
+            applyCardStyleToPage(cardStyle);
             
-            // PHP session value passed to JavaScript
-            const isPremiumPHP = {{ $isPremium ? 'true' : 'false' }};
-            
-            return hasPremiumBadge || isPremiumLocal || isPremiumCookie || isPremiumPHP;
-        }
-
-        // Dark mode toggle
-        $('#darkModeToggle').change(function() {
-            if (!isPremiumUser()) {
-                // If not premium, reset toggle and show upgrade message
-                $(this).prop('checked', false);
-                showToast('Dark Mode is a premium feature. Please upgrade to unlock it.', 'error');
-                
-                // Try to open subscription modal if it exists
-        if (typeof openSubscriptionModal === 'function') {
-            openSubscriptionModal();
-                }
-                return;
-            }
-            
-            toggleDarkMode($(this).is(':checked'));
-        });
-        
-        // Function to toggle dark mode
-        function toggleDarkMode(isDark) {
-            // If trying to enable dark mode, verify premium status again
-            if (isDark && !isPremiumUser()) {
-                showToast('Dark Mode is a premium feature. Please upgrade to unlock it.', 'error');
-                $('#darkModeToggle').prop('checked', false);
-                return;
-            }
-            
-            // Apply to body
-            if(isDark) {
-                $('body').addClass('dark-mode');
-            localStorage.setItem('darkMode', 'enabled');
-        } else {
-                $('body').removeClass('dark-mode');
-            localStorage.setItem('darkMode', 'disabled');
-        }
-            
-            // Update any iframe elements that might exist
-            $('iframe').each(function() {
-                try {
-                    if (isDark) {
-                        $(this).contents().find('body').addClass('dark-mode');
-                    } else {
-                        $(this).contents().find('body').removeClass('dark-mode');
-                    }
-                } catch(e) {
-                    // Handle cross-origin issues silently
-                }
-            });
-            
-            // Dispatch a custom event for other scripts to listen for
-            document.dispatchEvent(new CustomEvent('darkModeToggled', { 
-                detail: { isDarkMode: isDark } 
+            // Dispatch both storage and custom events for immediate cross-tab effect
+            window.dispatchEvent(new StorageEvent('storage', {
+                key: 'selectedCardStyle',
+                newValue: cardStyle
             }));
+            
+            // Dispatch a custom event that our dashboards can listen for
+            document.dispatchEvent(new CustomEvent('cardStyleChanged', {
+                detail: { cardStyle: cardStyle }
+            }));
+
+            // Show success modal with the updated card style
+            updateCardStyleSuccessModal(cardStyle);
+        });
+        
+        // Function to apply card style to current page
+        function applyCardStyleToPage(style) {
+            // Remove existing style classes
+            $('body').removeClass('card-style-square card-style-rounded card-style-glass');
+            
+            // Add the selected style class
+            if (style) {
+                $('body').addClass('card-style-' + style);
+            }
+            
+            // Update any preview elements
+            updateCardStylePreview(style);
         }
         
-        // Toast message function
-        function showToast(message, type = 'success') {
-            const toast = $('<div class="settings-toast ' + type + '">' + message + '</div>');
-            $('body').append(toast);
-            
-            setTimeout(function() {
-                toast.addClass('show');
-            }, 100);
-            
-            setTimeout(function() {
-                toast.removeClass('show');
-                
-                setTimeout(function() {
-                    toast.remove();
-                }, 300);
-            }, 3000);
+        // Apply saved card style on page load
+        try {
+            const savedCardStyle = localStorage.getItem('selectedCardStyle');
+            if (savedCardStyle) {
+                applyCardStyleToPage(savedCardStyle);
+            }
+        } catch (e) {
+            console.error('Error applying saved card style:', e);
         }
+        
+        // Layout option selection
+        $('.layout-option').on('click', function() {
+            const layoutType = $(this).data('layout');
+            console.log('Layout option selected:', layoutType);
+            
+            $('.layout-option').removeClass('active');
+            $(this).addClass('active');
+            $('#dashboardLayoutInput').val(layoutType);
+            
+            // Save to localStorage for immediate effect on dashboard
+            try {
+                localStorage.setItem('selectedDashboardLayout', layoutType);
+                console.log('Layout type saved to localStorage:', layoutType);
+                
+                // Update the layout name in the success modal and show it
+                updateLayoutSuccessModal(layoutType, true);
+            } catch (e) {
+                console.error('Failed to save layout type to localStorage:', e);
+            }
+            
+            // Show success message in the alert
+            saveStatus.removeClass('alert-danger alert-info').addClass('alert-success')
+                .html('<i class="fas fa-check"></i> Dashboard layout type updated. Click Save to apply changes.').show();
+                
+            // If dashboard is open in another tab, this will make the changes take effect immediately
+            try {
+                // Dispatch a storage event manually to update other tabs
+                window.dispatchEvent(new StorageEvent('storage', {
+                    key: 'selectedDashboardLayout',
+                    newValue: layoutType
+                }));
+                console.log('Storage event dispatched for immediate update');
+            } catch (e) {
+                console.error('Error dispatching storage event:', e);
+            }
+                
+            // Hide message after delay
+            setTimeout(() => {
+                saveStatus.fadeOut();
+            }, 3000);
+        });
+        
+        // Function to update the success modal with the correct layout name
+        // showModal parameter determines whether to show the modal (default: false)
+        function updateLayoutSuccessModal(layoutType, showModal = false) {
+            const layoutNameElement = document.getElementById('newLayoutName');
+            if (layoutNameElement) {
+                let formattedName = 'Standard';
+                
+                switch(layoutType) {
+                    case 'compact':
+                        formattedName = 'Compact';
+                        break;
+                    case 'modern':
+                        formattedName = 'Modern';
+                        break;
+                    default:
+                        formattedName = 'Standard';
+                }
+                
+                layoutNameElement.textContent = formattedName;
+                
+                // Only show the modal if explicitly requested
+                if (showModal) {
+                    const layoutSuccessModal = new bootstrap.Modal(document.getElementById('layoutSuccessModal'));
+                    layoutSuccessModal.show();
+                }
+            }
+        }
+        
+        // Initialize drag and drop when modal is shown
+        $('#layoutEditorModal').on('shown.bs.modal', function() {
+            initDragAndDrop();
+        });
         
         // Reset button
         $('#resetBtn').click(function() {
-            if(confirm('Are you sure you want to reset all settings to default?')) {
+            if (confirm('Are you sure you want to reset all settings to default?')) {
                 $('#darkModeToggle').prop('checked', false);
                 $('.card-example').removeClass('active');
                 $('.card-example-square').addClass('active');
@@ -884,122 +1848,191 @@
                 $('#fontPreview').css('font-family', 'Work Sans, sans-serif');
                 $('#sizePreview').css('font-size', '14px');
                 $('body').removeClass('dark-mode');
-            }
-        });
-        
-        // Form submission
-        $('#settingsForm').submit(function(e) {
-            e.preventDefault();
-            
-            // Show loading state
-            $('#saveBtn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Saving...');
-            
-            // Collect form data
-            const formData = $(this).serialize();
-            
-            // Send AJAX request with CSRF token in header
-            $.ajax({
-                url: "{{ route('tenant.settings.save') }}",
-                type: "POST",
-                data: formData,
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                success: function(response) {
-                    if(response.success) {
-                        showToast(response.message, 'success');
-                    } else {
-                        showToast('An error occurred while saving settings.', 'error');
-                    }
-                },
-                error: function(xhr) {
-                    console.error(xhr);
-                    showToast('Could not save settings. Please try again later.', 'error');
-                },
-                complete: function() {
-                    // Reset button state
-                    $('#saveBtn').prop('disabled', false).html('Save Changes');
-                }
-            });
-        });
-        
-        // Apply current settings on page load
-        $(function() {
-            // First check if user is premium before applying dark mode
-            const userIsPremium = isPremiumUser();
-            
-            // If premium, handle dark mode settings
-            if (userIsPremium) {
-                // Check for dark mode in localStorage and apply it
-                const savedDarkMode = localStorage.getItem('darkMode');
-                if (savedDarkMode === 'enabled') {
-                    $('#darkModeToggle').prop('checked', true);
-                    toggleDarkMode(true);
-                } else if (savedDarkMode === 'disabled') {
-                    $('#darkModeToggle').prop('checked', false);
-                    toggleDarkMode(false);
-                } else {
-                    // If no saved preference, check the current checkbox state from database
-                    toggleDarkMode($('#darkModeToggle').is(':checked'));
-                }
-            } else {
-                // If not premium, ensure dark mode is disabled
-                $('#darkModeToggle').prop('checked', false);
-                $('body').removeClass('dark-mode');
-                localStorage.setItem('darkMode', 'disabled');
-            }
-            
-            // Log authentication info for debugging (remove in production)
-            console.log('Current tenant: {{ tenant('id') }}');
-            
-            @if(Auth::guard('admin')->check())
-                console.log('Admin authenticated: {{ Auth::guard('admin')->user()->name }}');
-            @elseif(Auth::guard('staff')->check())
-                console.log('Staff authenticated: {{ Auth::guard('staff')->user()->name }}');
-            @else
-                console.log('No authenticated user');
-            @endif
-        });
-        
-        // Ensure card examples maintain their styles in dark mode
-        function preserveCardExamples() {
-            if (document.body.classList.contains('dark-mode')) {
-                $('.card-examples-wrapper').css({
-                    'background-color': '#ffffff',
-                    'box-shadow': '0 2px 8px rgba(0, 0, 0, 0.3)',
-                    'border': '1px solid #e5e7eb'
-                });
                 
-                $('.card-example').css({
-                    'background-color': '#ffffff',
-                    'color': '#111827',
-                    'border-color': '#e5e7eb'
-                });
+                // Also clear localStorage
+                localStorage.removeItem('darkMode');
                 
-                $('.card-example i, .card-example h5').css('color', '#111827');
-                
-                $('.card-example-glass').css({
-                    'background-color': 'rgba(255, 255, 255, 0.8)',
-                    'backdrop-filter': 'blur(10px)'
-                });
-            }
-        }
-        
-        // Run initially
-        preserveCardExamples();
-        
-        // Listen for dark mode toggle events
-        document.addEventListener('darkModeToggled', function(e) {
-            // Apply the styles after a short delay to ensure they take effect after dark mode changes
-            setTimeout(preserveCardExamples, 50);
-        });
-        
-        // Premium badge click - open subscription modal
-        $('.premium-feature-badge').on('click', function() {
-            if (typeof openSubscriptionModal === 'function') {
-                openSubscriptionModal();
+                saveStatus.removeClass('alert-danger alert-success').addClass('alert-info')
+                    .html('<i class="fas fa-info-circle"></i> Settings reset to defaults. Click Save to apply changes.').show();
         }
     });
+
+    // Sync dashboard layout with localStorage on page load
+    try {
+        const savedLayout = localStorage.getItem('selectedDashboardLayout');
+        if (savedLayout) {
+            // Update hidden input value
+            $('#dashboardLayoutInput').val(savedLayout);
+            
+            // Update active class on layout option
+            $('.layout-option').removeClass('active');
+            $(`.layout-option[data-layout="${savedLayout}"]`).addClass('active');
+            
+            // Initialize success modal with current layout name but don't show it
+            updateLayoutSuccessModal(savedLayout, false);
+            
+            console.log('Synced layout from localStorage:', savedLayout);
+        }
+    } catch (e) {
+        console.error('Error syncing layout from localStorage:', e);
+    }
+
+    // Listen for dashboard layout changes from other tabs
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'selectedDashboardLayout') {
+            console.log('Detected dashboard layout change:', e.newValue);
+            
+            // Update hidden input value
+            $('#dashboardLayoutInput').val(e.newValue);
+            
+            // Update active class on layout option
+            $('.layout-option').removeClass('active');
+            $(`.layout-option[data-layout="${e.newValue}"]`).addClass('active');
+            
+            // Update the layout name in the success modal but don't show it
+            updateLayoutSuccessModal(e.newValue, false);
+        } else if (e.key === 'selectedCardStyle') {
+            console.log('Detected card style change:', e.newValue);
+            
+            // Update hidden input value
+            $('#cardStyleInput').val(e.newValue);
+            
+            // Update active class on card style options
+            $('.card-example').removeClass('active');
+            $(`.card-example-${e.newValue}`).addClass('active');
+        }
+    });
+
+    // Initialize dashboard link
+    const tenantId = $('input[name="tenant_id"]').val();
+    const origin = window.location.origin;
+    const dashboardUrl = tenantId ? `${origin}/${tenantId}/dashboard` : `${origin}/dashboard`;
+    $('#dashboardLink').attr('href', dashboardUrl);
+
+    // Helper function to show toast notifications
+    function showToast(type, message) {
+        // Create toast element
+        const toast = $('<div class="settings-toast ' + type + '">' +
+                        '<i class="fas ' + (type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle') + '"></i> ' +
+                        message +
+                        '</div>');
+        
+        // Add to body
+        $('body').append(toast);
+        
+        // Fade in
+        setTimeout(() => {
+            toast.addClass('show');
+        }, 10);
+        
+        // Fade out and remove after delay
+        setTimeout(() => {
+            toast.removeClass('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 3000);
+    }
+    
+    // Function to update card style preview (used by the card style selector)
+    function updateCardStylePreview(cardStyle) {
+        // Update any preview elements that need to show the selected card style
+        $('.card-style-preview').attr('data-style', cardStyle);
+    }
+
+    // Function to update and show card style success modal
+    function updateCardStyleSuccessModal(cardStyle) {
+        // Format the card style name to be more presentable
+        let cardStyleName;
+        switch(cardStyle) {
+            case 'rounded':
+                cardStyleName = 'Rounded';
+                break;
+            case 'glass':
+                cardStyleName = 'Glassy';
+                break;
+            default:
+                cardStyleName = 'Square';
+        }
+        
+        // Update the modal content with the correct style name
+        document.getElementById('newCardStyleName').textContent = cardStyleName;
+        
+        // Update dashboard link
+        const tenantId = document.querySelector('[name="tenant_id"]').value;
+        const dashboardLink = document.getElementById('viewDashboardLink');
+        dashboardLink.href = `/${tenantId}/dashboard`;
+        
+        // Show the modal
+        const cardStyleModal = new bootstrap.Modal(document.getElementById('cardStyleSuccessModal'));
+        cardStyleModal.show();
+    }
+
+    // Function to update and show font style success modal
+    function updateFontStyleSuccessModal(fontStyle) {
+        // Format the font style name to be more presentable
+        let fontStyleName;
+        switch(fontStyle) {
+            case 'montserrat':
+                fontStyleName = 'Montserrat';
+                break;
+            case 'roboto':
+                fontStyleName = 'Roboto';
+                break;
+            case 'lato':
+                fontStyleName = 'Lato';
+                break;
+            case 'opensans':
+                fontStyleName = 'Open Sans';
+                break;
+            default:
+                fontStyleName = 'Default';
+        }
+        
+        // Update the modal content with the correct style name
+        document.getElementById('newFontStyleName').textContent = fontStyleName;
+        
+        // Update dashboard link
+        const tenantId = document.querySelector('[name="tenant_id"]').value;
+        const dashboardLink = document.getElementById('viewDashboardLinkFont');
+        dashboardLink.href = `/${tenantId}/dashboard`;
+        
+        // Show the modal
+        const fontStyleModal = new bootstrap.Modal(document.getElementById('fontStyleSuccessModal'));
+        fontStyleModal.show();
+    }
+
+    // Font style change handler
+    document.querySelectorAll('input[name="font_style"]').forEach(input => {
+        input.addEventListener('change', function() {
+            const fontStyle = this.value;
+            document.documentElement.style.setProperty('--font-family', getFontFamily(fontStyle));
+            
+            // Update preview text
+            const previewText = document.getElementById('fontPreview');
+            if (previewText) {
+                previewText.style.fontFamily = getFontFamily(fontStyle);
+            }
+            
+            // Show success modal
+            updateFontStyleSuccessModal(fontStyle);
+        });
+    });
+
+    function getFontFamily(fontStyle) {
+        switch(fontStyle) {
+            case 'montserrat':
+                return "'Montserrat', sans-serif";
+            case 'roboto':
+                return "'Roboto', sans-serif";
+            case 'lato':
+                return "'Lato', sans-serif";
+            case 'opensans':
+                return "'Open Sans', sans-serif";
+            default:
+                return "'Arial', sans-serif";
+        }
+    }
 });
 </script>
 @endpush

@@ -3,462 +3,348 @@
 @section('title', 'Department Dashboard')
 
 @section('content')
-<div class="container-fluid py-2">
-    <div class="row">
-        <!-- Main Content -->
-        <div class="col-12">
-            <!-- Statistics Cards -->
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <div class="card h-100 border-0 shadow-sm hover-shadow">
-                        <div class="card-body d-flex align-items-center">
-                            <div class="rounded-circle p-3 bg-primary bg-opacity-10 me-3">
-                                <i class="fas fa-chalkboard-teacher fs-4 text-primary"></i>
-                            </div>
-                            <div>
-                                <h6 class="card-subtitle mb-1 text-muted">Total Instructors</h6>
-                                <h2 class="card-title mb-0 fw-bold">{{ $instructorCount ?? 0 }}</h2>
-                            </div>
-                        </div>
-                        <div class="card-footer border-0 bg-primary bg-opacity-10 py-3">
-                            <small class="text-primary">
-                                <i class="fas fa-chart-line me-1"></i>
-                                Active Teaching Staff
-                            </small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card h-100 border-0 shadow-sm hover-shadow">
-                        <div class="card-body d-flex align-items-center">
-                            <div class="rounded-circle p-3 bg-success bg-opacity-10 me-3">
-                                <i class="fas fa-user-graduate fs-4 text-success"></i>
-                            </div>
-                            <div>
-                                <h6 class="card-subtitle mb-1 text-muted">Total Students</h6>
-                                <h2 class="card-title mb-0 fw-bold">{{ $studentCount ?? 0 }}</h2>
-                            </div>
-                        </div>
-                        <div class="card-footer border-0 bg-success bg-opacity-10 py-3">
-                            <small class="text-success">
-                                <i class="fas fa-users me-1"></i>
-                                Enrolled Learners
-                            </small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card h-100 border-0 shadow-sm hover-shadow">
-                        <div class="card-body d-flex align-items-center">
-                            <div class="rounded-circle p-3 bg-info bg-opacity-10 me-3">
-                                <i class="fas fa-clipboard-list fs-4 text-info"></i>
-                            </div>
-                            <div>
-                                <h6 class="card-subtitle mb-1 text-muted">Pending Requirements</h6>
-                                <h2 class="card-title mb-0 fw-bold">{{ $pendingRequirements ?? 0 }}</h2>
-                            </div>
-                        </div>
-                        <div class="card-footer border-0 bg-info bg-opacity-10 py-3">
-                            <small class="text-info">
-                                <i class="fas fa-clock me-1"></i>
-                                Awaiting Review
-                            </small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card h-100 border-0 shadow-sm hover-shadow">
-                        <div class="card-body d-flex align-items-center">
-                            <div class="rounded-circle p-3 bg-warning bg-opacity-10 me-3">
-                                <i class="fas fa-book fs-4 text-warning"></i>
-                            </div>
-                            <div>
-                                <h6 class="card-subtitle mb-1 text-muted">Active Courses</h6>
-                                <h2 class="card-title mb-0 fw-bold">{{ $activeCourses ?? 0 }}</h2>
-                            </div>
-                        </div>
-                        <div class="card-footer border-0 bg-warning bg-opacity-10 py-3">
-                            <small class="text-warning">
-                                <i class="fas fa-graduation-cap me-1"></i>
-                                Current Semester
-                            </small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cards Row for Students and Courses -->
-            <div class="d-flex flex-wrap justify-content-between mt-4">
-                <!-- Recent Enrolled Students Section -->
-                <div class="enrolled-card flex-grow-1 mx-2" style="min-width: 280px; max-width: 32%;">
-                    <p class="title p-2 mb-0" style="font-size: 1em; color: #111827;">Recent Enrolled Students</p>
-                    <div class="user__container custom-scrollbar overflow-y-auto" style="max-height: 200px;">
-                        @forelse($students ?? [] as $student)
-                            <div class="user">
-                                <div class="image">
-                                    @if($student->avatar)
-                                        <img src="{{ asset('storage/' . $student->avatar) }}" 
-                                             alt="{{ $student->student_id }}" 
-                                             class="w-full h-full rounded-full object-cover">
-                                    @else
-                                        <div class="w-full h-full flex items-center justify-center student-image">
-                                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                                            </svg>
-                                        </div>
-                                    @endif
-                                </div>
-                                <div class="user__content">
-                                    <div class="text">
-                                        <span class="name" style="font-size: 0.85em;">{{ $student->student_id }}</span>
-                                        <p class="username {{ $student->status === 'Regular' ? 'text-green-500' : ($student->status === 'Irregular' ? 'text-yellow-500' : 'text-red-500') }}" 
-                                           style="font-size: 0.75em; margin: 0;">
-                                            {{ $student->status }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        @empty
-                            <div class="user">
-                                <p class="text-xs text-coolGray-500 text-center">No students enrolled yet</p>
-                            </div>
-                        @endforelse
-                    </div>
-                    <a class="more" href="{{ route('tenant.students.index', ['tenant' => tenant('id')]) }}" style="font-size: 0.85em;">See more</a>
-                </div>
-
-                <!-- Available Courses Section -->
-                <div class="enrolled-card flex-grow-1 mx-2" style="min-width: 280px; max-width: 32%;">
-                    <p class="title p-2 mb-0" style="font-size: 1em; color: #111827;">Available Courses</p>
-                    <div class="user__container custom-scrollbar overflow-y-auto" style="max-height: 200px;">
-                        @forelse($courses ?? [] as $course)
-                            <div class="user">
-                                <div class="image">
-                                    <div class="w-full h-full flex items-center justify-center course-image">
-                                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/>
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div class="user__content">
-                                    <div class="text">
-                                        <span class="name" style="font-size: 0.85em;">{{ $course->name }}</span>
-                                        <div class="d-flex align-items-center gap-2" style="font-size: 0.75em; margin: 0;">
-                                            <span class="badge bg-{{ $course->status === 'active' ? 'success' : 'secondary' }} rounded-pill" style="font-size: 0.65em; padding: 0.25em 0.5em;">
-                                                {{ ucfirst($course->status) }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div style="margin-left: auto; text-align: right;">
-                                        <span class="badge bg-info rounded-pill">
-                                            <i class="fas fa-users fa-xs me-1"></i>{{ $course->students_count }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        @empty
-                            <div class="user">
-                                <p class="text-xs text-coolGray-500 text-center">No courses available</p>
-                            </div>
-                        @endforelse
-                    </div>
-                    <a class="more" href="{{ route('tenant.courses.index', ['tenant' => tenant('id')]) }}" style="font-size: 0.85em;">See more</a>
-                </div>
-
-                <!-- Requirements Submitted Graph -->
-                <div class="enrolled-card flex-grow-1 mx-2" style="min-width: 280px; max-width: 32%;">
-                    <p class="title p-2 mb-0" style="font-size: 1em; color: #111827;">Requirements Submitted</p>
-                    <div class="chart-container" style="position: relative; height: 200px; width: 100%; padding: 10px;">
-                        <canvas id="requirementsChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Student Requirements Tables -->
-          
-
-
-<!-- View Requirements Modal -->
-<div class="modal fade" id="viewRequirementsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Student Requirements</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="requirementsList"></div>
-            </div>
+<div class="container-fluid p-5">
+    <div class="text-center">
+        <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
         </div>
+        <h3>Loading your preferred dashboard layout...</h3>
+        <p class="text-muted">Redirecting to your customized dashboard...</p>
     </div>
 </div>
 
-<!-- Add Requirement Modal -->
-<div class="modal fade" id="addRequirementModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add New Requirement</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="{{ route('tenant.requirements.store', ['tenant' => tenant('id')]) }}" method="POST">
-                @csrf
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" name="name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-control" name="description" rows="3"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Student Categories</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="student_categories[]" value="Regular" id="regularCheck" checked>
-                            <label class="form-check-label" for="regularCheck">
-                                Regular Students
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="student_categories[]" value="Irregular" id="irregularCheck">
-                            <label class="form-check-label" for="irregularCheck">
-                                Irregular Students
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="student_categories[]" value="Probation" id="probationCheck">
-                            <label class="form-check-label" for="probationCheck">
-                                Probation Students
-                            </label>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Category</label>
-                        <select class="form-select" name="category_id" required>
-                            <option value="">Select Category</option>
-                            @foreach($requirementCategories as $category)
-                                <option value="{{ $category->id }}">{{ $category->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">File Type</label>
-                        <select class="form-select" name="file_type" required>
-                            <option value="pdf">PDF</option>
-                            <option value="doc">Word Document</option>
-                            <option value="image">Image</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="is_required" id="isRequired" checked>
-                            <label class="form-check-label" for="isRequired">
-                                Required
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Add Requirement</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-@endsection
-
-@section('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-function viewRequirements(studentId) {
-    fetch(`/tenant/{{ tenant('id') }}/admin/students/${studentId}/requirements`)
-        .then(response => response.json())
-        .then(data => {
-            let html = '<div class="list-group">';
-            data.requirements.forEach(req => {
-                html += `
-                    <div class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h6 class="mb-1">${req.name}</h6>
-                            <span class="badge bg-${req.pivot.status === 'approved' ? 'success' : (req.pivot.status === 'rejected' ? 'danger' : 'warning')}">
-                                ${req.pivot.status}
-                            </span>
-                        </div>
-                        ${req.pivot.file_path ? `
-                            <div class="mt-2">
-                                <a href="/storage/${req.pivot.file_path}" target="_blank" class="btn btn-sm btn-primary">View File</a>
-                                <button class="btn btn-sm btn-success" onclick="updateStatus(${req.pivot.id}, 'approved')">Approve</button>
-                                <button class="btn btn-sm btn-danger" onclick="updateStatus(${req.pivot.id}, 'rejected')">Reject</button>
-                            </div>
-                        ` : `
-                            <p class="text-muted mb-0">No file uploaded yet</p>
-                        `}
-                        ${req.pivot.remarks ? `<p class="text-muted mt-2 mb-0">Remarks: ${req.pivot.remarks}</p>` : ''}
-                    </div>
-                `;
-            });
-            html += '</div>';
-            document.getElementById('requirementsList').innerHTML = html;
-            new bootstrap.Modal(document.getElementById('viewRequirementsModal')).show();
-        });
-}
-
-function updateStatus(studentRequirementId, status) {
-    const remarks = status === 'rejected' ? prompt('Please enter rejection remarks:') : null;
-    if (status === 'rejected' && !remarks) return;
-
-    fetch(`/tenant/{{ tenant('id') }}/admin/student-requirements/${studentRequirementId}/status`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        },
-        body: JSON.stringify({ status, remarks })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
+document.addEventListener('DOMContentLoaded', function() {
+    // Check user's layout preference
+    function checkLayoutPreference() {
+        // First try localStorage for immediate response
+        const selectedLayout = localStorage.getItem('selectedDashboardLayout');
+        
+        console.log('Checking layout preference, localStorage value:', selectedLayout);
+        
+        if (selectedLayout) {
+            console.log('Using layout from localStorage:', selectedLayout);
+            redirectToLayout(selectedLayout);
+            return;
         }
-    });
-}
-
-// Requirements Chart
-const setupRequirementsChart = () => {
-    const ctx = document.getElementById('requirementsChart');
-    if (!ctx) return;
-
-    const chart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['Form 137', 'Good Moral', 'Birth Cert', 'Medical Cert', 'Photo', 'Enrollment'],
-            datasets: [{
-                data: [85, 92, 78, 65, 95, 70],
-                backgroundColor: [
-                    'rgba(54, 162, 235, 0.7)',
-                    'rgba(75, 192, 192, 0.7)',
-                    'rgba(153, 102, 255, 0.7)',
-                    'rgba(255, 159, 64, 0.7)',
-                    'rgba(255, 99, 132, 0.7)',
-                    'rgba(46, 204, 113, 0.7)'
-                ],
-                borderColor: [
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)',
-                    'rgba(255, 159, 64, 1)',
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(46, 204, 113, 1)'
-                ],
-                borderWidth: 2,
-                borderRadius: 4,
-                maxBarThickness: 25
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    titleColor: '#111827',
-                    bodyColor: '#111827',
-                    titleFont: {
-                        size: 12,
-                        weight: 'bold'
-                    },
-                    bodyFont: {
-                        size: 11
-                    },
-                    padding: 12,
-                    borderColor: '#e5e7eb',
-                    borderWidth: 1,
-                    displayColors: true,
-                    callbacks: {
-                        label: function(context) {
-                            return `Submitted: ${context.parsed.y}%`;
-                        }
-                    }
-                }
+        
+        // If not in localStorage, try to fetch from server
+        const tenantId = "{{ tenant('id') }}";
+        console.log('Tenant ID from blade:', tenantId);
+        
+        // Ensure we use the correct URL format that matches the Laravel route
+        let getLayoutUrl;
+        if (window.location.pathname.startsWith(`/${tenantId}`)) {
+            // When accessing via tenant path, use tenant prefix
+            getLayoutUrl = `/${tenantId}/settings/get-layout`;
+        } else {
+            // When accessing via subdomain
+            getLayoutUrl = `/settings/get-layout`;
+        }
+        
+        console.log('Fetching layout from URL:', getLayoutUrl);
+        
+        fetch(getLayoutUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Cache-Control': 'no-cache',
+                'X-Tenant-ID': tenantId
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100,
-                    grid: {
-                        display: true,
-                        color: 'rgba(0, 0, 0, 0.05)',
-                        drawBorder: false
-                    },
-                    ticks: {
-                        callback: function(value) {
-                            return value + '%';
-                        },
-                        font: {
-                            size: 10
-                        },
-                        color: '#6B7280'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        font: {
-                            size: 9
-                        },
-                        color: '#6B7280'
-                    }
-                }
-            },
-            animation: {
-                duration: 2000,
-                easing: 'easeOutQuart'
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            console.log('Layout fetch response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Layout data received:', data);
+            if (data.success && data.dashboard_layout) {
+                // Save to localStorage for future quick access
+                localStorage.setItem('selectedDashboardLayout', data.dashboard_layout);
+                console.log('Saved layout to localStorage and redirecting to:', data.dashboard_layout);
+                redirectToLayout(data.dashboard_layout);
+            } else if (data.success && !data.dashboard_layout) {
+                console.log('Success but no dashboard_layout in response, using standard');
+                redirectToLayout('standard');
+            } else {
+                // Default to standard if no preference is set
+                console.log('No success in response, using standard layout');
+                redirectToLayout('standard');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching layout preference:', error);
+            // Default to standard on error
+            redirectToLayout('standard');
+        });
+    }
+    
+    function redirectToLayout(layout) {
+        // Check if layout is one of the supported layouts
+        const supportedLayouts = ['standard', 'compact', 'modern'];
+        console.log('Redirecting to layout:', layout, 'Supported:', supportedLayouts.includes(layout));
+        
+        if (!supportedLayouts.includes(layout)) {
+            console.log('Unsupported layout, defaulting to standard');
+            layout = 'standard'; // Default to standard for unsupported layout names
         }
-    });
-};
+        
+        const tenantId = "{{ tenant('id') }}";
+        let redirectUrl;
+        
+        // Build the redirect URL with appropriate tenant path
+        if (window.location.pathname.startsWith(`/${tenantId}`)) {
+            // When accessing via tenant path
+            redirectUrl = `/${tenantId}/dashboard-${layout}`;
+        } else {
+            // When accessing via subdomain
+            redirectUrl = `/dashboard-${layout}`;
+        }
+        
+        console.log('Final redirect URL:', redirectUrl);
+        
+        // Redirect to the appropriate dashboard layout
+        window.location.href = redirectUrl;
+    }
+    
+    // Initialize the layout check
+    console.log('Starting dashboard layout detection');
+    checkLayoutPreference();
+});
 
-// Initialize chart when DOM is loaded
-document.addEventListener('DOMContentLoaded', setupRequirementsChart);
+// Function to apply the user's card style preference
+function applyCardStyle() {
+    // Get card style preference from localStorage
+    let cardStyle = localStorage.getItem('selectedCardStyle');
+    
+    // If not found in localStorage, check from backend (by reading body data attributes if set)
+    if (!cardStyle && document.body.dataset.cardStyle) {
+        cardStyle = document.body.dataset.cardStyle;
+        // Store in localStorage for future use
+        localStorage.setItem('selectedCardStyle', cardStyle);
+    }
+    
+    // Default to 'square' if not set
+    if (!cardStyle) {
+        cardStyle = 'square';
+        localStorage.setItem('selectedCardStyle', cardStyle);
+    }
+    
+    console.log('Applying card style:', cardStyle);
+    
+    // Target all card types across all layouts
+    const cardSelectors = '.card, .enrolled-card, .stat-card, .compact-content-card, .modern-stat-card, .modern-card';
+    
+    // Remove all card style classes first
+    document.querySelectorAll(cardSelectors).forEach(card => {
+        card.classList.remove('card-rounded', 'card-square', 'card-glass');
+        // Add the selected style class
+        card.classList.add(`card-${cardStyle}`);
+    });
+    
+    // Apply specific styles based on the card type
+    switch(cardStyle) {
+        case 'rounded':
+            document.documentElement.style.setProperty('--card-border-radius', '1rem');
+            break;
+        case 'square':
+            document.documentElement.style.setProperty('--card-border-radius', '0');
+            break;
+        case 'glass':
+            document.documentElement.style.setProperty('--card-border-radius', '0.5rem');
+            // Additional glass specific styling
+            document.querySelectorAll(`${cardSelectors}.card-glass`).forEach(card => {
+                card.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+                card.style.backdropFilter = 'blur(10px)';
+                card.style.WebkitBackdropFilter = 'blur(10px)';
+                card.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+            });
+            
+            // Dark mode specific glass styling
+            if (document.body.classList.contains('dark-mode')) {
+                document.querySelectorAll(`${cardSelectors}.card-glass`).forEach(card => {
+                    card.style.backgroundColor = 'rgba(30, 41, 59, 0.8)';
+                    card.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+                });
+            }
+            break;
+    }
+    
+    console.log('Card style applied:', cardStyle);
+}
+
+// Listen for storage events to update card style if changed in another tab
+window.addEventListener('storage', function(e) {
+    if (e.key === 'selectedCardStyle') {
+        console.log('Card style changed in another tab:', e.newValue);
+        applyCardStyle();
+    }
+});
+
+// Listen for custom event from settings page
+document.addEventListener('cardStyleChanged', function(e) {
+    console.log('Card style changed via custom event:', e.detail.cardStyle);
+    applyCardStyle();
+});
+
+// Apply card style when DOM content is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    applyCardStyle();
+});
 </script>
 @endsection
 
 @push('styles')
 <style>
+    /* Dashboard CSS Variables */
+    :root {
+        --card-border-radius: 1rem;
+        --card-background-color: white;
+        --card-border-color: rgba(0, 0, 0, 0.125);
+        --card-box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        --card-hover-transform: translateY(-5px);
+        --card-hover-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Dark mode card variables */
+    body.dark-mode {
+        --card-background-color: #1F2937;
+        --card-border-color: rgba(255, 255, 255, 0.125);
+        --card-box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.35);
+        --card-hover-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.4);
+    }
+    
     /* Dashboard Cards Styles */
     .hover-shadow {
         transition: all 0.3s ease;
     }
     
     .hover-shadow:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        transform: var(--card-hover-transform);
+        box-shadow: var(--card-hover-shadow) !important;
     }
     
-    .card {
+    /* General card styles that apply to all card types across all layouts */
+    .card, .enrolled-card, .stat-card, .compact-content-card, .modern-stat-card, .modern-card {
         overflow: hidden;
-        border-radius: 1rem;
-    }
-    
-    .card .rounded-circle {
+        background-color: var(--card-background-color);
+        border-color: var(--card-border-color);
+        box-shadow: var(--card-box-shadow);
         transition: all 0.3s ease;
     }
     
-    .card:hover .rounded-circle {
-        transform: scale(1.1);
+    /* Card style variations */
+    .card-rounded, 
+    .enrolled-card.card-rounded, 
+    .stat-card.card-rounded, 
+    .compact-content-card.card-rounded, 
+    .modern-stat-card.card-rounded, 
+    .modern-card.card-rounded {
+        border-radius: 1rem !important;
+        overflow: hidden;
+    }
+    
+    .card-rounded .card-header,
+    .card-rounded .card-footer {
+        border-radius: 1rem 1rem 0 0 !important;
+    }
+    
+    .card-square, 
+    .enrolled-card.card-square, 
+    .stat-card.card-square, 
+    .compact-content-card.card-square, 
+    .modern-stat-card.card-square, 
+    .modern-card.card-square {
+        border-radius: 0 !important;
+        overflow: hidden;
+    }
+    
+    .card-square .card-header,
+    .card-square .card-footer {
+        border-radius: 0 !important;
+    }
+    
+    .card-glass, 
+    .enrolled-card.card-glass, 
+    .stat-card.card-glass, 
+    .compact-content-card.card-glass, 
+    .modern-stat-card.card-glass, 
+    .modern-card.card-glass {
+        border-radius: 0.5rem !important;
+        background-color: rgba(255, 255, 255, 0.8) !important;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    
+    body.dark-mode .card-glass,
+    body.dark-mode .enrolled-card.card-glass,
+    body.dark-mode .stat-card.card-glass,
+    body.dark-mode .compact-content-card.card-glass,
+    body.dark-mode .modern-stat-card.card-glass,
+    body.dark-mode .modern-card.card-glass {
+        background-color: rgba(30, 41, 59, 0.8) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Sidebar positioning */
+    .sidebar-right .row {
+        flex-direction: row-reverse;
+    }
+    
+    /* Layout structure classes */
+    .layout-standard .card {
+        margin-bottom: 1.5rem;
+    }
+    
+    .layout-compact .card {
+        margin-bottom: 1rem;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    .layout-compact .col-md-3 {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    
+    .layout-modern .dashboard-page-header {
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    body.dark-mode .layout-modern .dashboard-page-header {
+        border-color: rgba(255,255,255,0.1);
+    }
+    
+    .layout-modern .card {
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+    }
+    
+    .layout-modern .card-body {
+        padding: 1.5rem;
+    }
+    
+    /* Card styles */
+    .card .rounded-circle {
+        transition: all 0.3s ease;
     }
     
     .card-title {
         font-size: 2rem;
         color: rgb(3, 1, 43);
+    }
+    
+    body.dark-mode .card-title {
+        color: rgb(96, 165, 250);
     }
     
     .card-subtitle {
@@ -493,6 +379,15 @@ document.addEventListener('DOMContentLoaded', setupRequirementsChart);
         font-weight: 600;
     }
     
+    body.dark-mode .nav-tabs .nav-link {
+        color: #e2e8f0;
+    }
+    
+    body.dark-mode .nav-tabs .nav-link.active {
+        color: rgb(96, 165, 250);
+        border-bottom: 2px solid rgb(96, 165, 250);
+    }
+    
     .list-group-item {
         border: 1px solid rgba(0,0,0,0.1);
         margin-bottom: 0.5rem;
@@ -503,6 +398,11 @@ document.addEventListener('DOMContentLoaded', setupRequirementsChart);
     .list-group-item:hover {
         background-color: rgba(3, 1, 43, 0.05);
         border-color: rgb(3, 1, 43);
+    }
+    
+    body.dark-mode .list-group-item:hover {
+        background-color: rgba(96, 165, 250, 0.05);
+        border-color: rgb(96, 165, 250);
     }
     
     .badge {
@@ -573,6 +473,10 @@ document.addEventListener('DOMContentLoaded', setupRequirementsChart);
         background: #ffffff;
     }
 
+    body.dark-mode .custom-scrollbar::-webkit-scrollbar-track {
+        background: #1F2937;
+    }
+
     .custom-scrollbar::-webkit-scrollbar-thumb {
         background: #9CA3AF;
         border-radius: 20px;
@@ -585,6 +489,10 @@ document.addEventListener('DOMContentLoaded', setupRequirementsChart);
     .overflow-y-auto {
         scrollbar-width: thin;
         scrollbar-color: #9CA3AF #ffffff;
+    }
+
+    body.dark-mode .overflow-y-auto {
+        scrollbar-color: #6B7280 #1F2937;
     }
 
     /* Last item in list */
@@ -630,6 +538,10 @@ document.addEventListener('DOMContentLoaded', setupRequirementsChart);
         color: #64696e;
     }
 
+    body.dark-mode .username {
+        color: #9CA3AF;
+    }
+
     .image {
         width: 40px;
         height: 40px;
@@ -652,9 +564,17 @@ document.addEventListener('DOMContentLoaded', setupRequirementsChart);
         background-color: rgba(0, 0, 0, 0.03);
     }
 
+    body.dark-mode .user:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+
     .more:hover {
         background-color: #b3b6b6;
         border-radius: 0px 0px 15px 15px;
+    }
+
+    body.dark-mode .more:hover {
+        background-color: #4B5563;
     }
 
     .enrolled-card {
@@ -669,6 +589,12 @@ document.addEventListener('DOMContentLoaded', setupRequirementsChart);
         transition: all ease-in-out 0.3s;
     }
 
+    body.dark-mode .enrolled-card {
+        background: #1F2937;
+        box-shadow: rgba(0, 0, 0, 0.4) 0px 6px 12px -2px,
+            rgba(0, 0, 0, 0.5) 0px 3px 7px -3px;
+    }
+
     .enrolled-card:hover {
         background-color: #fdfdfd;
         box-shadow: rgba(0, 0, 0, 0.09) 0px 2px 1px, 
@@ -678,10 +604,23 @@ document.addEventListener('DOMContentLoaded', setupRequirementsChart);
             rgba(0, 0, 0, 0.09) 0px 32px 16px;
     }
 
+    body.dark-mode .enrolled-card:hover {
+        background-color: #2D3748;
+        box-shadow: rgba(0, 0, 0, 0.2) 0px 2px 1px, 
+            rgba(0, 0, 0, 0.2) 0px 4px 2px,
+            rgba(0, 0, 0, 0.2) 0px 8px 4px, 
+            rgba(0, 0, 0, 0.2) 0px 16px 8px,
+            rgba(0, 0, 0, 0.2) 0px 32px 16px;
+    }
+
     /* Course Card Styles */
     .enrolled-card .user:hover {
         background-color: rgba(0, 0, 0, 0.03);
         transition: all 0.2s ease;
+    }
+
+    body.dark-mode .enrolled-card .user:hover {
+        background-color: rgba(255, 255, 255, 0.05);
     }
 
     .enrolled-card .user .image {
@@ -716,6 +655,51 @@ document.addEventListener('DOMContentLoaded', setupRequirementsChart);
     .enrolled-card:has(#requirementsChart) .chart-container {
         flex: 1;
         margin-top: 10px;
+    }
+
+    body.dark-mode .enrolled-card:has(#requirementsChart) {
+        background: #1F2937;
+    }
+    
+    /* Layout notification styles */
+    .layout-notification {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 12px 18px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        font-size: 14px;
+        display: none;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    .layout-notification-info {
+        background-color: #3b82f6;
+        color: white;
+        border-left: 4px solid #1d4ed8;
+    }
+    
+    .layout-notification-warning {
+        background-color: #f59e0b;
+        color: white;
+        border-left: 4px solid #b45309;
+    }
+    
+    .layout-notification-error {
+        background-color: #ef4444;
+        color: white;
+        border-left: 4px solid #b91c1c;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    body.dark-mode .layout-notification {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.35);
     }
 </style>
 @endpush

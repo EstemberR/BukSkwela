@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Course\Course;
+use App\Models\Staff\Staff;
+use App\Models\Student\Student;
 
 class ReportsController extends Controller
 {
@@ -19,7 +22,11 @@ class ReportsController extends Controller
 
     public function courses()
     {
-        return view('tenant.reports.courses');
+        $courses = Course::with(['staff', 'students'])
+            ->where('tenant_id', tenant('id'))
+            ->get();
+            
+        return view('tenant.reports.courses', compact('courses'));
     }
 
     public function requirements()

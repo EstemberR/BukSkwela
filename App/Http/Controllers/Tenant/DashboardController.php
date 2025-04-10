@@ -17,6 +17,22 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        $data = $this->getDashboardData();
+        return view('tenant.dashboard', $data);
+    }
+
+    public function staffDashboard()
+    {
+        return view('tenant.staff.dashboard');
+    }
+    
+    /**
+     * Get dashboard data for use in various dashboard layouts
+     * 
+     * @return array Dashboard data
+     */
+    public function getDashboardData()
+    {
         $tenantId = tenant('id');
         $databaseName = 'tenant_' . $tenantId;
         
@@ -114,15 +130,106 @@ class DashboardController extends Controller
                 Log::error("Failed to get courses: " . $e->getMessage());
             }
             
-            return view('tenant.dashboard', $data);
+            // Fetch requirement categories if needed
+            try {
+                if (Schema::connection('tenant')->hasTable('requirement_categories')) {
+                    $data['requirementCategories'] = DB::connection('tenant')
+                        ->table('requirement_categories')
+                        ->select('id', 'name')
+                        ->get();
+                }
+            } catch (\Exception $e) {
+                Log::error("Failed to get requirement categories: " . $e->getMessage());
+            }
+            
+            return $data;
         } catch (\Exception $e) {
             Log::error("DashboardController: Database error: " . $e->getMessage());
-            return view('tenant.dashboard-error', ['error' => $e->getMessage()]);
+            return [
+                'error' => $e->getMessage(),
+                'instructorCount' => 0,
+                'studentCount' => 0,
+                'pendingRequirements' => 0,
+                'activeCourses' => 0,
+                'students' => collect([]),
+                'courses' => collect([]),
+                'requirementCategories' => collect([])
+            ];
         }
     }
 
-    public function staffDashboard()
+    /**
+     * Display the standard dashboard view.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function standard()
     {
-        return view('tenant.staff.dashboard');
+        // Get current user settings
+        $user = auth()->guard('admin')->user() ?? auth()->guard('staff')->user();
+        $settings = null;
+        
+        if ($user) {
+            $settings = \App\Models\UserSettings::forTenant(tenant('id'))
+                ->where('user_id', $user->id)
+                ->where('user_type', get_class($user))
+                ->first();
+        }
+        
+        // Get dashboard data
+        $data = $this->getDashboardData();
+        $data['settings'] = $settings; // Pass settings to the view
+        
+        return view('tenant.dashboard-standard', $data);
+    }
+    
+    /**
+     * Display the compact dashboard view.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function compact()
+    {
+        // Get current user settings
+        $user = auth()->guard('admin')->user() ?? auth()->guard('staff')->user();
+        $settings = null;
+        
+        if ($user) {
+            $settings = \App\Models\UserSettings::forTenant(tenant('id'))
+                ->where('user_id', $user->id)
+                ->where('user_type', get_class($user))
+                ->first();
+        }
+        
+        // Get dashboard data
+        $data = $this->getDashboardData();
+        $data['settings'] = $settings; // Pass settings to the view
+        
+        return view('tenant.dashboard-compact', $data);
+    }
+    
+    /**
+     * Display the modern dashboard view.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function modern()
+    {
+        // Get current user settings
+        $user = auth()->guard('admin')->user() ?? auth()->guard('staff')->user();
+        $settings = null;
+        
+        if ($user) {
+            $settings = \App\Models\UserSettings::forTenant(tenant('id'))
+                ->where('user_id', $user->id)
+                ->where('user_type', get_class($user))
+                ->first();
+        }
+        
+        // Get dashboard data
+        $data = $this->getDashboardData();
+        $data['settings'] = $settings; // Pass settings to the view
+        
+        return view('tenant.dashboard-modern', $data);
     }
 }
