@@ -123,6 +123,9 @@
                                         <i class="fas fa-book mb-1"></i>
                                         <h5 class="small">Glassy</h5>
                                     </div>
+                                    <div class="go-corner">
+                                        <div class="go-arrow">→</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -407,9 +410,6 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <a href="#" id="dashboardLink" class="btn btn-primary">
-                    <i class="fas fa-eye me-1"></i>Visit Dashboard
-                </a>
             </div>
         </div>
     </div>
@@ -433,9 +433,6 @@
             </div>
             <div class="modal-footer justify-content-center">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-                <a href="#" id="viewDashboardLink" class="btn btn-primary" style="background-color: #003366; border-color: #003366;">
-                    <i class="fas fa-tachometer-alt me-1"></i> View Dashboard
-                </a>
             </div>
         </div>
     </div>
@@ -459,9 +456,6 @@
             </div>
             <div class="modal-footer justify-content-center">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-                <a href="#" id="viewDashboardLinkFont" class="btn btn-primary" style="background-color: #003366; border-color: #003366;">
-                    <i class="fas fa-tachometer-alt me-1"></i> View Dashboard
-                </a>
             </div>
         </div>
     </div>
@@ -710,30 +704,82 @@
     
     /* Glass card style */
     .card-example-glass {
-        border-radius: 6px;
-        background: rgba(255, 255, 255, 0.7) !important;
-        backdrop-filter: blur(10px) !important;
-        -webkit-backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
         position: relative;
-        overflow: hidden;
-    }
-    
-    .card-example-glass::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.1) 100%);
+        background-color: #f2f8f9;
+        border-radius: 4px;
+        padding: 32px 24px;
+        text-decoration: none;
         z-index: 0;
+        overflow: hidden;
+        border: 1px solid #f2f8f9;
+        transition: all 0.3s ease;
     }
     
-    .card-example-glass .text-center {
-        position: relative;
-        z-index: 1;
+    .card-example-glass:before {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        top: -16px;
+        right: -16px;
+        background: #00838d;
+        height: 32px;
+        width: 32px;
+        border-radius: 32px;
+        transform: scale(1);
+        transform-origin: 50% 50%;
+        transition: transform 0.25s ease-out;
+    }
+    
+    .card-example-glass:hover:before {
+        transform: scale(2.15);
+    }
+    
+    .card-example-glass:hover {
+        border: 1px solid #00838d;
+        box-shadow: 0px 0px 999px 999px rgba(255, 255, 255, 0.5);
+        z-index: 500;
+    }
+    
+    .card-example-glass:hover .text-center {
+        color: #fff;
+    }
+    
+    .card-example-glass .go-corner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        width: 32px;
+        height: 32px;
+        overflow: hidden;
+        top: 0;
+        right: 0;
+        background-color: #00838d;
+        border-radius: 0 4px 0 32px;
+        opacity: 0.7;
+        transition: opacity 0.3s linear;
+    }
+    
+    .card-example-glass:hover .go-corner {
+        opacity: 1;
+    }
+    
+    .card-example-glass .go-arrow {
+        margin-top: -4px;
+        margin-right: -4px;
+        color: white;
+        font-family: courier, sans;
+    }
+    
+    /* Dark mode styles */
+    body.dark-mode .card-example-glass {
+        background-color: #1a1a1a;
+        border-color: #2d2d2d;
+    }
+    
+    body.dark-mode .card-example-glass:hover {
+        border-color: #00838d;
+        box-shadow: 0px 0px 999px 999px rgba(0, 0, 0, 0.5);
     }
     
     /* Card style container */
@@ -1430,6 +1476,56 @@
     body.dark-mode #cardStyleSuccessModal .btn-outline-secondary:hover {
         background-color: #4B5563;
         color: #e2e8f0;
+    }
+
+    /* Card examples - static previews without hover effects */
+    .card-example {
+        height: 120px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+        border: 2px solid transparent;
+        background-color: white;
+        color: var(--text-color);
+    }
+    
+    .card-example.active {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(0, 51, 102, 0.2);
+    }
+    
+    /* Square card preview */
+    .card-example-square {
+        border-radius: 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--border-color);
+    }
+    
+    /* Rounded card preview */
+    .card-example-rounded {
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--border-color);
+    }
+    
+    /* Glass card preview */
+    .card-example-glass {
+        background: rgba(255, 255, 255, 0.7) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    /* Dark mode card example styles */
+    body.dark-mode .card-example-glass {
+        background: rgba(31, 41, 55, 0.7) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
 </style>
 @endpush

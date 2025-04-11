@@ -3,14 +3,14 @@
 @section('title', 'Department Dashboard - Compact Layout')
 
 @section('content')
-<div class="container-fluid py-3 layout-compact">
+<div class="container-fluid py-3 layout-compact" data-page="dashboard">
     <div class="row">
         <!-- Main Content -->
         <div class="col-12">
             <!-- Statistics Cards - 2x2 Grid -->
             <div class="row g-3">
                 <div class="col-md-6 col-lg-3 compact-card">
-                    <div class="card h-100 border-0 shadow-sm stat-card">
+                    <div class="card h-100 border-0 shadow-sm stat-card dashboard-card">
                         <div class="card-body d-flex align-items-center p-3">
                             <div class="stat-icon-container bg-primary-soft me-3">
                                 <i class="fas fa-chalkboard-teacher text-primary"></i>
@@ -23,7 +23,7 @@
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-3 compact-card">
-                    <div class="card h-100 border-0 shadow-sm stat-card">
+                    <div class="card h-100 border-0 shadow-sm stat-card dashboard-card">
                         <div class="card-body d-flex align-items-center p-3">
                             <div class="stat-icon-container bg-success-soft me-3">
                                 <i class="fas fa-user-graduate text-success"></i>
@@ -36,7 +36,7 @@
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-3 compact-card">
-                    <div class="card h-100 border-0 shadow-sm stat-card">
+                    <div class="card h-100 border-0 shadow-sm stat-card dashboard-card">
                         <div class="card-body d-flex align-items-center p-3">
                             <div class="stat-icon-container bg-info-soft me-3">
                                 <i class="fas fa-clipboard-list text-info"></i>
@@ -49,7 +49,7 @@
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-3 compact-card">
-                    <div class="card h-100 border-0 shadow-sm stat-card">
+                    <div class="card h-100 border-0 shadow-sm stat-card dashboard-card">
                         <div class="card-body d-flex align-items-center p-3">
                             <div class="stat-icon-container bg-warning-soft me-3">
                                 <i class="fas fa-book text-warning"></i>
@@ -67,7 +67,7 @@
             <div class="row mt-3 g-3">
                 <!-- Recent Enrolled Students Section -->
                 <div class="col-md-12 col-lg-4">
-                    <div class="card compact-content-card h-100 border-0 shadow-sm">
+                    <div class="card compact-content-card h-100 border-0 shadow-sm dashboard-card">
                         <div class="card-header d-flex justify-content-between align-items-center bg-transparent">
                             <h6 class="mb-0 fw-semibold">Recent Students</h6>
                             <a href="{{ route('tenant.students.index', ['tenant' => tenant('id')]) }}" class="btn btn-sm btn-link text-primary p-0">
@@ -111,7 +111,7 @@
 
                 <!-- Available Courses Section -->
                 <div class="col-md-12 col-lg-4">
-                    <div class="card compact-content-card h-100 border-0 shadow-sm">
+                    <div class="card compact-content-card h-100 border-0 shadow-sm dashboard-card">
                         <div class="card-header d-flex justify-content-between align-items-center bg-transparent">
                             <h6 class="mb-0 fw-semibold">Active Courses</h6>
                             <a href="{{ route('tenant.courses.index', ['tenant' => tenant('id')]) }}" class="btn btn-sm btn-link text-primary p-0">
@@ -154,7 +154,7 @@
 
                 <!-- Requirements Chart Section -->
                 <div class="col-md-12 col-lg-4">
-                    <div class="card compact-content-card h-100 border-0 shadow-sm">
+                    <div class="card compact-content-card h-100 border-0 shadow-sm dashboard-card">
                         <div class="card-header bg-transparent">
                             <h6 class="mb-0 fw-semibold">Requirements Progress</h6>
                         </div>

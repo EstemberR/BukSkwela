@@ -3,14 +3,14 @@
 @section('title', 'Department Dashboard - Standard Layout')
 
 @section('content')
-<div class="container-fluid py-2 layout-standard">
+<div class="container-fluid py-2 layout-standard" data-page="dashboard">
     <div class="row">
         <!-- Main Content -->
         <div class="col-12">
             <!-- Statistics Cards -->
             <div class="row g-3">
                 <div class="col-md-3">
-                    <div class="card h-100 border-0 shadow-sm hover-shadow">
+                    <div class="card h-100 border-0 shadow-sm hover-shadow dashboard-card">
                         <div class="card-body d-flex align-items-center">
                             <div class="rounded-circle p-3 bg-primary bg-opacity-10 me-3">
                                 <i class="fas fa-chalkboard-teacher fs-4 text-primary"></i>
@@ -29,7 +29,7 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card h-100 border-0 shadow-sm hover-shadow">
+                    <div class="card h-100 border-0 shadow-sm hover-shadow dashboard-card">
                         <div class="card-body d-flex align-items-center">
                             <div class="rounded-circle p-3 bg-success bg-opacity-10 me-3">
                                 <i class="fas fa-user-graduate fs-4 text-success"></i>
@@ -48,7 +48,7 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card h-100 border-0 shadow-sm hover-shadow">
+                    <div class="card h-100 border-0 shadow-sm hover-shadow dashboard-card">
                         <div class="card-body d-flex align-items-center">
                             <div class="rounded-circle p-3 bg-info bg-opacity-10 me-3">
                                 <i class="fas fa-clipboard-list fs-4 text-info"></i>
@@ -67,7 +67,7 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card h-100 border-0 shadow-sm hover-shadow">
+                    <div class="card h-100 border-0 shadow-sm hover-shadow dashboard-card">
                         <div class="card-body d-flex align-items-center">
                             <div class="rounded-circle p-3 bg-warning bg-opacity-10 me-3">
                                 <i class="fas fa-book fs-4 text-warning"></i>
@@ -90,7 +90,7 @@
             <!-- Cards Row for Students and Courses -->
             <div class="d-flex flex-wrap justify-content-between mt-4">
                 <!-- Recent Enrolled Students Section -->
-                <div class="enrolled-card flex-grow-1 mx-2" style="min-width: 280px; max-width: 32%;">
+                <div class="enrolled-card flex-grow-1 mx-2 dashboard-card" style="min-width: 280px; max-width: 32%;">
                     <p class="title p-2 mb-0" style="font-size: 1em; color: #111827;">Recent Enrolled Students</p>
                     <div class="user__container custom-scrollbar overflow-y-auto" style="max-height: 200px;">
                         @forelse($students ?? [] as $student)
@@ -128,7 +128,7 @@
                 </div>
 
                 <!-- Available Courses Section -->
-                <div class="enrolled-card flex-grow-1 mx-2" style="min-width: 280px; max-width: 32%;">
+                <div class="enrolled-card flex-grow-1 mx-2 dashboard-card" style="min-width: 280px; max-width: 32%;">
                     <p class="title p-2 mb-0" style="font-size: 1em; color: #111827;">Available Courses</p>
                     <div class="user__container custom-scrollbar overflow-y-auto" style="max-height: 200px;">
                         @forelse($courses ?? [] as $course)
@@ -166,7 +166,7 @@
                 </div>
 
                 <!-- Requirements Submitted Graph -->
-                <div class="enrolled-card flex-grow-1 mx-2" style="min-width: 280px; max-width: 32%;">
+                <div class="enrolled-card flex-grow-1 mx-2 dashboard-card" style="min-width: 280px; max-width: 32%;">
                     <p class="title p-2 mb-0" style="font-size: 1em; color: #111827;">Requirements Submitted</p>
                     <div class="chart-container" style="position: relative; height: 200px; width: 100%; padding: 10px;">
                         <canvas id="requirementsChart"></canvas>

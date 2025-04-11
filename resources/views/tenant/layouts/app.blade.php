@@ -2996,87 +2996,340 @@
         .card-style-glass .settings-card,
         .card-style-glass .stat-card,
         .card-style-glass .content-card {
-            background: rgba(255, 255, 255, 0.7) !important;
-            backdrop-filter: blur(10px) !important;
-            -webkit-backdrop-filter: blur(10px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+            display: block;
+            position: relative;
+            background-color: #f2f8f9;
+            border-radius: 4px;
+            padding: 32px 24px;
+            margin: 12px;
+            text-decoration: none;
+            z-index: 0;
+            overflow: hidden;
+            border: 1px solid #f2f8f9;
+            transition: all 0.3s ease;
         }
 
-        /* Glass effect for dark mode */
-        .dark-mode .card-style-glass .card,
-        .dark-mode .card-style-glass .settings-card,
-        .dark-mode .card-style-glass .stat-card,
-        .dark-mode .card-style-glass .content-card {
-            background: rgba(31, 41, 55, 0.7) !important;
-            backdrop-filter: blur(10px) !important;
-            -webkit-backdrop-filter: blur(10px) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
-            color: var(--buk-light-text-color) !important;
+        .card-style-glass .card p,
+        .card-style-glass .settings-card p,
+        .card-style-glass .stat-card p,
+        .card-style-glass .content-card p {
+            font-size: 17px;
+            font-weight: 400;
+            line-height: 20px;
+            color: #666;
+            transition: all 0.3s ease-out;
         }
 
-        /* Additional styles for glass elements in dark mode */
-        .dark-mode .card-style-glass .card-header,
-        .dark-mode .card-style-glass .card-footer {
-            background: rgba(31, 41, 55, 0.8) !important;
-            border-color: rgba(255, 255, 255, 0.1) !important;
+        .card-style-glass .card p.small,
+        .card-style-glass .settings-card p.small,
+        .card-style-glass .stat-card p.small,
+        .card-style-glass .content-card p.small {
+            font-size: 14px;
         }
 
-        .dark-mode .card-style-glass .stat-card .card-body,
-        .dark-mode .card-style-glass .content-card .card-body {
-            background: transparent !important;
+        .card-style-glass .card:before,
+        .card-style-glass .settings-card:before,
+        .card-style-glass .stat-card:before,
+        .card-style-glass .content-card:before {
+            content: "";
+            position: absolute;
+            z-index: -1;
+            top: -16px;
+            right: -16px;
+            background: #00838d;
+            height: 32px;
+            width: 32px;
+            border-radius: 32px;
+            transform: scale(1);
+            transform-origin: 50% 50%;
+            transition: transform 0.25s ease-out;
         }
 
-        /* Background gradient for glass effect */
-        .card-style-glass {
-            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%), var(--buk-bg-primary);
+        .card-style-glass .card:hover:before,
+        .card-style-glass .settings-card:hover:before,
+        .card-style-glass .stat-card:hover:before,
+        .card-style-glass .content-card:hover:before {
+            transform: scale(21);
         }
 
-        .dark-mode.card-style-glass {
-            background: linear-gradient(135deg, rgba(30,41,59,0.1) 0%, rgba(30,41,59,0.05) 100%), var(--buk-dark-bg-primary);
+        .card-style-glass .card:hover,
+        .card-style-glass .settings-card:hover,
+        .card-style-glass .stat-card:hover,
+        .card-style-glass .content-card:hover {
+            border: 1px solid #00838d;
+            box-shadow: 0px 0px 999px 999px rgba(255, 255, 255, 0.5);
+            z-index: 500;
         }
 
-        /* Additional glass effect for inputs and buttons */
-        .card-style-glass .form-control,
-        .card-style-glass .form-select,
-        .card-style-glass .input-group-text {
-            background-color: rgba(255, 255, 255, 0.7);
-            border-color: rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
+        .card-style-glass .card:hover p,
+        .card-style-glass .settings-card:hover p,
+        .card-style-glass .stat-card:hover p,
+        .card-style-glass .content-card:hover p {
+            color: rgba(255, 255, 255, 0.8);
         }
 
-        .dark-mode.card-style-glass .form-control,
-        .dark-mode.card-style-glass .form-select,
-        .dark-mode.card-style-glass .input-group-text {
-            background-color: rgba(30, 41, 59, 0.7);
-            border-color: rgba(255, 255, 255, 0.1);
-            color: var(--buk-light-text-color);
+        .card-style-glass .card:hover h3,
+        .card-style-glass .settings-card:hover h3,
+        .card-style-glass .stat-card:hover h3,
+        .card-style-glass .content-card:hover h3 {
+            color: #fff;
+            transition: all 0.3s ease-out;
         }
 
-        /* Dropdown active item styles */
-        .sidebar .dropdown-item.active {
-            background-color: var(--primary-color);
-            color: #ffffff;
+        .card-style-glass .go-corner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            overflow: hidden;
+            top: 0;
+            right: 0;
+            background-color: #00838d;
+            border-radius: 0 4px 0 32px;
+            opacity: 0.7;
+            transition: opacity 0.3s linear;
         }
 
-        .sidebar .dropdown-item.active i {
-            color: #ffffff;
+        .card-style-glass .card:hover .go-corner,
+        .card-style-glass .settings-card:hover .go-corner,
+        .card-style-glass .stat-card:hover .go-corner,
+        .card-style-glass .content-card:hover .go-corner {
+            opacity: 1;
         }
 
-        /* Dark mode active dropdown items */
-        body.dark-mode .sidebar .dropdown-item:hover i {
-            color: #ffffff;
+        .card-style-glass .go-arrow {
+            margin-top: -4px;
+            margin-right: -4px;
+            color: white;
+            font-family: courier, sans;
+        }
+
+        /* Dark mode specific styles for glass cards */
+        body.dark-mode .card-style-glass .card,
+        body.dark-mode .card-style-glass .settings-card,
+        body.dark-mode .card-style-glass .stat-card,
+        body.dark-mode .card-style-glass .content-card {
+            background-color: #1a1a1a;
+            border-color: #2d2d2d;
+        }
+
+        body.dark-mode .card-style-glass .card p,
+        body.dark-mode .card-style-glass .settings-card p,
+        body.dark-mode .card-style-glass .stat-card p,
+        body.dark-mode .card-style-glass .content-card p {
+            color: #a0aec0;
+        }
+
+        body.dark-mode .card-style-glass .card:hover,
+        body.dark-mode .card-style-glass .settings-card:hover,
+        body.dark-mode .card-style-glass .stat-card:hover,
+        body.dark-mode .card-style-glass .content-card:hover {
+            border-color: #00838d;
+            box-shadow: 0px 0px 999px 999px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Glass card style for dashboard components */
+        body[data-card-style="glass"] .dashboard-card,
+        .card-style-glass .dashboard-card {
+            display: block;
+            position: relative;
+            background-color: #f2f8f9;
+            border-radius: 4px;
+            padding: 32px 24px;
+            margin: 12px;
+            text-decoration: none;
+            z-index: 0;
+            overflow: hidden;
+            border: 1px solid #f2f8f9;
+            transition: all 0.3s ease;
+        }
+
+        body[data-card-style="glass"] .dashboard-card p,
+        .card-style-glass .dashboard-card p {
+            font-size: 17px;
+            font-weight: 400;
+            line-height: 20px;
+            color: #666;
+            transition: all 0.3s ease-out;
+        }
+
+        body[data-card-style="glass"] .dashboard-card p.small,
+        .card-style-glass .dashboard-card p.small {
+            font-size: 14px;
+        }
+
+        body[data-card-style="glass"] .dashboard-card:before,
+        .card-style-glass .dashboard-card:before {
+            content: "";
+            position: absolute;
+            z-index: -1;
+            top: -16px;
+            right: -16px;
+            background: #00838d;
+            height: 32px;
+            width: 32px;
+            border-radius: 32px;
+            transform: scale(1);
+            transform-origin: 50% 50%;
+            transition: transform 0.25s ease-out;
+        }
+
+        body[data-card-style="glass"] .dashboard-card:hover:before,
+        .card-style-glass .dashboard-card:hover:before {
+            transform: scale(21);
+        }
+
+        body[data-card-style="glass"] .dashboard-card:hover,
+        .card-style-glass .dashboard-card:hover {
+            border: 1px solid #00838d;
+            box-shadow: 0px 0px 999px 999px rgba(255, 255, 255, 0.5);
+            z-index: 500;
+        }
+
+        body[data-card-style="glass"] .dashboard-card:hover p,
+        .card-style-glass .dashboard-card:hover p {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        body[data-card-style="glass"] .dashboard-card:hover h3,
+        .card-style-glass .dashboard-card:hover h3 {
+            color: #fff;
+            transition: all 0.3s ease-out;
+        }
+
+        body[data-card-style="glass"] .dashboard-card .go-corner,
+        .card-style-glass .dashboard-card .go-corner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            overflow: hidden;
+            top: 0;
+            right: 0;
+            background-color: #00838d;
+            border-radius: 0 4px 0 32px;
+            opacity: 0.7;
+            transition: opacity 0.3s linear;
+        }
+
+        body[data-card-style="glass"] .dashboard-card:hover .go-corner,
+        .card-style-glass .dashboard-card:hover .go-corner {
+            opacity: 1;
+        }
+
+        body[data-card-style="glass"] .dashboard-card .go-arrow,
+        .card-style-glass .dashboard-card .go-arrow {
+            margin-top: -4px;
+            margin-right: -4px;
+            color: white;
+            font-family: courier, sans;
+        }
+
+        /* Dark mode specific styles for glass dashboard cards */
+        body.dark-mode[data-card-style="glass"] .dashboard-card,
+        body.dark-mode .card-style-glass .dashboard-card {
+            background-color: #1a1a1a;
+            border-color: #2d2d2d;
+        }
+
+        body.dark-mode[data-card-style="glass"] .dashboard-card p,
+        body.dark-mode .card-style-glass .dashboard-card p {
+            color: #a0aec0;
+        }
+
+        body.dark-mode[data-card-style="glass"] .dashboard-card:hover,
+        body.dark-mode .card-style-glass .dashboard-card:hover {
+            border-color: #00838d;
+            box-shadow: 0px 0px 999px 999px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Regular card styles (non-dashboard) */
+        .card-style-glass .card:not(.dashboard-card),
+        .card-style-glass .settings-card:not(.dashboard-card),
+        .card-style-glass .stat-card:not(.dashboard-card),
+        .card-style-glass .content-card:not(.dashboard-card) {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Dashboard card hover effects */
+        .dashboard-card {
+            transition: all 0.3s ease;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.2);
+        }
+
+        body.dark-mode .dashboard-card:hover {
+            box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.4);
+        }
+
+        /* Card style variations - without hover effects */
+        .card-rounded {
+            border-radius: 1rem !important;
+            overflow: hidden;
         }
         
-        body.dark-mode .sidebar .dropdown-item.active {
-            background-color: var(--dropdown-active-bg);
-            color: var(--dropdown-active-text);
+        .card-square {
+            border-radius: 0 !important;
+            overflow: hidden;
         }
         
-        body.dark-mode .sidebar .dropdown-item.active i {
-            color: var(--dropdown-active-text);
+        .card-glass {
+            border-radius: 0.5rem !important;
+            background-color: rgba(255, 255, 255, 0.8) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        body.dark-mode .card-glass {
+            background-color: rgba(30, 41, 59, 0.8) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Dashboard-specific hover effects */
+        body[data-page="dashboard"] .card {
+            transition: all 0.3s ease;
+        }
+
+        body[data-page="dashboard"] .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.2);
+        }
+
+        body.dark-mode[data-page="dashboard"] .card:hover {
+            box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.4);
+        }
+
+        /* Card style variations - without hover effects */
+        .card-rounded {
+            border-radius: 1rem !important;
+            overflow: hidden;
+        }
+        
+        .card-square {
+            border-radius: 0 !important;
+            overflow: hidden;
+        }
+        
+        .card-glass {
+            border-radius: 0.5rem !important;
+            background-color: rgba(255, 255, 255, 0.8) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
     </style>
     @stack('styles')

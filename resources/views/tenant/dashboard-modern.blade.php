@@ -3,7 +3,7 @@
 @section('title', 'Department Dashboard - Modern Layout')
 
 @section('content')
-
+<div data-page="dashboard">
     <!-- Modern Layout Grid -->
     <div class="modern-layout-grid row">
         <!-- Main Content Column -->
@@ -11,7 +11,7 @@
             <!-- Content Cards in 2-column layout -->
             <div class="d-flex flex-wrap justify-content-between">
                 <!-- Recent Enrolled Students Section -->
-                <div class="enrolled-card modern-card mb-4" style="width: 48%;">
+                <div class="enrolled-card modern-card mb-4 dashboard-card" style="width: 48%;">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h6 class="mb-0 fw-bold">Recent Enrolled Students</h6>
                         <a href="{{ route('tenant.students.index', ['tenant' => tenant('id')]) }}" class="btn btn-sm btn-outline-primary rounded-pill">
@@ -57,7 +57,7 @@
                 </div>
 
                 <!-- Available Courses Section -->
-                <div class="enrolled-card modern-card mb-4" style="width: 48%;">
+                <div class="enrolled-card modern-card mb-4 dashboard-card" style="width: 48%;">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h6 class="mb-0 fw-bold">Available Courses</h6>
                         <a href="{{ route('tenant.courses.index', ['tenant' => tenant('id')]) }}" class="btn btn-sm btn-outline-primary rounded-pill">
@@ -99,7 +99,7 @@
                 </div>
 
                 <!-- Requirements Submitted Graph -->
-                <div class="enrolled-card modern-card w-100 mb-4">
+                <div class="enrolled-card modern-card w-100 mb-4 dashboard-card">
                     <div class="card-header">
                         <h6 class="mb-0 fw-bold">Requirements Submission Analysis</h6>
                     </div>
@@ -116,7 +116,7 @@
         <div class="col-md-3 modern-sidebar">
             <div class="statistics-sidebar">
                 <div class="mb-3">
-                    <div class="card h-100 border-0 shadow-sm modern-stat-card">
+                    <div class="card h-100 border-0 shadow-sm modern-stat-card dashboard-card">
                         <div class="card-body">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="rounded-circle p-2 bg-primary bg-opacity-10 me-3">
@@ -132,7 +132,7 @@
                     </div>
                 </div>
                 <div class="mb-3">
-                    <div class="card h-100 border-0 shadow-sm modern-stat-card">
+                    <div class="card h-100 border-0 shadow-sm modern-stat-card dashboard-card">
                         <div class="card-body">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="rounded-circle p-2 bg-success bg-opacity-10 me-3">
@@ -148,7 +148,7 @@
                     </div>
                 </div>
                 <div class="mb-3">
-                    <div class="card h-100 border-0 shadow-sm modern-stat-card">
+                    <div class="card h-100 border-0 shadow-sm modern-stat-card dashboard-card">
                         <div class="card-body">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="rounded-circle p-2 bg-info bg-opacity-10 me-3">
@@ -164,7 +164,7 @@
                     </div>
                 </div>
                 <div class="mb-3">
-                    <div class="card h-100 border-0 shadow-sm modern-stat-card">
+                    <div class="card h-100 border-0 shadow-sm modern-stat-card dashboard-card">
                         <div class="card-body">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="rounded-circle p-2 bg-warning bg-opacity-10 me-3">

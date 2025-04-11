@@ -35,6 +35,7 @@ class Controller extends BaseController
             $tenant = new Tenant();
             $tenant->id = $subdomain;
             $tenant->tenant_name = $request->name;
+            $tenant->name = $request->name;
             $tenant->tenant_email = $request->admin_email;
             $tenant->status = 'pending';
             $tenant->subscription_plan = $request->subscription_plan ?? 'basic';
