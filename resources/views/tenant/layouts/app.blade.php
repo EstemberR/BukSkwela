@@ -76,6 +76,8 @@
             --sidebar-text-color: #e2e8f0;
             --buk-text-color: rgb(251, 191, 36);
             --buk-only-color: #ffffff;
+            --dropdown-active-bg: rgb(59, 130, 246);
+            --dropdown-active-text: #ffffff;
         }
         
         /* Apply variables to elements */
@@ -3052,6 +3054,30 @@
             border-color: rgba(255, 255, 255, 0.1);
             color: var(--buk-light-text-color);
         }
+
+        /* Dropdown active item styles */
+        .sidebar .dropdown-item.active {
+            background-color: var(--primary-color);
+            color: #ffffff;
+        }
+
+        .sidebar .dropdown-item.active i {
+            color: #ffffff;
+        }
+
+        /* Dark mode active dropdown items */
+        body.dark-mode .sidebar .dropdown-item:hover i {
+            color: #ffffff;
+        }
+        
+        body.dark-mode .sidebar .dropdown-item.active {
+            background-color: var(--dropdown-active-bg);
+            color: var(--dropdown-active-text);
+        }
+        
+        body.dark-mode .sidebar .dropdown-item.active i {
+            color: var(--dropdown-active-text);
+        }
     </style>
     @stack('styles')
 </head>
@@ -3097,63 +3123,30 @@
                             <i class="fas fa-clipboard-list"></i> <span>Requirements</span>
                         </a>
                     </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {{ request()->routeIs('tenant.dashboard') || request()->routeIs('tenant.dashboard.*') ? 'active' : '' }}" 
-                           href="#"
-                           data-bs-toggle="dropdown" 
-                           aria-expanded="false">
-                            <div class="nav-content">
-                                <i class="fas fa-home"></i>
-                                <span>Dashboard</span>
-                            </div>
-                            <i class="fas fa-chevron-down dropdown-icon"></i>
-                        </a>
-                        <div class="dropdown-menu">
-                            <a class="dropdown-item {{ request()->routeIs('tenant.dashboard') && !request()->routeIs('tenant.dashboard.*') ? 'active' : '' }}" 
-                               href="{{ route('tenant.dashboard', ['tenant' => tenant('id')]) }}">
-                                <i class="fas fa-th-large"></i>
-                                <span>Default</span>
-                            </a>
-                            <a class="dropdown-item {{ request()->routeIs('tenant.dashboard.standard') ? 'active' : '' }}" 
-                               href="{{ route('tenant.dashboard.standard', ['tenant' => tenant('id')]) }}">
-                                <i class="fas fa-columns"></i>
-                                <span>Standard Layout</span>
-                            </a>
-                            <a class="dropdown-item {{ request()->routeIs('tenant.dashboard.compact') ? 'active' : '' }}" 
-                               href="{{ route('tenant.dashboard.compact', ['tenant' => tenant('id')]) }}">
-                                <i class="fas fa-compress"></i>
-                                <span>Compact Layout</span>
-                            </a>
-                            <a class="dropdown-item {{ request()->routeIs('tenant.dashboard.modern') ? 'active' : '' }}" 
-                               href="{{ route('tenant.dashboard.modern', ['tenant' => tenant('id')]) }}">
-                                <i class="fas fa-tv"></i>
-                                <span>Modern Layout</span>
-                            </a>
-                        </div>
-                    </li>
+                   
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ request()->routeIs('tenant.reports.*') ? 'active' : '' }}" 
                            href="#"
                            data-bs-toggle="dropdown" 
-                           aria-expanded="false">
+                           aria-expanded="{{ request()->routeIs('tenant.reports.*') ? 'true' : 'false' }}">
                             <div class="nav-content">
                                 <i class="fas fa-chart-bar"></i>
                                 <span>Reports</span>
                             </div>
                             <i class="fas fa-chevron-down dropdown-icon"></i>
                         </a>
-                        <div class="dropdown-menu">
-                            <a class="dropdown-item" 
+                        <div class="dropdown-menu {{ request()->routeIs('tenant.reports.*') ? 'show' : '' }}">
+                            <a class="dropdown-item {{ request()->routeIs('tenant.reports.students') || request()->routeIs('tenant.reports.students.*') ? 'active' : '' }}" 
                                href="{{ route('tenant.reports.students', ['tenant' => tenant('id')]) }}">
                                 <i class="fas fa-user-graduate"></i>
                                 <span>Student Reports</span>
                             </a>
-                            <a class="dropdown-item" 
+                            <a class="dropdown-item {{ request()->routeIs('tenant.reports.staff') || request()->routeIs('tenant.reports.staff.*') ? 'active' : '' }}" 
                                href="{{ route('tenant.reports.staff', ['tenant' => tenant('id')]) }}">
                                 <i class="fas fa-user-tie"></i>
                                 <span>Staff Reports</span>
                             </a>
-                            <a class="dropdown-item" 
+                            <a class="dropdown-item {{ request()->routeIs('tenant.reports.courses') || request()->routeIs('tenant.reports.courses.*') ? 'active' : '' }}" 
                                href="{{ route('tenant.reports.courses', ['tenant' => tenant('id')]) }}">
                                 <i class="fas fa-book-open"></i>
                                 <span>Course Reports</span>
@@ -3291,6 +3284,156 @@
             const savedDarkMode = localStorage.getItem('darkMode');
             if (savedDarkMode === 'enabled') {
                 document.body.classList.add('dark-mode');
+            }
+            
+            // Keep Reports dropdown open when on a report page
+            const isReportPage = {{ request()->routeIs('tenant.reports.*') ? 'true' : 'false' }};
+            if (isReportPage) {
+                // Get the reports dropdown and menu elements
+                const reportsDropdownToggle = document.querySelector('.nav-item.dropdown .nav-link.dropdown-toggle.active');
+                const reportsDropdownMenu = document.querySelector('.nav-item.dropdown .dropdown-menu');
+                const reportsNavItem = document.querySelector('.nav-item.dropdown');
+                
+                if (reportsDropdownToggle && reportsDropdownMenu && reportsNavItem) {
+                    // Add the show class to both the toggle and menu
+                    reportsDropdownToggle.classList.add('show');
+                    reportsDropdownMenu.classList.add('show');
+                    reportsDropdownToggle.setAttribute('aria-expanded', 'true');
+                    
+                    // Add mouseover and mouseout handlers to prevent dropdown from closing on hover
+                    reportsNavItem.addEventListener('mouseover', function() {
+                        reportsDropdownMenu.classList.add('show');
+                        reportsDropdownToggle.classList.add('show');
+                        reportsDropdownToggle.setAttribute('aria-expanded', 'true');
+                    });
+                    
+                    // Prevent Bootstrap's mouseleave from closing dropdown
+                    reportsNavItem.addEventListener('mouseleave', function(e) {
+                        if (isReportPage) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            
+                            // Ensure it stays open
+                            setTimeout(() => {
+                                reportsDropdownMenu.classList.add('show');
+                                reportsDropdownToggle.classList.add('show');
+                                reportsDropdownToggle.setAttribute('aria-expanded', 'true');
+                            }, 10);
+                        }
+                    });
+                    
+                    // Prevent dropdown from closing when clicking items or outside
+                    document.addEventListener('click', function(e) {
+                        // Check if click is outside the dropdown
+                        if (!reportsDropdownMenu.contains(e.target) && !reportsDropdownToggle.contains(e.target)) {
+                            // Prevent the dropdown from closing on outside clicks
+                            e.stopPropagation();
+                            
+                            // Make sure dropdown stays open
+                            setTimeout(() => {
+                                reportsDropdownMenu.classList.add('show');
+                                reportsDropdownToggle.classList.add('show');
+                                reportsDropdownToggle.setAttribute('aria-expanded', 'true');
+                            }, 10);
+                        }
+                    }, true);
+                    
+                    // Override Bootstrap's dropdown behavior
+                    const bootstrapDropdowns = document.querySelectorAll('.nav-item.dropdown');
+                    bootstrapDropdowns.forEach(dropdown => {
+                        if (dropdown.contains(reportsDropdownToggle)) {
+                            const originalToggle = bootstrap.Dropdown.getInstance(reportsDropdownToggle);
+                            if (originalToggle) {
+                                // Disable the hide method by overriding it
+                                const originalHide = originalToggle.hide;
+                                originalToggle.hide = function() {
+                                    if (!isReportPage) {
+                                        originalHide.call(this);
+                                    } else {
+                                        // For report pages, prevent hiding and force show
+                                        reportsDropdownMenu.classList.add('show');
+                                        reportsDropdownToggle.classList.add('show');
+                                        reportsDropdownToggle.setAttribute('aria-expanded', 'true');
+                                    }
+                                };
+                            }
+                        }
+                    });
+                    
+                    // Prevent dropdown from closing when clicking items
+                    document.querySelectorAll('.dropdown-item').forEach(item => {
+                        item.addEventListener('click', function(e) {
+                            // Don't prevent default to allow navigation
+                            e.stopPropagation(); // Prevent event from bubbling up to parent dropdown
+                        });
+                    });
+                    
+                    // Create a mutation observer to watch for changes to the dropdown
+                    const observer = new MutationObserver(function(mutations) {
+                        mutations.forEach(function(mutation) {
+                            if (mutation.attributeName === 'class' && 
+                                !reportsDropdownMenu.classList.contains('show')) {
+                                // If the show class was removed, add it back
+                                reportsDropdownMenu.classList.add('show');
+                                reportsDropdownToggle.classList.add('show');
+                                reportsDropdownToggle.setAttribute('aria-expanded', 'true');
+                            }
+                        });
+                    });
+                    
+                    // Start observing the dropdown menu
+                    observer.observe(reportsDropdownMenu, { attributes: true });
+                    
+                    // Make sure dropdown toggle keeps show class
+                    reportsDropdownToggle.addEventListener('click', function(e) {
+                        // Prevent the default toggle behavior on report pages
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // Ensure dropdown stays open
+                        if (!reportsDropdownMenu.classList.contains('show')) {
+                            reportsDropdownMenu.classList.add('show');
+                            reportsDropdownToggle.classList.add('show');
+                            reportsDropdownToggle.setAttribute('aria-expanded', 'true');
+                        }
+                    });
+                    
+                    // IMPORTANT: Add inline style to force visibility
+                    reportsDropdownMenu.setAttribute('style', 'display: block !important; visibility: visible !important; opacity: 1 !important;');
+                    
+                    // Add a style tag to ensure the dropdown stays visible
+                    const styleTag = document.createElement('style');
+                    styleTag.textContent = `
+                        .nav-item.dropdown .dropdown-menu.show {
+                            display: block !important;
+                            visibility: visible !important;
+                            opacity: 1 !important;
+                            pointer-events: auto !important;
+                        }
+                        
+                        .nav-item.dropdown:hover .dropdown-menu.show {
+                            display: block !important;
+                            visibility: visible !important;
+                            opacity: 1 !important;
+                            pointer-events: auto !important;
+                        }
+                        
+                        /* Ensure active dropdown items are properly styled */
+                        .dropdown-item.active,
+                        .dropdown-item.active:hover,
+                        .dropdown-item.active:focus {
+                            background-color: var(--primary-color) !important;
+                            color: #ffffff !important;
+                        }
+                        
+                        .dropdown-item.active i,
+                        .dropdown-item.active:hover i,
+                        .dropdown-item.active:focus i {
+                            color: #ffffff !important;
+                        }
+                    `;
+                    document.head.appendChild(styleTag);
+                }
             }
             
             // Check for dark mode flash message from backend

@@ -25,9 +25,31 @@ class ReportsPdfController extends Controller
             $student->enrollment_month = $student->created_at ? $student->created_at->format('M Y') : 'Unknown';
         });
         
-        // Generate PDF
-        $pdf = PDF::loadView('tenant.reports.pdf.students', compact('students'));
-        $pdf->setPaper('a4', 'landscape');
+        // Generate PDF with explicit options
+        $pdf = PDF::setOptions([
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => true,
+            'isPhpEnabled' => false,
+            'defaultMediaType' => 'screen',
+            'defaultPaperSize' => 'a4',
+            'defaultPaperOrientation' => 'landscape',
+            'defaultFont' => 'serif',
+            'dpi' => 96,
+            'fontHeightRatio' => 1.1,
+            'debugCss' => false,
+            'debugLayout' => false,
+            'debugLayoutPaddingBox' => false,
+            'debugLayoutLines' => false,
+            'debugLayoutBlocks' => false,
+            'debugLayoutInline' => false,
+            'debugLayoutTable' => false,
+            // Improve rendering quality
+            'isFontSubsettingEnabled' => true,
+            'isCssFloatEnabled' => true,
+            'renderBackgroundImages' => true,
+            'renderBackground' => true,
+            'testMode' => false
+        ])->loadView('tenant.reports.pdf.students', compact('students'));
         
         // Download PDF file
         return $pdf->download('students-report.pdf');
@@ -52,9 +74,31 @@ class ReportsPdfController extends Controller
             $staffMember->students_count = 0;
         });
         
-        // Generate PDF
-        $pdf = PDF::loadView('tenant.reports.pdf.staff', compact('staff'));
-        $pdf->setPaper('a4', 'landscape');
+        // Generate PDF with explicit options
+        $pdf = PDF::setOptions([
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => true,
+            'isPhpEnabled' => false,
+            'defaultMediaType' => 'screen',
+            'defaultPaperSize' => 'a4',
+            'defaultPaperOrientation' => 'landscape',
+            'defaultFont' => 'serif',
+            'dpi' => 96,
+            'fontHeightRatio' => 1.1,
+            'debugCss' => false,
+            'debugLayout' => false,
+            'debugLayoutPaddingBox' => false,
+            'debugLayoutLines' => false,
+            'debugLayoutBlocks' => false,
+            'debugLayoutInline' => false,
+            'debugLayoutTable' => false,
+            // Improve rendering quality
+            'isFontSubsettingEnabled' => true,
+            'isCssFloatEnabled' => true,
+            'renderBackgroundImages' => true,
+            'renderBackground' => true,
+            'testMode' => false
+        ])->loadView('tenant.reports.pdf.staff', compact('staff'));
         
         // Download PDF file
         return $pdf->download('staff-report.pdf');
@@ -68,9 +112,31 @@ class ReportsPdfController extends Controller
         // The model already uses tenant connection, so no need to filter by tenant_id
         $courses = Course::with(['students'])->get();
         
-        // Generate PDF
-        $pdf = PDF::loadView('tenant.reports.pdf.courses', compact('courses'));
-        $pdf->setPaper('a4', 'landscape');
+        // Generate PDF with explicit options
+        $pdf = PDF::setOptions([
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => true,
+            'isPhpEnabled' => false,
+            'defaultMediaType' => 'screen',
+            'defaultPaperSize' => 'a4',
+            'defaultPaperOrientation' => 'landscape',
+            'defaultFont' => 'serif',
+            'dpi' => 96,
+            'fontHeightRatio' => 1.1,
+            'debugCss' => false,
+            'debugLayout' => false,
+            'debugLayoutPaddingBox' => false,
+            'debugLayoutLines' => false,
+            'debugLayoutBlocks' => false,
+            'debugLayoutInline' => false,
+            'debugLayoutTable' => false,
+            // Improve rendering quality
+            'isFontSubsettingEnabled' => true,
+            'isCssFloatEnabled' => true,
+            'renderBackgroundImages' => true,
+            'renderBackground' => true,
+            'testMode' => false
+        ])->loadView('tenant.reports.pdf.courses', compact('courses'));
         
         // Download PDF file
         return $pdf->download('courses-report.pdf');

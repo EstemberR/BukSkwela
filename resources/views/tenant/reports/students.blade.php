@@ -4,61 +4,25 @@
 
 @section('content')
 <div class="container">
+    <!-- Main Report Card -->
     <div class="card">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <h4>Student Reports</h4>
-            <div class="mt-2">
+            <div>
                 <a href="{{ route('tenant.reports.students.pdf', ['tenant' => tenant('id')]) }}" class="btn btn-danger">
                     <i class="fas fa-file-pdf me-1"></i> Download PDF
                 </a>
             </div>
         </div>
+        
         <div class="card-body">
             @if($students->isEmpty())
                 <div class="alert alert-info">
                     No student data available to display.
                 </div>
             @else
+                <!-- Summary Stats Cards -->
                 <div class="row mb-4">
-                    <div class="col-md-4">
-                        <div class="card shadow-sm h-100">
-                            <div class="card-header bg-light">
-                                <h5 class="mb-0">Students by Course</h5>
-                            </div>
-                            <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 350px;">
-                                <div style="position: relative; height: 100%; width: 100%;">
-                                    <canvas id="studentsByCourseChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card shadow-sm h-100">
-                            <div class="card-header bg-light">
-                                <h5 class="mb-0">Student Status</h5>
-                            </div>
-                            <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 350px;">
-                                <div style="position: relative; height: 100%; width: 100%;">
-                                    <canvas id="studentStatusChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card shadow-sm h-100">
-                            <div class="card-header bg-light">
-                                <h5 class="mb-0">Course Enrollment Trend</h5>
-                            </div>
-                            <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 350px;">
-                                <div style="position: relative; height: 100%; width: 100%;">
-                                    <canvas id="enrollmentTrendChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row mt-4">
                     <div class="col-md-12">
                         <div class="card shadow-sm">
                             <div class="card-header bg-light">
@@ -104,21 +68,63 @@
                     </div>
                 </div>
                 
-                <div class="row mt-4">
+                <!-- Overview Charts Section -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Students by Course</h5>
+                            </div>
+                            <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 350px;">
+                                <div style="position: relative; height: 100%; width: 100%;">
+                                    <canvas id="studentsByCourseChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Student Status</h5>
+                            </div>
+                            <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 350px;">
+                                <div style="position: relative; height: 100%; width: 100%;">
+                                    <canvas id="studentStatusChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">Top 5 Courses</h5>
+                            </div>
+                            <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 350px;">
+                                <div style="position: relative; height: 100%; width: 100%;">
+                                    <canvas id="enrollmentTrendChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Course Analysis Section -->
+                <div class="row">
                     <div class="col-md-12">
                         <div class="card shadow-sm">
                             <div class="card-header bg-light">
                                 <h5 class="mb-0">Course Analysis</h5>
                             </div>
                             <div class="card-body">
+                                <!-- PHP Data Preparation -->
+                                @php
+                                    $courses = $students->groupBy(function($student) {
+                                        return $student->course ? $student->course->name : 'No Course';
+                                    });
+                                    $colorIndex = 0;
+                                @endphp
+                                
                                 <div class="row" id="courseCharts">
-                                    @php
-                                        $courses = $students->groupBy(function($student) {
-                                            return $student->course ? $student->course->name : 'No Course';
-                                        });
-                                        $colorIndex = 0;
-                                    @endphp
-                                    
                                     @foreach($courses as $courseName => $courseStudents)
                                         @php
                                             // Skip if there are no students in this course
@@ -152,18 +158,21 @@
     </div>
 </div>
 
-<!-- Chart.js script -->
+<!-- Chart.js dependency -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Charts initialization script -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     @if(!$students->isEmpty())
-    // Define professional color schemes
+    // ----- Configuration & Utility -----
+    // Color schemes
     const statusColors = {
         active: '#1cc88a',
         inactive: '#e74a3b'
     };
     
-    // Define a color palette for courses
+    // Color palette for charts
     const colorPalette = [
         '#4e73df', // Primary blue
         '#1cc88a', // Success green
@@ -179,8 +188,19 @@ document.addEventListener('DOMContentLoaded', function() {
         '#17a673', // Forest green
     ];
     
-    // Students by Course Chart
-    const studentsByCourseCtx = document.getElementById('studentsByCourseChart');
+    // Shared chart configuration
+    const chartDefaults = {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+            animateScale: true,
+            animateRotate: true,
+            duration: 1200
+        }
+    };
+    
+    // ----- Data Preparation -----
+    // Course distribution data
     const courseData = {
         labels: [
             @php
@@ -202,228 +222,227 @@ document.addEventListener('DOMContentLoaded', function() {
         ]
     };
     
-    const studentsByCourseChart = new Chart(studentsByCourseCtx, {
-        type: 'pie',
-        data: {
-            labels: courseData.labels,
-            datasets: [{
-                data: courseData.counts,
-                backgroundColor: colorPalette.slice(0, courseData.labels.length),
-                borderColor: '#ffffff',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            layout: {
-                padding: 20
-            },
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 15,
-                        boxWidth: 12,
-                        font: {
-                            size: 11,
-                            weight: 'bold'
-                        },
-                        usePointStyle: true,
-                        pointStyle: 'circle'
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0,0,0,0.8)',
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.raw || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = Math.round((value / total) * 100);
-                            return `${label}: ${value} students (${percentage}%)`;
-                        }
-                    }
-                }
-            },
-            animation: {
-                animateScale: true,
-                animateRotate: true,
-                duration: 1200
-            }
-        }
-    });
-    
-    // Student Status Chart
-    const studentStatusCtx = document.getElementById('studentStatusChart');
+    // Status data
     const activeCount = {{ $students->where('status', 'active')->count() }};
     const inactiveCount = {{ $students->where('status', 'inactive')->count() }};
     
-    const studentStatusChart = new Chart(studentStatusCtx, {
-        type: 'pie',
-        data: {
-            labels: ['Active Students', 'Inactive Students'],
-            datasets: [{
-                data: [activeCount, inactiveCount],
-                backgroundColor: [statusColors.active, statusColors.inactive],
-                borderColor: '#ffffff',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            layout: {
-                padding: 20
+    // ----- Chart Initialization -----
+    // 1. Students by Course Chart
+    initStudentsByCourseChart();
+    
+    // 2. Student Status Chart
+    initStudentStatusChart();
+    
+    // 3. Top 5 Courses Chart
+    initTopCoursesChart();
+    
+    // 4. Individual Course Status Charts
+    initCourseStatusCharts();
+    
+    // ----- Chart Functions -----
+    function initStudentsByCourseChart() {
+        const ctx = document.getElementById('studentsByCourseChart');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: courseData.labels,
+                datasets: [{
+                    data: courseData.counts,
+                    backgroundColor: colorPalette.slice(0, courseData.labels.length),
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                }]
             },
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        boxWidth: 12,
-                        font: {
-                            size: 11,
-                            weight: 'bold'
-                        },
-                        usePointStyle: true,
-                        pointStyle: 'circle'
-                    }
+            options: {
+                ...chartDefaults,
+                layout: {
+                    padding: 20
                 },
-                tooltip: {
-                    backgroundColor: 'rgba(0,0,0,0.8)',
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.raw || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = Math.round((value / total) * 100);
-                            return `${label}: ${value} (${percentage}%)`;
-                        }
-                    }
-                }
-            },
-            animation: {
-                animateScale: true,
-                animateRotate: true,
-                duration: 1000
-            }
-        }
-    });
-    
-    // Enrollment Trend Chart (by top 5 courses)
-    const enrollmentTrendCtx = document.getElementById('enrollmentTrendChart');
-    
-    // Get top 5 courses by enrollment
-    const topCourses = Object.entries(courseData.labels)
-        .map(([index, label]) => ({ 
-            label, 
-            count: courseData.counts[index] 
-        }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
-        
-    const enrollmentTrendChart = new Chart(enrollmentTrendCtx, {
-        type: 'pie',
-        data: {
-            labels: topCourses.map(course => course.label),
-            datasets: [{
-                data: topCourses.map(course => course.count),
-                backgroundColor: colorPalette.slice(0, 5),
-                borderColor: '#ffffff',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            layout: {
-                padding: 20
-            },
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 15,
-                        boxWidth: 12,
-                        font: {
-                            size: 11,
-                            weight: 'bold'
-                        },
-                        usePointStyle: true,
-                        pointStyle: 'circle'
-                    },
-                    title: {
-                        display: true,
-                        text: 'Top 5 Courses'
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0,0,0,0.8)',
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.raw || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = Math.round((value / total) * 100);
-                            return `${label}: ${value} students (${percentage}%)`;
-                        }
-                    }
-                }
-            },
-            animation: {
-                animateScale: true,
-                animateRotate: true,
-                duration: 1200
-            }
-        }
-    });
-    
-    // Individual course status charts
-    @php
-        $colorIndex = 0;
-        foreach($courses as $courseName => $courseStudents) {
-            if ($courseStudents->isEmpty()) continue;
-            $activeStudents = $courseStudents->where('status', 'active')->count();
-            $inactiveStudents = $courseStudents->where('status', 'inactive')->count();
-    @endphp
-            
-            const courseStatusChart{{ $colorIndex }} = new Chart(
-                document.getElementById('courseStatusChart{{ $colorIndex }}'),
-                {
-                    type: 'pie',
-                    data: {
-                        labels: ['Active', 'Inactive'],
-                        datasets: [{
-                            data: [{{ $activeStudents }}, {{ $inactiveStudents }}],
-                            backgroundColor: [statusColors.active, statusColors.inactive],
-                            borderColor: '#ffffff',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    font: { size: 10 }
-                                }
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            boxWidth: 12,
+                            font: {
+                                size: 11,
+                                weight: 'bold'
                             },
-                            title: {
-                                display: true,
-                                text: 'Student Status',
-                                font: { size: 12 }
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value} students (${percentage}%)`;
                             }
                         }
                     }
                 }
-            );
+            }
+        });
+    }
     
-    @php
-            $colorIndex++;
-        }
-    @endphp
+    function initStudentStatusChart() {
+        const ctx = document.getElementById('studentStatusChart');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['Active Students', 'Inactive Students'],
+                datasets: [{
+                    data: [activeCount, inactiveCount],
+                    backgroundColor: [statusColors.active, statusColors.inactive],
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                layout: {
+                    padding: 20
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12,
+                            font: {
+                                size: 11,
+                                weight: 'bold'
+                            },
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function initTopCoursesChart() {
+        const ctx = document.getElementById('enrollmentTrendChart');
+        
+        // Get top 5 courses by enrollment
+        const topCourses = Object.entries(courseData.labels)
+            .map(([index, label]) => ({ 
+                label, 
+                count: courseData.counts[index] 
+            }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+            
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: topCourses.map(course => course.label),
+                datasets: [{
+                    data: topCourses.map(course => course.count),
+                    backgroundColor: colorPalette.slice(0, 5),
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                ...chartDefaults,
+                layout: {
+                    padding: 20
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            boxWidth: 12,
+                            font: {
+                                size: 11,
+                                weight: 'bold'
+                            },
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value} students (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function initCourseStatusCharts() {
+        @php
+            $colorIndex = 0;
+            foreach($courses as $courseName => $courseStudents) {
+                if ($courseStudents->isEmpty()) continue;
+                $activeStudents = $courseStudents->where('status', 'active')->count();
+                $inactiveStudents = $courseStudents->where('status', 'inactive')->count();
+        @endphp
+                
+                new Chart(
+                    document.getElementById('courseStatusChart{{ $colorIndex }}'),
+                    {
+                        type: 'pie',
+                        data: {
+                            labels: ['Active', 'Inactive'],
+                            datasets: [{
+                                data: [{{ $activeStudents }}, {{ $inactiveStudents }}],
+                                backgroundColor: [statusColors.active, statusColors.inactive],
+                                borderColor: '#ffffff',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        font: { size: 10 }
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Student Status',
+                                    font: { size: 12 }
+                                }
+                            }
+                        }
+                    }
+                );
+        
+        @php
+                $colorIndex++;
+            }
+        @endphp
+    }
     @endif
 });
 </script>

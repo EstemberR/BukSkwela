@@ -128,12 +128,15 @@
         }
         .chart-box {
             width: 48%;
+            float: left;
+            margin-right: 2%;
             border: 1px solid #ddd;
             border-radius: 5px;
             padding: 10px;
             margin-bottom: 15px;
             background-color: #fff;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
         }
         .chart-title {
             font-weight: bold;
@@ -143,9 +146,10 @@
             text-align: center;
         }
         .charts-row {
-            display: flex;
-            justify-content: space-between;
+            width: 100%;
+            overflow: hidden;
             margin-bottom: 20px;
+            clear: both;
         }
         .badge {
             padding: 5px 8px;
@@ -177,6 +181,36 @@
             border-radius: 3px;
             font-weight: bold;
             color: #333;
+        }
+        .clearfix:after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+        /* Tables for charts as fallback */
+        .chart-table {
+            width: 100%;
+            margin-top: 10px;
+            font-size: 10px;
+        }
+        .chart-table th {
+            background-color: #003366;
+            color: white;
+            padding: 5px;
+        }
+        .chart-table td {
+            padding: 5px;
+        }
+        .chart-table .value-cell {
+            text-align: right;
+            font-weight: bold;
+        }
+        .color-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-right: 5px;
+            border-radius: 2px;
         }
     </style>
 </head>
@@ -219,7 +253,53 @@
     </div>
 
     <!-- Visual Charts Section -->
-    <div class="charts-row">
+    <div class="charts-row clearfix">
+        <div class="chart-box">
+            <div class="chart-title">Courses by Student Count</div>
+            @php
+                // Group courses by student count ranges
+                $studentRanges = [
+                    '0 students' => $courses->filter(function($course) { return $course->students->count() == 0; })->count(),
+                    '1-5 students' => $courses->filter(function($course) { return $course->students->count() >= 1 && $course->students->count() <= 5; })->count(),
+                    '6-10 students' => $courses->filter(function($course) { return $course->students->count() >= 6 && $course->students->count() <= 10; })->count(),
+                    '11-20 students' => $courses->filter(function($course) { return $course->students->count() >= 11 && $course->students->count() <= 20; })->count(),
+                    '21+ students' => $courses->filter(function($course) { return $course->students->count() > 20; })->count(),
+                ];
+                
+                // Remove any range with 0 count
+                $studentRanges = array_filter($studentRanges);
+                
+                // Colors for the chart
+                $colors = ['#1cc88a', '#4e73df', '#f6c23e', '#e74a3b', '#36b9cc'];
+                $total = array_sum($studentRanges);
+            @endphp
+            
+            <!-- Fallback table for chart -->
+            <table class="chart-table">
+                <thead>
+                    <tr>
+                        <th>Student Range</th>
+                        <th>Number of Courses</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php $i = 0; @endphp
+                    @foreach($studentRanges as $range => $count)
+                    <tr>
+                        <td>
+                            <span class="color-indicator" style="background-color: {{ $colors[$i % count($colors)] }}"></span>
+                            {{ $range }}
+                        </td>
+                        <td class="value-cell">{{ $count }}</td>
+                        <td class="value-cell">{{ round(($count / $total) * 100, 1) }}%</td>
+                    </tr>
+                    @php $i++; @endphp
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        
         <div class="chart-box">
             <div class="chart-title">Course Status Distribution</div>
             @php
@@ -227,256 +307,123 @@
                 $statusCounts = [
                     'active' => $courses->where('status', 'active')->count(),
                     'inactive' => $courses->where('status', 'inactive')->count(),
-                    'pending' => $courses->where('status', 'pending')->count()
+                    'upcoming' => $courses->where('status', 'upcoming')->count(),
+                    'completed' => $courses->where('status', 'completed')->count(),
+                    'archived' => $courses->where('status', 'archived')->count()
                 ];
                 
                 // Remove any status with 0 count
                 $statusCounts = array_filter($statusCounts);
-                
-                // Create HTML representation of pie chart
-                $colors = ['#1cc88a', '#e74a3b', '#f6c23e', '#4e73df', '#36b9cc'];
-                $total = array_sum($statusCounts);
-                
-                $chartHtml = '<div style="width:400px;height:250px;margin:0 auto;position:relative;">';
-                $chartHtml .= '<svg width="400" height="250" viewBox="0 0 400 250">';
-                
-                // Create legend
-                $y = 90;
-                $i = 0;
-                foreach ($statusCounts as $status => $count) {
-                    $color = $colors[$i % count($colors)];
-                    $percentage = ($count / $total) * 100;
-                    
-                    // Draw colored square for legend
-                    $chartHtml .= "<rect x='50' y='$y' width='15' height='15' fill='$color' />";
-                    
-                    // Display status and count
-                    $chartHtml .= "<text x='75' y='" . ($y + 12) . "' font-size='12'>" . ucfirst($status) . ": $count (" . round($percentage, 1) . "%)</text>";
-                    
-                    $y += 25;
-                    $i++;
-                }
-                
-                // Draw circle for pie chart
-                $chartHtml .= "<circle cx='290' cy='120' r='70' fill='none' stroke='#ccc' stroke-width='1' />";
-                
-                // Draw slices of pie
-                $startAngle = 0;
-                $i = 0;
-                
-                foreach ($statusCounts as $status => $count) {
-                    $percentage = ($count / $total) * 100;
-                    $angle = 360 * ($percentage / 100);
-                    $endAngle = $startAngle + $angle;
-                    $color = $colors[$i % count($colors)];
-                    
-                    // Convert angles to radians for calculation
-                    $startRad = $startAngle * M_PI / 180;
-                    $endRad = $endAngle * M_PI / 180;
-                    
-                    // Calculate points on circle
-                    $x1 = 290 + 70 * sin($startRad);
-                    $y1 = 120 - 70 * cos($startRad);
-                    $x2 = 290 + 70 * sin($endRad);
-                    $y2 = 120 - 70 * cos($endRad);
-                    
-                    // Create path for slice
-                    $largeArcFlag = $angle > 180 ? 1 : 0;
-                    $path = "M290,120 L$x1,$y1 A70,70 0 $largeArcFlag,1 $x2,$y2 Z";
-                    
-                    $chartHtml .= "<path d='$path' fill='$color' />";
-                    
-                    $startAngle = $endAngle;
-                    $i++;
-                }
-                
-                $chartHtml .= '</svg>';
-                $chartHtml .= '</div>';
-                
-                echo $chartHtml;
+                $totalCourses = $courses->count();
             @endphp
-        </div>
-        <div class="chart-box">
-            <div class="chart-title">Top 5 Courses by Student Enrollment</div>
-            @php
-                // Get top 5 courses with most students
-                $topCoursesByStudents = $courses->sortByDesc('students_count')->take(5);
-                
-                // Create HTML representation of horizontal bar chart
-                $chartHtml = '<div style="width:400px;height:250px;margin:0 auto;position:relative;">';
-                $chartHtml .= '<svg width="400" height="250" viewBox="0 0 400 250">';
-                
-                // Get maximum students count for scaling
-                $maxStudents = $topCoursesByStudents->max('students_count');
-                if ($maxStudents == 0) $maxStudents = 1; // Avoid division by zero
-                
-                // Draw horizontal bars
-                $barHeight = 25;
-                $barGap = 15;
-                $chartWidth = 250;
-                $startY = 50;
-                
-                foreach ($topCoursesByStudents as $index => $course) {
-                    $color = $colors[$index % count($colors)];
-                    $barWidth = ($course->students_count / $maxStudents) * $chartWidth;
-                    $y = $startY + ($index * ($barHeight + $barGap));
-                    
-                    // Draw bar
-                    $chartHtml .= "<rect x='120' y='$y' width='$barWidth' height='$barHeight' fill='$color' rx='3' ry='3' />";
-                    
-                    // Display course code
-                    $displayCode = strlen($course->code) > 12 ? substr($course->code, 0, 12) . '...' : $course->code;
-                    $chartHtml .= "<text x='115' y='" . ($y + 17) . "' font-size='12' text-anchor='end'>$displayCode</text>";
-                    
-                    // Display count on bar
-                    $chartHtml .= "<text x='" . (125 + $barWidth - 5) . "' y='" . ($y + 17) . "' font-size='12' fill='white' text-anchor='end'>{$course->students_count}</text>";
-                }
-                
-                $chartHtml .= '</svg>';
-                $chartHtml .= '</div>';
-                
-                echo $chartHtml;
-            @endphp
+            
+            <!-- Fallback table for chart -->
+            <table class="chart-table">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Courses</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php $i = 0; @endphp
+                    @foreach($statusCounts as $status => $count)
+                    <tr>
+                        <td>
+                            <span class="color-indicator" style="background-color: {{ $colors[$i % count($colors)] }}"></span>
+                            {{ ucfirst($status) }}
+                        </td>
+                        <td class="value-cell">{{ $count }}</td>
+                        <td class="value-cell">{{ round(($count / $totalCourses) * 100, 1) }}%</td>
+                    </tr>
+                    @php $i++; @endphp
+                    @endforeach
+                </tbody>
+            </table>
         </div>
     </div>
-
-    <div class="charts-row">
+    
+    <div class="charts-row clearfix">
         <div class="chart-box">
-            <div class="chart-title">Staff with Most Courses</div>
+            <div class="chart-title">Students per Course</div>
             @php
-                // Calculate courses per staff
-                $staffCourses = [];
-                foreach ($courses as $course) {
-                    if (!$course->staff) continue;
-                    
-                    $staffName = $course->staff->name;
-                    if (!isset($staffCourses[$staffName])) {
-                        $staffCourses[$staffName] = 0;
-                    }
-                    $staffCourses[$staffName]++;
-                }
-                
-                // Sort staff by course count (descending)
-                arsort($staffCourses);
-                
-                // Take top 5 staff
-                $topStaff = array_slice($staffCourses, 0, 5, true);
-                
-                // Create HTML representation of horizontal bar chart
-                $chartHtml = '<div style="width:400px;height:250px;margin:0 auto;position:relative;">';
-                $chartHtml .= '<svg width="400" height="250" viewBox="0 0 400 250">';
-                
-                // Get maximum course count for scaling
-                $maxCourses = max($topStaff) ?: 1; // Avoid division by zero
-                
-                // Draw horizontal bars
-                $barHeight = 25;
-                $barGap = 15;
-                $chartWidth = 250;
-                $startY = 50;
-                
-                $i = 0;
-                foreach ($topStaff as $staffName => $count) {
-                    $color = $colors[($i + 2) % count($colors)]; // Different color scheme
-                    $barWidth = ($count / $maxCourses) * $chartWidth;
-                    $y = $startY + ($i * ($barHeight + $barGap));
-                    
-                    // Draw bar
-                    $chartHtml .= "<rect x='120' y='$y' width='$barWidth' height='$barHeight' fill='$color' rx='3' ry='3' />";
-                    
-                    // Display staff name
-                    $displayName = strlen($staffName) > 15 ? substr($staffName, 0, 15) . '...' : $staffName;
-                    $chartHtml .= "<text x='115' y='" . ($y + 17) . "' font-size='12' text-anchor='end'>$displayName</text>";
-                    
-                    // Display count on bar
-                    $chartHtml .= "<text x='" . (125 + $barWidth - 5) . "' y='" . ($y + 17) . "' font-size='12' fill='white' text-anchor='end'>$count</text>";
-                    
-                    $i++;
-                }
-                
-                $chartHtml .= '</svg>';
-                $chartHtml .= '</div>';
-                
-                echo $chartHtml;
+                // Calculate the average, min, and max students per course
+                $coursesWithStudents = $courses->filter(function($course) { return $course->students->count() > 0; });
+                $avgStudentsPerCourse = $coursesWithStudents->count() > 0 
+                    ? round($coursesWithStudents->sum(function($course) { return $course->students->count(); }) / $coursesWithStudents->count(), 1) 
+                    : 0;
+                $maxStudentsPerCourse = $courses->max(function($course) { return $course->students->count(); });
+                $minStudentsPerCourse = $coursesWithStudents->count() > 0 
+                    ? $coursesWithStudents->min(function($course) { return $course->students->count(); }) 
+                    : 0;
             @endphp
+            
+            <!-- Simple stats table -->
+            <table class="chart-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Total Courses</td>
+                        <td class="value-cell">{{ $courses->count() }}</td>
+                    </tr>
+                    <tr>
+                        <td>Courses with Students</td>
+                        <td class="value-cell">{{ $coursesWithStudents->count() }}</td>
+                    </tr>
+                    <tr>
+                        <td>Empty Courses</td>
+                        <td class="value-cell">{{ $courses->count() - $coursesWithStudents->count() }}</td>
+                    </tr>
+                    <tr>
+                        <td>Average Students per Course</td>
+                        <td class="value-cell">{{ $avgStudentsPerCourse }}</td>
+                    </tr>
+                    <tr>
+                        <td>Maximum Students in a Course</td>
+                        <td class="value-cell">{{ $maxStudentsPerCourse }}</td>
+                    </tr>
+                    <tr>
+                        <td>Minimum Students in a Course (with students)</td>
+                        <td class="value-cell">{{ $minStudentsPerCourse }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
+        
         <div class="chart-box">
-            <div class="chart-title">Students per Course (Average: {{ round($courses->sum('students_count') / max($courses->count(), 1), 1) }})</div>
+            <div class="chart-title">Top 5 Courses by Enrollment</div>
             @php
-                // Calculate student distribution across courses
-                $studentDistribution = [
-                    '0' => $courses->where('students_count', 0)->count(),
-                    '1-10' => $courses->where('students_count', '>', 0)->where('students_count', '<=', 10)->count(),
-                    '11-20' => $courses->where('students_count', '>', 10)->where('students_count', '<=', 20)->count(),
-                    '21-30' => $courses->where('students_count', '>', 20)->where('students_count', '<=', 30)->count(),
-                    '31+' => $courses->where('students_count', '>', 30)->count()
-                ];
-                
-                // Remove any ranges with 0 count
-                $studentDistribution = array_filter($studentDistribution);
-                
-                // Create HTML representation of pie chart
-                $total = array_sum($studentDistribution);
-                
-                $chartHtml = '<div style="width:400px;height:250px;margin:0 auto;position:relative;">';
-                $chartHtml .= '<svg width="400" height="250" viewBox="0 0 400 250">';
-                
-                // Create legend
-                $y = 50;
-                $i = 0;
-                foreach ($studentDistribution as $range => $count) {
-                    $color = $colors[$i % count($colors)];
-                    $percentage = ($count / $total) * 100;
-                    
-                    // Draw colored square for legend
-                    $chartHtml .= "<rect x='50' y='$y' width='15' height='15' fill='$color' />";
-                    
-                    // Display range and count
-                    $label = ($range === '0') ? 'No students' : $range . ' students';
-                    $chartHtml .= "<text x='75' y='" . ($y + 12) . "' font-size='12'>$label: $count (" . round($percentage, 1) . "%)</text>";
-                    
-                    $y += 25;
-                    $i++;
-                }
-                
-                // Draw circle for pie chart
-                $chartHtml .= "<circle cx='290' cy='120' r='70' fill='none' stroke='#ccc' stroke-width='1' />";
-                
-                // Draw slices of pie
-                $startAngle = 0;
-                $i = 0;
-                
-                foreach ($studentDistribution as $range => $count) {
-                    $percentage = ($count / $total) * 100;
-                    $angle = 360 * ($percentage / 100);
-                    $endAngle = $startAngle + $angle;
-                    $color = $colors[$i % count($colors)];
-                    
-                    // Convert angles to radians for calculation
-                    $startRad = $startAngle * M_PI / 180;
-                    $endRad = $endAngle * M_PI / 180;
-                    
-                    // Calculate points on circle
-                    $x1 = 290 + 70 * sin($startRad);
-                    $y1 = 120 - 70 * cos($startRad);
-                    $x2 = 290 + 70 * sin($endRad);
-                    $y2 = 120 - 70 * cos($endRad);
-                    
-                    // Create path for slice
-                    $largeArcFlag = $angle > 180 ? 1 : 0;
-                    $path = "M290,120 L$x1,$y1 A70,70 0 $largeArcFlag,1 $x2,$y2 Z";
-                    
-                    $chartHtml .= "<path d='$path' fill='$color' />";
-                    
-                    $startAngle = $endAngle;
-                    $i++;
-                }
-                
-                $chartHtml .= '</svg>';
-                $chartHtml .= '</div>';
-                
-                echo $chartHtml;
+                // Get top 5 courses by student count
+                $topCourses = $courses->sortByDesc(function($course) {
+                    return $course->students->count();
+                })->take(5);
             @endphp
+            
+            <!-- Top courses table -->
+            <table class="chart-table">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Code</th>
+                        <th>Students</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($topCourses as $course)
+                    <tr>
+                        <td>{{ strlen($course->name) > 30 ? substr($course->name, 0, 27) . '...' : $course->name }}</td>
+                        <td><span class="course-code">{{ $course->code }}</span></td>
+                        <td class="value-cell">{{ $course->students->count() }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
     </div>
     
