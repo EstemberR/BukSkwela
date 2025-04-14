@@ -31,8 +31,31 @@ Route::middleware(['web'])
             ->name('tenant.login');
         Route::post('/login', [LoginController::class, 'login'])
             ->name('tenant.login.post');
+        Route::post('/logout', [LoginController::class, 'logout'])
+            ->name('tenant.logout');
         Route::get('/status', [App\Http\Controllers\Auth\TenantStatusController::class, 'checkStatus'])
             ->name('tenant.status');
+    });
+
+// Student auth routes
+Route::middleware(['web'])
+    ->prefix('student')
+    ->group(function () {
+        Route::get('/login', [App\Http\Controllers\Student\StudentAuthController::class, 'showLoginForm'])
+            ->name('tenant.student.login');
+        Route::post('/login', [App\Http\Controllers\Student\StudentAuthController::class, 'login'])
+            ->name('tenant.student.login.post');
+        Route::post('/logout', [App\Http\Controllers\Student\StudentAuthController::class, 'logout'])
+            ->name('tenant.student.logout');
+    });
+
+// Student protected routes
+Route::middleware(['web', 'tenant', 'auth:student'])
+    ->prefix('student')
+    ->group(function () {
+        Route::get('/dashboard', function () {
+            return view('tenant.students.studentDashboard');
+        })->name('tenant.student.dashboard');
     });
 
 // Protected tenant routes

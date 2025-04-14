@@ -399,7 +399,13 @@
     @php
         // Check for premium status from multiple sources
         $tenantData = tenant();
-        $isPremiumFromTenant = $tenantData && isset($tenantData->subscription_plan) && $tenantData->subscription_plan === 'premium';
+        
+        // Try to refresh tenant data to make sure we have the latest information
+        if ($tenantData && is_object($tenantData) && method_exists($tenantData, 'refresh')) {
+            $tenantData->refresh();
+        }
+        
+        $isPremiumFromTenant = $tenantData && $tenantData->subscription_plan === 'premium';
         
         // Check if we have a session variable indicating premium
         $isPremiumFromSession = session('is_premium') === true;
@@ -970,7 +976,7 @@
                     user_id: '{{ $user->id }}',
                     user_name: '{{ $user->name }}',
                     user_email: '{{ $user->email }}',
-                    message: document.getElementById('message').value || 'Upgraded to Premium plan',
+                    message: document.getElementById('message')?.value || 'Upgraded to Premium plan',
                     set_session: true // Add flag to set session variable
                 })
             })

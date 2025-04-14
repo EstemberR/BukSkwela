@@ -22,9 +22,21 @@ class RedirectIfAuthenticated
             if (tenant()) {
                 return redirect()->route('tenant.dashboard');
             }
-            if (Auth::user()->role === 'superadmin') {
+            
+            $user = Auth::user();
+            if ($user && $user->role === 'superadmin') {
                 return redirect()->route('superadmin.dashboard');
             }
+            
+            // Check which guard was authenticated and redirect accordingly
+            if ($guard === 'admin') {
+                return redirect()->route('tenant.dashboard');
+            } else if ($guard === 'student') {
+                return redirect('/student/dashboard');
+            } else if ($guard === 'staff') {
+                return redirect('/staff/dashboard');
+            }
+            
             return redirect('/');
         }
 

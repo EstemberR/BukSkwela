@@ -39,8 +39,9 @@
     35 => 'App\\Providers\\RouteServiceProvider',
     36 => 'App\\Providers\\TenancyServiceProvider',
     37 => 'App\\Providers\\TenancyHelperServiceProvider',
-    38 => 'Stancl\\Tenancy\\TenancyServiceProvider',
-    39 => 'Barryvdh\\DomPDF\\ServiceProvider',
+    38 => 'App\\Providers\\TenantDatabaseServiceProvider',
+    39 => 'Stancl\\Tenancy\\TenancyServiceProvider',
+    40 => 'Barryvdh\\DomPDF\\ServiceProvider',
   ),
   'eager' => 
   array (
@@ -68,8 +69,9 @@
     21 => 'App\\Providers\\RouteServiceProvider',
     22 => 'App\\Providers\\TenancyServiceProvider',
     23 => 'App\\Providers\\TenancyHelperServiceProvider',
-    24 => 'Stancl\\Tenancy\\TenancyServiceProvider',
-    25 => 'Barryvdh\\DomPDF\\ServiceProvider',
+    24 => 'App\\Providers\\TenantDatabaseServiceProvider',
+    25 => 'Stancl\\Tenancy\\TenancyServiceProvider',
+    26 => 'Barryvdh\\DomPDF\\ServiceProvider',
   ),
   'deferred' => 
   array (

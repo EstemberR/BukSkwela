@@ -34,14 +34,12 @@
                 @endif
 
                 @error('email')
-                    <script>
-                        document.addEventListener('DOMContentLoaded', function() {
-                            $('#tenantApprovalModal').modal('show');
-                        });
-                    </script>
+                    <div class="alert alert-danger">
+                        {{ $message }}
+                    </div>
                 @enderror
 
-                <form method="POST" action="{{ url('/login') }}">
+                <form method="POST" action="{{ url('/login') }}" id="loginForm">
                     @csrf
                     <div class="form-group">
                         <label>Email</label>
@@ -50,10 +48,8 @@
                                 <i class="fas fa-envelope input-icon"></i>
                             </div>
                             <input type="email" class="form-control" name="email" 
-                                placeholder="Enter your email" required>
-                            @error('email')
-                                <span class="text-danger">{{ $message }}</span>
-                            @enderror
+                                placeholder="Enter your email" required id="emailInput">
+                            <small class="form-text text-muted">For students, use your @student.buksu.edu.ph email address</small>
                         </div>
                     </div>
 
@@ -118,5 +114,24 @@
         });
     </script>
     @endif
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('loginForm');
+            const emailInput = document.getElementById('emailInput');
+            
+            loginForm.addEventListener('submit', function(e) {
+                const email = emailInput.value;
+                
+                if (email.endsWith('@student.buksu.edu.ph')) {
+                    e.preventDefault();
+                    // Update form action for student login
+                    loginForm.action = "{{ url('/student/login') }}";
+                    loginForm.submit();
+                }
+                // Otherwise, let it submit to the default admin login
+            });
+        });
+    </script>
 </body>
 </html>

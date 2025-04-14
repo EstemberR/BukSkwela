@@ -4368,5 +4368,70 @@
         }
     });
     </script>
+
+    <!-- Include the Tenant Approval Modal -->
+    @include('Modals.TenantApproval')
+    
+    <!-- Scripts to handle tenant approval modal -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if approval modal session flag is set
+            @if(session('show_approval_modal'))
+                const loginEmail = document.querySelector('input[name="email"]')?.value || '';
+                console.log('Email for modal check:', loginEmail);
+                
+                // Only show approval modal if not a student email
+                if (!loginEmail.includes('@student.buksu.edu.ph')) {
+                    console.log('Not a student email, showing approval modal');
+                    
+                    // Check if modal should be prevented (student email was entered)
+                    if (sessionStorage.getItem('preventApprovalModal') !== 'true') {
+                        // Use Bootstrap 5 Modal API
+                        const approvalModal = document.getElementById('tenantApprovalModal');
+                        if (approvalModal) {
+                            const modal = new bootstrap.Modal(approvalModal);
+                            modal.show();
+                        }
+                    } else {
+                        console.log('Modal showing prevented by session storage flag');
+                    }
+                } else {
+                    console.log('Student email detected, not showing approval modal');
+                    // Remove the session flag
+                    @php
+                    if (session()->has('show_approval_modal')) {
+                        session()->forget('show_approval_modal');
+                    }
+                    @endphp
+                }
+            @endif
+            
+            // Special check for student emails when page loads
+            const emailInput = document.querySelector('input[name="email"]');
+            if (emailInput) {
+                const checkStudentEmail = function() {
+                    const email = emailInput.value || '';
+                    if (email.includes('@student.buksu.edu.ph')) {
+                        console.log('Student email detected in input');
+                        // Hide modal if it's currently shown
+                        const modalElement = document.getElementById('tenantApprovalModal');
+                        if (modalElement) {
+                            const bsModal = bootstrap.Modal.getInstance(modalElement);
+                            if (bsModal) {
+                                bsModal.hide();
+                                console.log('Hiding modal for student email');
+                            }
+                        }
+                    }
+                };
+                
+                // Check on input change
+                emailInput.addEventListener('input', checkStudentEmail);
+                
+                // Check on page load
+                checkStudentEmail();
+            }
+        });
+    </script>
 </body>
 </html>

@@ -5,6 +5,9 @@ namespace App\Http;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 use App\Http\Middleware\InitializeTenancyByDomain;
 use App\Http\Middleware\PreventAccessFromCentralDomains;
+use App\Http\Middleware\EnsureTenantConnectionForStudent;
+use App\Http\Middleware\CheckTenantStatus;
+use App\Http\Middleware\CheckSubscriptionStatus;
 
 class Kernel extends HttpKernel
 {
@@ -41,7 +44,8 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
-            'throttle:60,1',
+            // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
 
@@ -51,6 +55,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\TenantAuthentication::class,
             \App\Http\Middleware\CheckTenantStatus::class,
             \App\Http\Middleware\EnsureTenantIsApproved::class,
+            \App\Http\Middleware\CheckSubscriptionStatus::class,
         ],
     ];
 
@@ -74,6 +79,7 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'superadmin' => \App\Http\Middleware\SuperAdminMiddleware::class,
         'tenant.approved' => \App\Http\Middleware\EnsureTenantIsApproved::class,
+        'tenant.student' => \App\Http\Middleware\EnsureTenantConnectionForStudent::class,
     ];
 
     /**

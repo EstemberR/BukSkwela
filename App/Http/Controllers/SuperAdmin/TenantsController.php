@@ -15,12 +15,22 @@ class TenantsController extends Controller
     public function index()
     {
         $tenants = Tenant::orderBy('created_at', 'desc')->paginate(10);
+        
+        // Synchronize payment status with subscription plan for all tenants
+        foreach ($tenants as $tenant) {
+            $this->syncPaymentStatus($tenant);
+        }
+        
         return view('superadmin.tenants.index', compact('tenants'));
     }
 
     public function show($id)
     {
         $tenant = Tenant::findOrFail($id);
+        
+        // Synchronize payment status with subscription plan
+        $tenant = $this->syncPaymentStatus($tenant);
+        
         return view('superadmin.tenants.show', compact('tenant'));
     }
 
@@ -242,7 +252,7 @@ class TenantsController extends Controller
     {
         try {
             $request->validate([
-                'subscription_plan' => 'required|in:basic,premium,enterprise'
+                'subscription_plan' => 'required|in:basic,premium'
             ]);
             
             $tenant = Tenant::findOrFail($id);
@@ -250,14 +260,27 @@ class TenantsController extends Controller
             // Get the old plan for comparison
             $oldPlan = $tenant->subscription_plan;
             
+            // Skip if current plan is the same as requested plan
+            if ($oldPlan === $request->subscription_plan) {
+                return redirect()->back()
+                    ->with('info', 'Tenant is already on the ' . ucfirst($request->subscription_plan) . ' plan.');
+            }
+            
             // Update subscription plan
             $tenant->subscription_plan = $request->subscription_plan;
             
-            // Add payment status change if upgrading from basic
-            if ($oldPlan === 'basic' && in_array($request->subscription_plan, ['premium', 'enterprise'])) {
-                // Update the data array for payment status
-                $data = $tenant->data;
-                $data['payment_status'] = 'pending';
+            // Set default data array if it doesn't exist
+            $data = $tenant->data ?? [];
+            
+            // Handle enterprise plan users
+            if ($oldPlan === 'enterprise') {
+                if ($request->subscription_plan === 'premium') {
+                    $data['payment_status'] = 'paid';
+                    $data['subscription_ends_at'] = now()->addYear()->format('Y-m-d H:i:s');
+                } else {
+                    // Downgrading to basic
+                    $data['payment_status'] = 'downgraded';
+                }
                 
                 // Add to payment history
                 if (!isset($data['payment_history'])) {
@@ -267,12 +290,50 @@ class TenantsController extends Controller
                 $data['payment_history'][] = [
                     'date' => now()->format('Y-m-d H:i:s'),
                     'plan' => $request->subscription_plan,
-                    'status' => 'pending',
-                    'amount' => $request->subscription_plan === 'premium' ? 29.99 : 49.99
+                    'status' => $request->subscription_plan === 'premium' ? 'paid' : 'downgraded',
+                    'amount' => $request->subscription_plan === 'premium' ? 29.99 : 0,
+                    'notes' => 'Downgraded from Enterprise plan'
                 ];
-                
-                $tenant->data = $data;
             }
+            // Always set premium plan to paid status
+            else if ($request->subscription_plan === 'premium') {
+                // Set payment status to paid
+                $data['payment_status'] = 'paid';
+                $data['subscription_ends_at'] = now()->addYear()->format('Y-m-d H:i:s');
+                
+                // Add to payment history
+                if (!isset($data['payment_history'])) {
+                    $data['payment_history'] = [];
+                }
+                
+                $data['payment_history'][] = [
+                    'date' => now()->format('Y-m-d H:i:s'),
+                    'plan' => 'premium',
+                    'status' => 'paid',
+                    'amount' => 29.99,
+                    'notes' => $oldPlan === 'basic' ? 'Upgraded from Basic plan' : null
+                ];
+            } 
+            // Set downgrade status if downgrading from premium/enterprise to basic
+            else if ($request->subscription_plan === 'basic' && in_array($oldPlan, ['premium', 'enterprise'])) {
+                $data['payment_status'] = 'downgraded';
+                
+                // Add to payment history
+                if (!isset($data['payment_history'])) {
+                    $data['payment_history'] = [];
+                }
+                
+                $data['payment_history'][] = [
+                    'date' => now()->format('Y-m-d H:i:s'),
+                    'plan' => 'basic',
+                    'status' => 'downgraded',
+                    'amount' => 0,
+                    'notes' => 'Downgraded from ' . ucfirst($oldPlan) . ' plan'
+                ];
+            }
+            
+            // Update the tenant data
+            $tenant->data = $data;
             
             // Save the tenant
             $tenant->save();
@@ -284,15 +345,102 @@ class TenantsController extends Controller
             Log::info('Tenant subscription updated: ' . $id, [
                 'tenant_id' => $id, 
                 'old_plan' => $oldPlan,
-                'new_plan' => $request->subscription_plan
+                'new_plan' => $request->subscription_plan,
+                'payment_status' => $data['payment_status'] ?? 'unknown'
             ]);
             
-            return redirect()->route('superadmin.tenants.show', $tenant->id)
-                ->with('success', 'Tenant subscription updated to ' . ucfirst($request->subscription_plan) . ' successfully.');
+            // Success message with more detail
+            $successMessage = "Subscription for <strong>{$tenant->tenant_name}</strong> updated from <span class='badge bg-secondary'>" . 
+                              ucfirst($oldPlan) . "</span> to <span class='badge bg-" . 
+                              ($request->subscription_plan === 'premium' ? 'warning' : 'info') . 
+                              "'>" . ucfirst($request->subscription_plan) . "</span> successfully.";
+            
+            // Add payment status to success message
+            $paymentStatus = $data['payment_status'] ?? 'unknown';
+            $paymentStatusClass = 'secondary';
+            
+            if ($paymentStatus === 'paid') {
+                $paymentStatusClass = 'success';
+            } else if ($paymentStatus === 'downgraded') {
+                $paymentStatusClass = 'secondary';
+            }
+            
+            $successMessage .= " Payment status: <span class='badge bg-{$paymentStatusClass}'>" . ucfirst($paymentStatus) . "</span>";
+            
+            // Determine if the request came from the tenant index page
+            $referer = request()->headers->get('referer');
+            if (strpos($referer, 'tenants') !== false && strpos($referer, 'show') === false) {
+                return redirect()->route('superadmin.tenants.index')
+                    ->with('success', $successMessage);
+            }
+            
+            return redirect()->back()
+                ->with('success', $successMessage);
         } catch(\Exception $e) {
             Log::error('Failed to update tenant subscription: ' . $e->getMessage(), ['tenant_id' => $id]);
-            return redirect()->route('superadmin.tenants.show', $id)
+            return redirect()->back()
                 ->with('error', 'Failed to update tenant subscription: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Synchronize payment status with subscription plan
+     * This ensures the payment status is consistent with the subscription plan
+     *
+     * @param Tenant $tenant The tenant to synchronize
+     * @return Tenant The updated tenant
+     */
+    protected function syncPaymentStatus(Tenant $tenant)
+    {
+        // Skip if tenant doesn't have a data array yet
+        if (!$tenant->data) {
+            return $tenant;
+        }
+        
+        $data = $tenant->data;
+        $changed = false;
+        
+        // Make sure payment_status exists in data
+        if (!isset($data['payment_status'])) {
+            $data['payment_status'] = 'unpaid';
+            $changed = true;
+        }
+        
+        // If plan is premium but payment status is not paid, fix it
+        if ($tenant->subscription_plan === 'premium' && $data['payment_status'] !== 'paid') {
+            $data['payment_status'] = 'paid';
+            $data['subscription_ends_at'] = $data['subscription_ends_at'] ?? now()->addYear()->format('Y-m-d H:i:s');
+            $changed = true;
+        }
+        
+        // If plan is basic but was downgraded from premium, ensure status is downgraded
+        if ($tenant->subscription_plan === 'basic' && 
+            isset($data['payment_history']) && 
+            is_array($data['payment_history']) && 
+            count($data['payment_history']) > 0) {
+            
+            // Check if there was a premium plan before
+            $hadPremium = false;
+            foreach ($data['payment_history'] as $payment) {
+                if (isset($payment['plan']) && $payment['plan'] === 'premium') {
+                    $hadPremium = true;
+                    break;
+                }
+            }
+            
+            if ($hadPremium && $data['payment_status'] !== 'downgraded') {
+                $data['payment_status'] = 'downgraded';
+                $changed = true;
+            }
+        }
+        
+        // If there were changes, save them
+        if ($changed) {
+            $tenant->data = $data;
+            $tenant->save();
+            $tenant->refresh();
+        }
+        
+        return $tenant;
     }
 } 

@@ -17,43 +17,36 @@ use Illuminate\Database\Schema\Blueprint;
 
 class ProfileController extends Controller
 {
+    /**
+     * Display the profile page
+     */
     public function index()
     {
-        // Try getting the user from the admin guard which is used for tenant admins
-        $user = Auth::guard('admin')->user();
-        
-        // Debug information
+        // First, let's handle various ways to get the user
         $authCheck = Auth::guard('admin')->check();
-        $authId = Auth::guard('admin')->id();
+        $authId = $authCheck ? Auth::guard('admin')->id() : null;
+        $user = $authCheck ? Auth::guard('admin')->user() : null;
         
-        // If we couldn't get the user through Auth, try finding them directly
-        if (!$user && $authId) {
-            $user = TenantAdmin::find($authId);
-        }
-        
-        // As a last resort, try finding the admin for this tenant
+        // If we couldn't get the user, try finding the admin for this tenant
         if (!$user) {
             $user = TenantAdmin::where('tenant_id', tenant('id'))->first();
         }
         
-        // Create dummy data for testing if no user is found
         if (!$user) {
-            $user = new \stdClass();
-            $user->name = 'Test User';
-            $user->email = 'test@example.com';
-            $user->status = 'active';
-            $user->id = 0;
+            return redirect()->route('login')
+                ->with('error', 'User not found');
         }
         
-        // Check if URL has upgraded parameter
-        if (request()->has('upgraded')) {
-            // Set session variable for premium status
-            session(['is_premium' => true]);
-        }
-        
-        // Check if tenant is premium from database and set session
+        // Check if tenant is premium from the tenant model directly
         $tenant = tenant();
-        if ($tenant && isset($tenant->subscription_plan) && $tenant->subscription_plan === 'premium') {
+        
+        // Force refresh tenant data to ensure we have the latest
+        if ($tenant && $tenant instanceof \App\Models\Tenant) {
+            $tenant->refresh();
+        }
+        
+        // Set premium status in session if the tenant has a premium subscription
+        if ($tenant && $tenant->subscription_plan === 'premium') {
             session(['is_premium' => true]);
         }
         
@@ -213,6 +206,10 @@ class ProfileController extends Controller
             // Also update the data JSON field to ensure consistency
             $data = $tenant->data ?? [];
             $data['subscription_plan'] = $request->subscription_plan;
+            
+            // Add subscription end date (1 year from now for premium)
+            $data['subscription_ends_at'] = now()->addYear()->format('Y-m-d H:i:s');
+            $data['payment_status'] = 'paid';
             
             DB::table('tenants')
                 ->where('id', $tenantId)

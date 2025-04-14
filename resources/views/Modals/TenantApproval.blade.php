@@ -1,15 +1,13 @@
 <!-- Tenant Approval Modal -->
-<div class="modal fade" id="tenantApprovalModal" tabindex="-1" role="dialog" aria-labelledby="tenantApprovalModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
+<div class="modal fade" id="tenantApprovalModal" tabindex="-1" aria-labelledby="tenantApprovalModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header bg-warning text-dark">
                 <h5 class="modal-title" id="tenantApprovalModalLabel">
-                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <i class="fas fa-exclamation-triangle me-2"></i>
                     Account Pending Approval
                 </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="notifications-container">
@@ -30,6 +28,9 @@
                                         <li>You'll receive an email once approved</li>
                                         <li>Contact support for urgent assistance</li>
                                     </ul>
+                                    <div class="alert alert-info mt-3">
+                                        <p class="mb-0"><strong>Note:</strong> If you are a student, please use your <strong>@student.buksu.edu.ph</strong> email address to log in directly.</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -38,15 +39,60 @@
             </div>
             <div class="modal-footer bg-light">
                 <a href="mailto:support@bukskwela.com" class="btn btn-primary">
-                    <i class="fas fa-envelope mr-2"></i>Contact Support
+                    <i class="fas fa-envelope me-2"></i>Contact Support
                 </a>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="fas fa-times mr-2"></i>Close
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Close
                 </button>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Script to prevent showing for student emails -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get the current email from the form
+    const emailInput = document.querySelector('input[name="email"]');
+    
+    if (emailInput) {
+        // Check if this is a student email
+        const isStudentEmail = function() {
+            const email = emailInput.value || '';
+            return email.includes('@student.buksu.edu.ph');
+        };
+        
+        // On input change, check if it's a student email
+        emailInput.addEventListener('input', function() {
+            if (isStudentEmail()) {
+                // Ensure the modal won't show for student emails
+                const approvalModal = document.getElementById('tenantApprovalModal');
+                if (approvalModal) {
+                    const bsModal = bootstrap.Modal.getInstance(approvalModal);
+                    if (bsModal) {
+                        bsModal.hide();
+                    }
+                }
+            }
+        });
+        
+        // Check on page load if we need to prevent modal from showing
+        if (isStudentEmail()) {
+            console.log('Student email detected, preventing approval modal');
+            // Set a flag in sessionStorage to prevent modal from showing
+            sessionStorage.setItem('preventApprovalModal', 'true');
+            
+            // Find and remove the session flag for modal if it exists
+            const sessionFlags = document.querySelectorAll('input[type="hidden"]');
+            sessionFlags.forEach(flag => {
+                if (flag.id === 'show_approval_modal') {
+                    flag.remove();
+                }
+            });
+        }
+    }
+});
+</script>
 
 <style>
 .notifications-container {

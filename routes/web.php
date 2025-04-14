@@ -179,3 +179,23 @@ Route::middleware(['web'])
         Route::get('/system-check/mysql', [App\Http\Controllers\SuperAdmin\SystemCheckController::class, 'checkMySQLConnections'])->name('system-check.mysql');
         Route::get('/system-check/mysql-ajax', [App\Http\Controllers\SuperAdmin\SystemCheckController::class, 'ajaxCheckMySQLStatus'])->name('system-check.mysql-ajax');
     });
+
+    // Student routes
+    Route::middleware(['web', 'tenant.student'])
+        ->prefix('student')
+        ->group(function () {
+            // Student auth routes
+            Route::get('/login', [App\Http\Controllers\Student\StudentAuthController::class, 'showLoginForm'])
+                ->name('student.login');
+            Route::post('/login', [App\Http\Controllers\Student\StudentAuthController::class, 'login'])
+                ->name('student.login.post');
+            Route::post('/logout', [App\Http\Controllers\Student\StudentAuthController::class, 'logout'])
+                ->name('student.logout');
+            
+            // Protected student routes - note tenant.student middleware runs first
+            Route::middleware(['auth:student'])->group(function () {
+                Route::get('/dashboard', function () {
+                    return view('tenant.students.dashboard');
+                })->name('student.dashboard');
+            });
+        });

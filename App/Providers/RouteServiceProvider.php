@@ -31,6 +31,9 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        // Register middleware aliases
+        Route::aliasMiddleware('tenant.student', \App\Http\Middleware\EnsureTenantConnectionForStudent::class);
+        
         Route::bind('student', function ($value) {
             return \App\Models\Student\Student::where('id', $value)
                 ->firstOrFail();

@@ -40,13 +40,26 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        'api' => [
+            'driver' => 'token',
+            'provider' => 'users',
+            'hash' => false,
+        ],
+
         'admin' => [
             'driver' => 'session',
-            'provider' => 'tenant_admins',
+            'provider' => 'admins',
         ],
+
         'staff' => [
             'driver' => 'session',
             'provider' => 'staff',
+        ],
+
+        'student' => [
+            'driver' => 'session',
+            'provider' => 'students',
         ],
     ],
 
@@ -72,13 +85,20 @@ return [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,
         ],
-        'tenant_admins' => [
+
+        'admins' => [
             'driver' => 'eloquent',
             'model' => App\Models\TenantAdmin::class,
         ],
+
         'staff' => [
             'driver' => 'eloquent',
             'model' => App\Models\Staff::class,
+        ],
+
+        'students' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Student::class,
         ],
 
         // 'users' => [
@@ -105,6 +125,27 @@ return [
     'passwords' => [
         'users' => [
             'provider' => 'users',
+            'table' => 'password_resets',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+
+        'admins' => [
+            'provider' => 'admins',
+            'table' => 'password_resets',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+
+        'staff' => [
+            'provider' => 'staff',
+            'table' => 'password_resets',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+
+        'students' => [
+            'provider' => 'students',
             'table' => 'password_resets',
             'expire' => 60,
             'throttle' => 60,

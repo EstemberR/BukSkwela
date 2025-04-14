@@ -176,6 +176,7 @@ return [
         App\Providers\RouteServiceProvider::class,
         App\Providers\TenancyServiceProvider::class,
         App\Providers\TenancyHelperServiceProvider::class,
+        App\Providers\TenantDatabaseServiceProvider::class,
         Stancl\Tenancy\TenancyServiceProvider::class,
         Barryvdh\DomPDF\ServiceProvider::class,
     ],
