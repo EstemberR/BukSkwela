@@ -6,39 +6,63 @@
 
     <!-- Statistics Cards -->
     <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card bg-primary text-white">
+        <div class="col-md-4 mb-3">
+            <div class="card dashboard-card bg-primary text-white h-100">
                 <div class="card-body">
-                    <h5 class="card-title">Total Tenants</h5>
-                    <h2 class="card-text">{{ $totalTenants ?? 0 }}</h2>
-                    <p class="mb-0">Active: {{ $activeTenants ?? 0 }}</p>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="card-title">Total Tenants</h5>
+                            <h2 class="card-text">{{ $totalTenants ?? 0 }}</h2>
+                            <p class="mb-0">Active: {{ $activeTenants ?? 0 }}</p>
+                        </div>
+                        <div class="text-white">
+                            <i class="fas fa-users fa-3x opacity-50"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card bg-success text-white">
+        <div class="col-md-4 mb-3">
+            <div class="card dashboard-card bg-success text-white h-100">
                 <div class="card-body">
-                    <h5 class="card-title">Active Subscriptions</h5>
-                    <h2 class="card-text">{{ $activeSubscriptions ?? 0 }}</h2>
-                    <p class="mb-0">Pending: {{ $pendingSubscriptions ?? 0 }}</p>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="card-title">Active Subscriptions</h5>
+                            <h2 class="card-text">{{ $activeSubscriptions ?? 0 }}</h2>
+                            <p class="mb-0">Pending: {{ $pendingSubscriptions ?? 0 }}</p>
+                        </div>
+                        <div class="text-white">
+                            <i class="fas fa-check-circle fa-3x opacity-50"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card bg-warning text-white">
+        <div class="col-md-4 mb-3">
+            <div class="card dashboard-card bg-warning text-white h-100">
                 <div class="card-body">
-                    <h5 class="card-title">Monthly Revenue</h5>
-                    <h2 class="card-text">₱{{ number_format($monthlyRevenue ?? 0, 2) }}</h2>
-                    <p class="mb-0">This Month</p>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="card-title">Monthly Revenue</h5>
+                            <h2 class="card-text">₱{{ number_format($monthlyRevenue ?? 0, 2) }}</h2>
+                            <p class="mb-0">This Month</p>
+                        </div>
+                        <div class="text-white">
+                            <i class="fas fa-money-bill-wave fa-3x opacity-50"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Recent Tenants Table -->
-    <div class="card">
-        <div class="card-header">
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">Recent Tenant Accounts</h5>
+            <a href="{{ route('superadmin.tenants.index') }}" class="btn btn-sm btn-primary">
+                <i class="fas fa-eye"></i> View All
+            </a>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -83,9 +107,12 @@
     </div>
 
     <!-- Recent Payments -->
-    <div class="card mt-4">
-        <div class="card-header">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">Recent Payments</h5>
+            <a href="{{ route('superadmin.payments.index') }}" class="btn btn-sm btn-primary">
+                <i class="fas fa-eye"></i> View All
+            </a>
         </div>
         <div class="card-body">
             <div class="table-responsive">
