@@ -34,8 +34,7 @@
             <!-- Search and filters -->
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <form id="searchForm" action="/admin/courses" method="GET">
-                        <input type="hidden" name="tenant" value="{{ tenant('id') }}">
+                    <form id="searchForm" action="{{ route('tenant.courses.index', ['tenant' => tenant('id')]) }}" method="GET">
                         <div class="input-group">
                             <span class="input-group-text">
                                 <i class="fas fa-search"></i>
@@ -149,7 +148,7 @@
                 <h5 class="modal-title">Edit Course</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="/admin/courses/update-direct/{{ $course->id }}?tenant={{ tenant('id') }}" method="POST">
+            <form action="{{ route('tenant.courses.update.direct', ['tenant' => tenant('id'), 'id' => $course->id]) }}" method="POST">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
@@ -204,11 +203,49 @@
 </div>
 
 @push('scripts')
+<!-- Make sure Bootstrap JS is loaded properly -->
 <script>
+// Check if Bootstrap is available
+if (typeof bootstrap === 'undefined') {
+    // If not, load it
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
+    script.integrity = 'sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz';
+    script.crossOrigin = 'anonymous';
+    document.head.appendChild(script);
+    
+    script.onload = function() {
+        initializeModals();
+    };
+} else {
+    // Bootstrap is available, initialize modals
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeModals();
+    });
+}
+
+// Function to safely initialize modals
+function initializeModals() {
+    const modalElements = document.querySelectorAll('.modal');
+    modalElements.forEach(function(modalElement) {
+        try {
+            new bootstrap.Modal(modalElement, {
+                backdrop: true,
+                keyboard: true,
+                focus: true
+            });
+        } catch (error) {
+            console.warn('Error initializing modal:', error);
+        }
+    });
+}
+
 function deleteCourse(courseId) {
     if (confirm('Are you sure you want to delete this course?')) {
         // Create a fetch request to check for enrolled students first
-        fetch(`/admin/courses/delete-direct/${courseId}?tenant={{ tenant('id') }}`, {
+        const url = "{{ route('tenant.courses.delete.direct', ['tenant' => tenant('id'), 'id' => ':id']) }}".replace(':id', courseId);
+        
+        fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -224,7 +261,13 @@ function deleteCourse(courseId) {
             } else {
                 // Show the modal with the error message
                 document.getElementById('cannotDeleteMessage').textContent = data.message;
-                new bootstrap.Modal(document.getElementById('cannotDeleteCourseModal')).show();
+                try {
+                    const modal = new bootstrap.Modal(document.getElementById('cannotDeleteCourseModal'));
+                    modal.show();
+                } catch (error) {
+                    console.error('Error showing modal:', error);
+                    alert(data.message);
+                }
             }
         })
         .catch(error => {

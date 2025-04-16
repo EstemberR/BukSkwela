@@ -281,44 +281,27 @@
         /* Upgrade button and premium indicator */
         body.compact-sidebar .sidebar .upgrade-btn,
         body.compact-sidebar .sidebar .premium-indicator {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 46px;
-            padding: 0;
-            margin: 0.5rem 0.5rem;
-            position: relative;
+            display: none;
         }
         
         body.compact-sidebar .sidebar:hover .upgrade-btn,
         body.compact-sidebar .sidebar:hover .premium-indicator {
-            padding: 0.75rem 1rem;
-            justify-content: flex-start;
+            display: none;
         }
         
         body.compact-sidebar .sidebar .upgrade-btn i,
         body.compact-sidebar .sidebar .premium-indicator i {
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 24px;
-            height: 24px;
-            position: absolute;
-            left: 23px;
-            transform: translateX(-50%);
+            display: none;
         }
         
         body.compact-sidebar .sidebar:hover .upgrade-btn i,
         body.compact-sidebar .sidebar:hover .premium-indicator i {
-            position: absolute;
-            left: 20px;
-            transform: translateX(0);
+            display: none;
         }
         
         body.compact-sidebar .sidebar .upgrade-btn span,
         body.compact-sidebar .sidebar .premium-indicator span {
-            margin-left: 35px;
+            display: none;
         }
         
         body.compact-sidebar .sidebar .logo-container {
@@ -702,20 +685,7 @@
 
         /* Upgrade button styles */
         .upgrade-btn {
-            background: linear-gradient(135deg,rgb(13, 10, 71) 0%,rgb(16, 46, 199) 100%);
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            margin: 0.5rem;
-            width: calc(100% - 1rem);
-        }
-
-        .upgrade-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+            display: none;
         }
 
         /* Dropdown menu styles */
@@ -1091,12 +1061,7 @@
 
         /* Add these styles for the Free Trial indicator */
         .free-trial-indicator .badge {
-            font-size: 0.875rem;
-            font-weight: 500;
-            letter-spacing: 0.3px;
-            background-color: rgba(3, 1, 43, 0.1) !important;
-            color: rgb(3, 1, 43) !important;
-            border: 1px solid rgba(3, 1, 43, 0.2);
+            display: none;
         }
 
         .free-trial-indicator .badge i {
@@ -1106,18 +1071,6 @@
         /* Modal Styles */
         .subscription-modal {
             display: none !important;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .subscription-modal.show {
-            display: flex !important;
         }
 
         .subscription-overlay {
@@ -1563,24 +1516,7 @@
 
         /* Additional styles for premium badge */
         .premium-indicator {
-            cursor: pointer;
-            position: relative;
-            padding: 10px 24px;
-            font-size: 16px;
-            color: rgb(193, 163, 98);
-            border: 2px solid rgb(193, 163, 98);
-            border-radius: 34px;
-            background-color: transparent;
-            font-weight: 600;
-            transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
-            overflow: hidden;
-            margin: 0.5rem;
-            width: calc(100% - 1rem);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            text-align: center;
+            display: none;
         }
 
         .premium-indicator::before {
@@ -1617,20 +1553,7 @@
 
         /* Navbar premium indicator */
         .navbar-premium-indicator {
-            cursor: pointer;
-            position: relative;
-            padding: 8px 16px;
-            font-size: 14px;
-            color: rgb(193, 163, 98);
-            border: 2px solid rgb(193, 163, 98);
-            border-radius: 34px;
-            background-color: transparent;
-            font-weight: 600;
-            transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            display: none;
         }
 
         .navbar-premium-indicator::before {
@@ -3410,30 +3333,7 @@
 
                 <!-- Upgrade to Pro Button -->
                 <div class="mt-auto">
-                    @php
-                        // Get the tenant's subscription plan
-                        $tenantData = tenant();
-                        $isPremium = $tenantData && isset($tenantData->subscription_plan) && $tenantData->subscription_plan === 'premium';
-                        
-                        // Also check session
-                        $isPremiumFromSession = session('is_premium') === true;
-                        
-                        // Check localStorage via JavaScript
-                        $isPremiumJsCheck = true;
-                        
-                        // Use either source
-                        $isPremium = $isPremium || $isPremiumFromSession;
-                    @endphp
-                    
-                    @if(!$isPremium)
-                    <button class="upgrade-btn w-100" onclick="openSubscriptionModal()">
-                        <i class="fas fa-crown me-2"></i> <span>Upgrade to Pro</span>
-                    </button>
-                    @else
-                    <div class="premium-indicator">
-                        <i class="fas fa-crown"></i> <span>Premium Account</span>
-                    </div>
-                    @endif
+                    <!-- Premium features removed -->
                 </div>
             </div>
         </div>
@@ -3450,31 +3350,30 @@
                     </button>
 
                     <div class="ms-auto d-flex align-items-center">
-                        <!-- Free Trial Indicator -->
-                        <div class="free-trial-indicator me-3">
-                            @php
-                                // Get the tenant's subscription plan
-                                $tenantData = tenant();
-                                $isPremium = $tenantData && isset($tenantData->subscription_plan) && $tenantData->subscription_plan === 'premium';
-                                
-                                // Also check session
-                                $isPremiumFromSession = session('is_premium') === true;
-                                
-                                // Use either source
-                                $isPremium = $isPremium || $isPremiumFromSession;
-                            @endphp
+                        <!-- Premium Indicator -->
+                        @php
+                            // Get current URL to extract tenant ID
+                            $url = request()->url();
+                            preg_match('/^https?:\/\/([^\.]+)\./', $url, $matches);
+                            $tenantDomain = $matches[1] ?? null;
                             
-                            @if($isPremium)
-                            <div class="navbar-premium-indicator">
-                                <i class="fas fa-crown"></i> Premium
+                            // Get tenant from domain or tenant helper
+                            if ($tenantDomain) {
+                                $currentTenant = \App\Models\Tenant::where('id', $tenantDomain)->first();
+                            } else {
+                                $tenantId = tenant('id') ?? null;
+                                $currentTenant = $tenantId ? \App\Models\Tenant::find($tenantId) : null;
+                            }
+                            
+                            $isPremium = $currentTenant && $currentTenant->subscription_plan === 'premium';
+                        @endphp
+
+                        @if($isPremium)
+                            <div class="premium-badge me-3">
+                                <i class="fas fa-crown"></i>
+                                <span>Premium</span>
                             </div>
-                            @else
-                            <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill">
-                                <i class="fas fa-star me-1"></i>
-                                Free Trial
-                            </span>
-                            @endif
-                        </div>
+                        @endif
 
                         <!-- Dark Mode Toggle -->
                         <div class="navbar-dark-mode-toggle me-3">
@@ -3487,25 +3386,32 @@
                             </label>
                         </div>
 
-                        <!-- User menu -->
-                        <div class="dropdown ms-2">
+                        <!-- Admin Avatar with Dropdown -->
+                        <div class="dropdown">
                             <button class="btn p-0" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 <div class="user-avatar-container">
                                     <img src="https://ui-avatars.com/api/?name=Admin&background=4f46e5&color=fff" 
-                                         alt="User" class="user-avatar">
+                                         alt="User" 
+                                         class="user-avatar"
+                                         style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
                                 </div>
                             </button>
-                            <div class="dropdown-menu" aria-labelledby="userDropdown">
+                            <div class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                                 <div class="dropdown-header">
                                     <strong>{{ Auth::guard('admin')->user()->name ?? 'User' }}</strong>
                                     <p class="mb-0 text-muted small">{{ Auth::guard('admin')->user()->email ?? 'No email' }}</p>
+                                    @if($isPremium)
+                                        <span class="badge bg-warning text-dark mt-1">
+                                            <i class="fas fa-crown"></i> Premium
+                                        </span>
+                                    @endif
                                 </div>
                                 <div class="dropdown-divider"></div>
-                                <a class="dropdown-item" href="{{ route('profile.index', ['tenant' => tenant('id')]) }}">
+                                <a class="dropdown-item" href="{{ $currentTenant ? route('profile.index', ['tenant' => $currentTenant->id]) : '#' }}">
                                     <i class="fas fa-user"></i>
                                     <span>Profile</span>
                                 </a>
-                                <a class="dropdown-item" href="{{ route('tenant.settings', ['tenant' => tenant('id')]) }}">
+                                <a class="dropdown-item" href="{{ $currentTenant ? route('tenant.settings', ['tenant' => $currentTenant->id]) : '#' }}">
                                     <i class="fas fa-cog"></i>
                                     <span>Settings</span>
                                 </a>
@@ -3516,9 +3422,25 @@
                                 </a>
                             </div>
                         </div>
-            </div>
+                    </div>
+                </div>
+            </nav>
+
+    <!-- Add this right after the nav to debug tenant info -->
+    @if(config('app.debug'))
+        <div class="d-none">
+            @php
+                dump([
+                    'url' => $url ?? null,
+                    'tenant_domain_from_url' => $tenantDomain ?? null,
+                    'tenant_id_from_helper' => tenant('id') ?? null,
+                    'current_tenant' => $currentTenant ?? null,
+                    'is_premium' => $isPremium ?? false,
+                    'subscription_plan' => $currentTenant->subscription_plan ?? null
+                ]);
+            @endphp
         </div>
-    </nav>
+    @endif
 
     <!-- Main Content -->
             <main class="main-content">
@@ -3529,6 +3451,61 @@
 
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Bootstrap Modal Fix -->
+    <script>
+        // Create a safe version of the Bootstrap Modal constructor
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof bootstrap !== 'undefined') {
+                // Store the original Modal constructor
+                const OriginalModal = bootstrap.Modal;
+                
+                // Create a proxy constructor that adds error handling
+                bootstrap.Modal = function(element, options) {
+                    try {
+                        // Apply default options if none provided
+                        const safeOptions = options || {
+                            backdrop: true,
+                            keyboard: true,
+                            focus: true
+                        };
+                        
+                        // Call the original constructor
+                        return new OriginalModal(element, safeOptions);
+                    } catch (error) {
+                        console.warn('Error creating Bootstrap modal:', error);
+                        
+                        // Return a dummy modal object to prevent further errors
+                        return {
+                            show: function() { console.warn('Modal show attempted but modal creation failed'); },
+                            hide: function() { console.warn('Modal hide attempted but modal creation failed'); },
+                            toggle: function() { console.warn('Modal toggle attempted but modal creation failed'); },
+                            dispose: function() { console.warn('Modal dispose attempted but modal creation failed'); },
+                            getInstance: function() { return null; }
+                        };
+                    }
+                };
+                
+                // Copy static methods from the original Modal
+                Object.keys(OriginalModal).forEach(key => {
+                    bootstrap.Modal[key] = OriginalModal[key];
+                });
+                
+                // Pre-initialize all modals on the page
+                const modalElements = document.querySelectorAll('.modal');
+                modalElements.forEach(function(modalElement) {
+                    try {
+                        // Don't initialize if it's already been initialized
+                        if (!bootstrap.Modal.getInstance(modalElement)) {
+                            new bootstrap.Modal(modalElement);
+                        }
+                    } catch (error) {
+                        console.warn('Error pre-initializing modal:', error);
+                    }
+                });
+            }
+        });
+    </script>
     
     <!-- Initialize Bootstrap components -->
     <script>
@@ -3728,12 +3705,7 @@
             
             // Check premium status from multiple sources
             function checkPremiumStatus() {
-                const isPremiumCookie = document.cookie.split('; ').find(row => row.startsWith('is_premium='));
-                const isPremiumLocal = localStorage.getItem('isPremium') === 'true';
-                // PHP session value passed to JavaScript
-                const isPremiumSession = {{ session('is_premium') ? 'true' : 'false' }};
-                
-                return isPremiumCookie || isPremiumLocal || isPremiumSession;
+                return false;
             }
             
             // Set premium status if true from any source
@@ -4002,137 +3974,9 @@
     @stack('scripts')
 
     <!-- Subscription Modal -->
-    <div id="subscriptionModal" class="subscription-modal">
-        <div class="subscription-overlay"></div>
-        <div class="subscription-content">
-            <button class="close-modal" onclick="closeSubscriptionModal()">
-                <i class="fas fa-times"></i>
-            </button>
-            
-            <!-- Premium User Content - Initially Hidden -->
-            <div id="premiumContent" class="plan-card" style="display: none;">
-                <h2>Premium Plan<span>You're already on our premium plan</span></h2>
-                <div class="etiquet-price" style="background: rgb(193, 163, 98);">
-                    <p style="color: #212121;">Active</p>
-                    <div></div>
-                </div>
-                <div class="benefits-list text-center mt-4">
-                    <p>Thank you for being a premium subscriber!</p>
-                    <p>You have access to all premium features.</p>
-                </div>
-                <div class="button-get-plan">
-                    <a href="#" onclick="closeSubscriptionModal(); return false;" style="background-color: rgb(193, 163, 98); color: #212121;">
-                        <i class="fas fa-check-circle me-2"></i>
-                        <span>CONTINUE</span>
-                    </a>
-                </div>
-            </div>
-            
-            <!-- Regular Plan Card - For Non-Premium Users -->
-            <div id="regularContent" class="plan-card">
-                <h2>Premium<span>Unlock all features for your department</span></h2>
-                <div class="etiquet-price">
-                    <p>5,000</p>
-                    <div></div>
-                </div>
-                <div class="benefits-list">
-                    <ul>
-                        <li>
-                            <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
-                            </svg>
-                            <span>Instructor Management</span>
-                        </li>
-                        <li>
-                            <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
-                            </svg>
-                            <span>Student Management</span>
-                        </li>
-                        <li>
-                            <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
-                            </svg>
-                            <span>View Student Submission Status</span>
-                        </li>
-                        <li>
-                            <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
-                            </svg>
-                            <span>Probationary Status Management</span>
-                        </li>
-                        <li>
-                            <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
-                            </svg>
-                            <span>Custom Enrollment Requirements</span>
-                        </li>
-                        <li>
-                            <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
-                            </svg>
-                            <span>Submission Reports</span>
-                        </li>
-                        <li>
-                            <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
-                            </svg>
-                            <span>Branding Customization</span>
-                        </li>
-                    </ul>
-                </div>
-                <div class="button-get-plan">
-                    <a href="{{ route('profile.index', ['tenant' => tenant('id')]) }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="svg-rocket">
-                            <path d="M156.6 384.9L125.7 353.1C117.2 345.5 114.2 333.1 117.1 321.8C120.1 312.9 124.1 301.3 129.8 288H24C15.38 288 7.414 283.4 3.146 275.9C-1.123 268.4-1.042 259.2 3.357 251.8L55.83 163.3C68.79 141.4 92.33 127.1 117.8 127.1H200C202.4 124 204.8 120.3 207.2 116.7C289.1-4.07 411.1-8.142 483.9 5.275C495.6 7.414 504.6 16.43 506.7 28.06C520.1 100.9 516.1 222.9 395.3 304.8C391.8 307.2 387.1 309.6 384 311.1V394.2C384 419.7 370.6 443.2 348.7 456.2L260.2 508.6C252.8 513 243.6 513.1 236.1 508.9C228.6 504.6 224 496.6 224 488V380.8C209.9 385.6 197.6 389.7 188.3 392.7C177.1 396.3 164.9 393.2 156.6 384.9V384.9zM384 167.1C406.1 167.1 424 150.1 424 127.1C424 105.9 406.1 87.1 384 87.1C361.9 87.1 344 105.9 344 127.1C344 150.1 361.9 167.1 384 167.1z"></path>
-                        </svg>
-                        <span>UPGRADE NOW</span>
-                    </a>
-                </div>
-            </div>
-        </div>
+    <div id="subscriptionModal" class="subscription-modal" style="display: none !important;">
+        <!-- Subscription modal content removed -->
     </div>
-
-    <script>
-    function openSubscriptionModal() {
-        // Check premium status from multiple sources
-        const isPremiumCookie = document.cookie.split('; ').find(row => row.startsWith('is_premium='));
-        const isPremiumLocal = localStorage.getItem('isPremium') === 'true';
-        const isPremium = isPremiumCookie || isPremiumLocal || {{ session('is_premium') ? 'true' : 'false' }};
-        
-        const modal = document.getElementById('subscriptionModal');
-        
-        // Show the appropriate content based on subscription status
-        if (isPremium) {
-            document.getElementById('premiumContent').style.display = 'block';
-            document.getElementById('regularContent').style.display = 'none';
-        } else {
-            document.getElementById('premiumContent').style.display = 'none';
-            document.getElementById('regularContent').style.display = 'block';
-        }
-        
-        modal.classList.add('show');
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeSubscriptionModal() {
-        const modal = document.getElementById('subscriptionModal');
-        modal.classList.remove('show');
-        document.body.style.overflow = 'auto';
-    }
-
-    // Close modal when clicking outside the plan card
-    document.addEventListener('DOMContentLoaded', function() {
-        const modal = document.getElementById('subscriptionModal');
-        const overlay = document.querySelector('.subscription-overlay');
-        
-        overlay.addEventListener('click', function(e) {
-            if (e.target === overlay) {
-                closeSubscriptionModal();
-            }
-        });
-    });
-    </script>
 
     <!-- Add before closing body tag -->
     <script>

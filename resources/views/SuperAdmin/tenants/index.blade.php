@@ -172,7 +172,7 @@
     <!-- Display Messages -->
     @if(session('success'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-        {{ session('success') }}
+        {!! session('success') !!}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
     @endif
@@ -245,7 +245,173 @@
         <div class="tab-pane fade show active" id="all" role="tabpanel" aria-labelledby="all-tab">
             <div class="card">
                 <div class="card-body">
-                    @include('superadmin.tenants.partials.tenant-table', ['tenants' => $tenants])
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Tenant Name</th>
+                                    <th>Email</th>
+                                    <th>Subscription</th>
+                                    <th>Status</th>
+                                    <th>Payment Status</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($tenants as $tenant)
+                                <tr>
+                                    <td>{{ $tenant->tenant_name }}</td>
+                                    <td>{{ $tenant->tenant_email }}</td>
+                                    <td>
+                                        <div class="subscription-status">
+                                            <div class="btn-group">
+                                                <button type="button" 
+                                                        class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : 'btn-outline-secondary' }} dropdown-toggle" 
+                                                        data-bs-toggle="dropdown" 
+                                                        aria-expanded="false">
+                                                    @if($tenant->subscription_plan === 'premium')
+                                                        <i class="fas fa-crown text-warning me-1"></i>
+                                                    @else
+                                                        <i class="fas fa-cube me-1"></i>
+                                                    @endif
+                                                    {{ ucfirst($tenant->subscription_plan) }}
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><h6 class="dropdown-header">Change Plan</h6></li>
+                                                    <li>
+                                                        <button type="button" 
+                                                                class="dropdown-item subscription-change-btn"
+                                                                data-tenant-id="{{ $tenant->id }}"
+                                                                data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                data-target-plan="{{ $tenant->subscription_plan === 'basic' ? 'premium' : 'basic' }}">
+                                                            @if($tenant->subscription_plan === 'basic')
+                                                                <i class="fas fa-crown text-warning me-2"></i>
+                                                                Upgrade to Premium
+                                                            @else
+                                                                <i class="fas fa-cube me-2"></i>
+                                                                Downgrade to Basic
+                                                            @endif
+                                                        </button>
+                                                    </li>
+                                                    @if($tenant->subscription_plan === 'premium' && isset($tenant->data['subscription_ends_at']))
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <div class="dropdown-item-text">
+                                                                <small class="text-muted">
+                                                                    <i class="fas fa-clock me-1"></i>
+                                                                    Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}
+                                                                </small>
+                                                            </div>
+                                                        </li>
+                                                    @endif
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ $tenant->status === 'approved' ? 'success' : ($tenant->status === 'pending' ? 'warning' : 'danger') }}">
+                                            {{ ucfirst($tenant->status) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @php
+                                            // Determine payment status based on subscription plan
+                                            $paymentStatus = $tenant->subscription_plan === 'premium' ? 'paid' : ($tenant->data['payment_status'] ?? 'not_paid');
+                                            $badgeClass = match($paymentStatus) {
+                                                'paid' => 'success',
+                                                'not_paid' => 'danger',
+                                                'downgraded' => 'secondary',
+                                                default => 'warning'
+                                            };
+                                            $statusText = match($paymentStatus) {
+                                                'paid' => 'Paid',
+                                                'not_paid' => 'Not Paid',
+                                                'downgraded' => 'Downgraded',
+                                                default => ucfirst($paymentStatus)
+                                            };
+                                        @endphp
+                                        <div class="payment-status">
+                                            <span class="badge bg-{{ $badgeClass }}">
+                                                @if($paymentStatus === 'paid')
+                                                    <i class="fas fa-check-circle me-1"></i>
+                                                @elseif($paymentStatus === 'not_paid')
+                                                    <i class="fas fa-times-circle me-1"></i>
+                                                @elseif($paymentStatus === 'downgraded')
+                                                    <i class="fas fa-arrow-circle-down me-1"></i>
+                                                @endif
+                                                {{ $statusText }}
+                                            </span>
+                                            @if($tenant->subscription_plan === 'premium' && isset($tenant->data['subscription_ends_at']))
+                                                <div class="mt-1">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-calendar-alt me-1"></i>
+                                                        Until: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}
+                                                    </small>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group">
+                                            <a href="{{ route('superadmin.tenants.show', $tenant->id) }}" 
+                                               class="btn btn-sm btn-info">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                            
+                                            @if($tenant->status === 'pending')
+                                                <form action="{{ route('superadmin.tenants.approve', $tenant->id) }}" 
+                                                      method="POST" 
+                                                      class="d-inline">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-success ms-1">
+                                                        <i class="fas fa-check"></i> Approve
+                                                    </button>
+                                                </form>
+                                                <form action="{{ route('superadmin.tenants.reject', $tenant->id) }}" 
+                                                      method="POST" 
+                                                      class="d-inline">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-danger ms-1">
+                                                        <i class="fas fa-times"></i> Reject
+                                                    </button>
+                                                </form>
+                                            @endif
+
+                                            @if($tenant->status === 'approved')
+                                                <form action="{{ route('superadmin.tenants.disable', $tenant->id) }}" 
+                                                      method="POST" 
+                                                      class="d-inline">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-warning ms-1" 
+                                                            onclick="return confirm('Are you sure you want to disable this tenant?')">
+                                                        <i class="fas fa-ban"></i> Disable
+                                                    </button>
+                                                </form>
+                                            @endif
+
+                                            @if($tenant->status === 'disabled')
+                                                <form action="{{ route('superadmin.tenants.enable', $tenant->id) }}" 
+                                                      method="POST" 
+                                                      class="d-inline">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-success ms-1" 
+                                                            onclick="return confirm('Are you sure you want to enable this tenant?')">
+                                                        <i class="fas fa-check-circle"></i> Enable
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="6" class="text-center">No tenants found</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -259,7 +425,101 @@
                             return $t->status == 'pending'; 
                         });
                     @endphp
-                    @include('superadmin.tenants.partials.tenant-table', ['tenants' => $pendingTenants])
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Tenant Name</th>
+                                    <th>Email</th>
+                                    <th>Subscription</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($pendingTenants as $tenant)
+                                <tr>
+                                    <td>{{ $tenant->tenant_name }}</td>
+                                    <td>{{ $tenant->tenant_email }}</td>
+                                    <td>
+                                        <div class="subscription-status">
+                                            <div class="btn-group">
+                                                <button type="button" 
+                                                        class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : 'btn-outline-secondary' }} dropdown-toggle" 
+                                                        data-bs-toggle="dropdown" 
+                                                        aria-expanded="false">
+                                                    @if($tenant->subscription_plan === 'premium')
+                                                        <i class="fas fa-crown text-warning me-1"></i>
+                                                    @else
+                                                        <i class="fas fa-cube me-1"></i>
+                                                    @endif
+                                                    {{ ucfirst($tenant->subscription_plan) }}
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><h6 class="dropdown-header">Change Plan</h6></li>
+                                                    <li>
+                                                        <button type="button" 
+                                                                class="dropdown-item subscription-change-btn"
+                                                                data-tenant-id="{{ $tenant->id }}"
+                                                                data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                data-target-plan="{{ $tenant->subscription_plan === 'basic' ? 'premium' : 'basic' }}">
+                                                            @if($tenant->subscription_plan === 'basic')
+                                                                <i class="fas fa-crown text-warning me-2"></i>
+                                                                Upgrade to Premium
+                                                            @else
+                                                                <i class="fas fa-cube me-2"></i>
+                                                                Downgrade to Basic
+                                                            @endif
+                                                        </button>
+                                                    </li>
+                                                    @if($tenant->subscription_plan === 'premium' && isset($tenant->data['subscription_ends_at']))
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <div class="dropdown-item-text">
+                                                                <small class="text-muted">
+                                                                    <i class="fas fa-clock me-1"></i>
+                                                                    Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}
+                                                                </small>
+                                                            </div>
+                                                        </li>
+                                                    @endif
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ $tenant->status === 'approved' ? 'success' : ($tenant->status === 'pending' ? 'warning' : 'danger') }}">
+                                            {{ ucfirst($tenant->status) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ route('superadmin.tenants.show', $tenant->id) }}" 
+                                               class="btn btn-sm btn-info">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                            @if($tenant->status === 'pending')
+                                                <form action="{{ route('superadmin.tenants.approve', $tenant->id) }}" 
+                                                      method="POST" 
+                                                      class="d-inline">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-success ms-1">
+                                                        <i class="fas fa-check"></i> Approve
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="5" class="text-center">No tenants found</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -273,7 +533,91 @@
                             return $t->status == 'approved'; 
                         });
                     @endphp
-                    @include('superadmin.tenants.partials.tenant-table', ['tenants' => $activeTenants])
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Tenant Name</th>
+                                    <th>Email</th>
+                                    <th>Subscription</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($activeTenants as $tenant)
+                                <tr>
+                                    <td>{{ $tenant->tenant_name }}</td>
+                                    <td>{{ $tenant->tenant_email }}</td>
+                                    <td>
+                                        <div class="subscription-status">
+                                            <div class="btn-group">
+                                                <button type="button" 
+                                                        class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : 'btn-outline-secondary' }} dropdown-toggle" 
+                                                        data-bs-toggle="dropdown" 
+                                                        aria-expanded="false">
+                                                    @if($tenant->subscription_plan === 'premium')
+                                                        <i class="fas fa-crown text-warning me-1"></i>
+                                                    @else
+                                                        <i class="fas fa-cube me-1"></i>
+                                                    @endif
+                                                    {{ ucfirst($tenant->subscription_plan) }}
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><h6 class="dropdown-header">Change Plan</h6></li>
+                                                    <li>
+                                                        <button type="button" 
+                                                                class="dropdown-item subscription-change-btn"
+                                                                data-tenant-id="{{ $tenant->id }}"
+                                                                data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                data-target-plan="{{ $tenant->subscription_plan === 'basic' ? 'premium' : 'basic' }}">
+                                                            @if($tenant->subscription_plan === 'basic')
+                                                                <i class="fas fa-crown text-warning me-2"></i>
+                                                                Upgrade to Premium
+                                                            @else
+                                                                <i class="fas fa-cube me-2"></i>
+                                                                Downgrade to Basic
+                                                            @endif
+                                                        </button>
+                                                    </li>
+                                                    @if($tenant->subscription_plan === 'premium' && isset($tenant->data['subscription_ends_at']))
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <div class="dropdown-item-text">
+                                                                <small class="text-muted">
+                                                                    <i class="fas fa-clock me-1"></i>
+                                                                    Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}
+                                                                </small>
+                                                            </div>
+                                                        </li>
+                                                    @endif
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ $tenant->status === 'approved' ? 'success' : ($tenant->status === 'pending' ? 'warning' : 'danger') }}">
+                                            {{ ucfirst($tenant->status) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ route('superadmin.tenants.show', $tenant->id) }}" 
+                                               class="btn btn-sm btn-info">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="5" class="text-center">No tenants found</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -287,7 +631,91 @@
                             return in_array($t->status, ['rejected', 'disabled', 'denied']); 
                         });
                     @endphp
-                    @include('superadmin.tenants.partials.tenant-table', ['tenants' => $rejectedTenants])
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Tenant Name</th>
+                                    <th>Email</th>
+                                    <th>Subscription</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($rejectedTenants as $tenant)
+                                <tr>
+                                    <td>{{ $tenant->tenant_name }}</td>
+                                    <td>{{ $tenant->tenant_email }}</td>
+                                    <td>
+                                        <div class="subscription-status">
+                                            <div class="btn-group">
+                                                <button type="button" 
+                                                        class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : 'btn-outline-secondary' }} dropdown-toggle" 
+                                                        data-bs-toggle="dropdown" 
+                                                        aria-expanded="false">
+                                                    @if($tenant->subscription_plan === 'premium')
+                                                        <i class="fas fa-crown text-warning me-1"></i>
+                                                    @else
+                                                        <i class="fas fa-cube me-1"></i>
+                                                    @endif
+                                                    {{ ucfirst($tenant->subscription_plan) }}
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><h6 class="dropdown-header">Change Plan</h6></li>
+                                                    <li>
+                                                        <button type="button" 
+                                                                class="dropdown-item subscription-change-btn"
+                                                                data-tenant-id="{{ $tenant->id }}"
+                                                                data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                data-target-plan="{{ $tenant->subscription_plan === 'basic' ? 'premium' : 'basic' }}">
+                                                            @if($tenant->subscription_plan === 'basic')
+                                                                <i class="fas fa-crown text-warning me-2"></i>
+                                                                Upgrade to Premium
+                                                            @else
+                                                                <i class="fas fa-cube me-2"></i>
+                                                                Downgrade to Basic
+                                                            @endif
+                                                        </button>
+                                                    </li>
+                                                    @if($tenant->subscription_plan === 'premium' && isset($tenant->data['subscription_ends_at']))
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <div class="dropdown-item-text">
+                                                                <small class="text-muted">
+                                                                    <i class="fas fa-clock me-1"></i>
+                                                                    Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}
+                                                                </small>
+                                                            </div>
+                                                        </li>
+                                                    @endif
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ $tenant->status === 'approved' ? 'success' : ($tenant->status === 'pending' ? 'warning' : 'danger') }}">
+                                            {{ ucfirst($tenant->status) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ route('superadmin.tenants.show', $tenant->id) }}" 
+                                               class="btn btn-sm btn-info">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="5" class="text-center">No tenants found</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -341,26 +769,44 @@
     </div>
 </div>
 
+<!-- Hidden Forms Container -->
+<div id="subscriptionFormsContainer" style="display: none;">
+    @foreach($tenants as $tenant)
+    <form id="subscription-form-{{ $tenant->id }}" 
+          action="{{ route('superadmin.tenants.update-subscription', $tenant->id) }}" 
+          method="POST">
+        @csrf
+        <input type="hidden" name="subscription_plan" value="{{ $tenant->subscription_plan === 'basic' ? 'premium' : 'basic' }}">
+    </form>
+    @endforeach
+</div>
+
 @endsection
 
 @push('scripts')
-<script>
-function applyFilter() {
-    const form = document.getElementById('filterForm');
-    const formData = new FormData(form);
-    // Add your filter logic here
-    $('#filterModal').modal('hide');
-}
+<!-- Add SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-// Function to confirm subscription plan change with a professional dialog
-function confirmPlanChange(buttonElement, planType, tenantName) {
-    // Prevent accidental double-click
-    buttonElement.disabled = true;
-    
-    // Find the form element
-    const form = buttonElement.closest('form.subscription-form');
-    
-    // Define plan details
+<script>
+// Initialize everything when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize subscription change buttons
+    document.querySelectorAll('.subscription-change-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tenantId = this.dataset.tenantId;
+            const tenantName = this.dataset.tenantName;
+            const targetPlan = this.dataset.targetPlan;
+            handleSubscriptionChange(tenantId, tenantName, targetPlan);
+        });
+    });
+
+    // Initialize tabs and dropdowns
+    initializeTabs();
+    initializeDropdowns();
+});
+
+function handleSubscriptionChange(tenantId, tenantName, targetPlan) {
     const planDetails = {
         'basic': { 
             title: 'Basic Plan',
@@ -371,78 +817,71 @@ function confirmPlanChange(buttonElement, planType, tenantName) {
         'premium': { 
             title: 'Premium Plan',
             icon: '<i class="fas fa-crown text-warning me-2"></i>',
-            description: '$29.99/month with advanced features',
+            description: '₱5,000/month with advanced features',
             color: '#ffc107'
         }
     };
     
-    // Create confirmation dialog with Bootstrap
-    const modalHtml = `
-        <div class="modal fade" id="confirmSubscriptionModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header" style="background-color: ${planDetails[planType].color}; color: #fff;">
-                        <h5 class="modal-title">${planDetails[planType].icon} Change Subscription</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="color: #fff;"></button>
+    Swal.fire({
+        title: `Change to ${planDetails[targetPlan].title}?`,
+        html: `
+            <div class="text-center">
+                <div class="display-1 mb-3" style="color: ${planDetails[targetPlan].color}">
+                    ${planDetails[targetPlan].icon}
                     </div>
-                    <div class="modal-body">
-                        <div class="text-center mb-4">
-                            <div class="display-1 mb-3" style="color: ${planDetails[planType].color};">${planDetails[planType].icon.replace('me-2', '')}</div>
-                            <h4>Confirm Subscription Change</h4>
-                            <p class="text-muted">You are about to change the subscription for <strong>${tenantName}</strong> to:</p>
+                <p>You are about to change the subscription for <strong>${tenantName}</strong> to:</p>
                             <div class="alert alert-light border">
-                                <strong>${planDetails[planType].title}</strong><br>
-                                <small>${planDetails[planType].description}</small>
-                            </div>
-                        </div>
-                        <p class="text-center">This action will take effect immediately. Are you sure?</p>
-                    </div>
-                    <div class="modal-footer justify-content-center">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" id="cancelPlanChange">
-                            <i class="fas fa-times me-1"></i> Cancel
-                        </button>
-                        <button type="button" class="btn btn-primary" id="confirmPlanBtn" style="background-color: ${planDetails[planType].color}; border-color: ${planDetails[planType].color};">
-                            <i class="fas fa-check me-1"></i> Confirm Change
-                        </button>
-                    </div>
+                    <strong>${planDetails[targetPlan].title}</strong><br>
+                    <small>${planDetails[targetPlan].description}</small>
                 </div>
+                <p class="text-muted">This action will take effect immediately.</p>
             </div>
-        </div>
-    `;
-    
-    // Append modal to body
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    // Initialize the modal
-    const modal = new bootstrap.Modal(document.getElementById('confirmSubscriptionModal'));
-    modal.show();
-    
-    // Handle cancel
-    document.getElementById('cancelPlanChange').addEventListener('click', function() {
-        buttonElement.disabled = false;
-        document.getElementById('confirmSubscriptionModal').remove();
-    });
-    
-    // Handle confirm
-    document.getElementById('confirmPlanBtn').addEventListener('click', function() {
-        // Submit the form
-        form.submit();
-        
-        // Show loading state
-        this.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Processing...';
-        this.disabled = true;
-    });
-    
-    // Remove modal on hidden
-    document.getElementById('confirmSubscriptionModal').addEventListener('hidden.bs.modal', function() {
-        buttonElement.disabled = false;
-        document.getElementById('confirmSubscriptionModal').remove();
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: planDetails[targetPlan].color,
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, change plan',
+        cancelButtonText: 'Cancel',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            submitPlanChange(tenantId);
+        }
     });
 }
 
-// Activate the correct tab based on URL hash or session flash data
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if a tab was specified in the session (from controller redirect)
+function submitPlanChange(tenantId) {
+    try {
+        const form = document.getElementById(`subscription-form-${tenantId}`);
+        if (!form) {
+            console.error('Form not found for tenant ID:', tenantId);
+            Swal.fire('Error', 'Could not process subscription change. Please try again.', 'error');
+            return;
+        }
+
+        // Show loading state
+        Swal.fire({
+            title: 'Processing...',
+            html: 'Please wait while we update the subscription.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            willOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Submit the form
+        form.submit();
+        
+    } catch (error) {
+        console.error('Error submitting form:', error);
+        Swal.fire('Error', 'An error occurred while processing your request. Please try again.', 'error');
+    }
+}
+
+function initializeTabs() {
     const tabFromSession = "{{ session('tab') }}";
     if (tabFromSession) {
         const tabElement = document.getElementById(`${tabFromSession}-tab`);
@@ -450,10 +889,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const tab = new bootstrap.Tab(tabElement);
             tab.show();
         }
-    } 
-    // Otherwise check for hash in URL
-    else if(window.location.hash) {
-        // Get the hash without # and try to activate that tab
+    } else if(window.location.hash) {
         const hash = window.location.hash.substring(1);
         const tabElement = document.getElementById(`${hash}-tab`);
         if(tabElement) {
@@ -462,7 +898,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Update URL when tab changes
     const tabList = [].slice.call(document.querySelectorAll('button[data-bs-toggle="tab"]'));
     tabList.forEach(function(tabEl) {
         tabEl.addEventListener('shown.bs.tab', function(event) {
@@ -474,6 +909,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-});
+}
+
+function initializeDropdowns() {
+    const dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
+    dropdownElementList.forEach(function(dropdownToggleEl) {
+        new bootstrap.Dropdown(dropdownToggleEl);
+    });
+}
 </script>
 @endpush 

@@ -80,7 +80,10 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editStaffModal{{ $staff->id }}">
+                                        <button class="btn btn-sm btn-info edit-staff-btn" 
+                                                data-staff-id="{{ $staff->id }}"
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#editStaffModal{{ $staff->id }}">
                                             Edit
                                         </button>
                                         <button class="btn btn-sm btn-danger" onclick="showDeleteConfirmation('{{ $staff->id }}')">
@@ -95,6 +98,59 @@
                                             @csrf
                                             @method('DELETE')
                                         </form>
+
+                                        <!-- Edit Staff Modal -->
+                                        <div class="modal fade edit-staff-modal" id="editStaffModal{{ $staff->id }}" tabindex="-1" aria-labelledby="editStaffModalLabel{{ $staff->id }}" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="editStaffModalLabel{{ $staff->id }}">Edit Staff Member</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <form action="{{ route('tenant.staff.update', ['tenant' => tenant('id'), 'staff' => $staff->id]) }}" method="POST">
+                                                        @csrf
+                                                        @method('PUT')
+                                                        <div class="modal-body">
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Staff ID</label>
+                                                                <input type="text" class="form-control" name="staff_id" value="{{ $staff->staff_id }}" required>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Name</label>
+                                                                <input type="text" class="form-control" name="name" value="{{ $staff->name }}" required>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Email</label>
+                                                                <input type="email" class="form-control" name="email" value="{{ $staff->email }}" required>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Role</label>
+                                                                <select class="form-select" name="role" required>
+                                                                    <option value="instructor" {{ $staff->role === 'instructor' ? 'selected' : '' }}>Instructor</option>
+                                                                    <option value="admin" {{ $staff->role === 'admin' ? 'selected' : '' }}>Admin</option>
+                                                                    <option value="staff" {{ $staff->role === 'staff' ? 'selected' : '' }}>Staff</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Department</label>
+                                                                <input type="text" class="form-control" name="department" value="{{ optional($staff->department)->name }}" required>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Status</label>
+                                                                <select class="form-select" name="status" required>
+                                                                    <option value="active" {{ $staff->status === 'active' ? 'selected' : '' }}>Active</option>
+                                                                    <option value="inactive" {{ $staff->status === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                                 @empty
@@ -220,9 +276,52 @@
 @push('scripts')
 <!-- Add SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Make sure Bootstrap JS is properly loaded -->
 <script>
-    // Show success/error messages using SweetAlert2
-    document.addEventListener('DOMContentLoaded', function() {
+    // Check if Bootstrap is available
+    if (typeof bootstrap === 'undefined') {
+        // If not, load it
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
+        script.integrity = 'sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz';
+        script.crossOrigin = 'anonymous';
+        document.head.appendChild(script);
+        
+        script.onload = function() {
+            initializeModals();
+            initializeOtherScripts();
+        };
+    } else {
+        // Bootstrap is available, initialize everything
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeModals();
+            initializeOtherScripts();
+        });
+    }
+
+    // Function to safely initialize modals
+    function initializeModals() {
+        const modalElements = document.querySelectorAll('.modal');
+        modalElements.forEach(function(modalElement) {
+            try {
+                // Create new modal instance with explicit options
+                const modalInstance = new bootstrap.Modal(modalElement, {
+                    backdrop: true,
+                    keyboard: true,
+                    focus: true
+                });
+                
+                // Store the instance on the element
+                modalElement._bsModal = modalInstance;
+            } catch (error) {
+                console.warn('Error initializing modal:', error);
+            }
+        });
+    }
+
+    // Function to run all other scripts
+    function initializeOtherScripts() {
+        // Show success/error messages using SweetAlert2
         const successMessage = document.getElementById('success-message');
         const errorMessage = document.getElementById('error-message');
         const warningMessage = document.getElementById('warning-message');
@@ -252,7 +351,7 @@
         
         // Setup duplicate checking for staff add form
         setupStaffAddForm();
-    });
+    }
     
     // Function to check for duplicate staff IDs and emails
     function setupStaffAddForm() {
@@ -462,5 +561,51 @@
             }, 300);
         });
     });
+
+    // Initialize edit buttons
+    function initializeEditButtons() {
+        document.querySelectorAll('.edit-staff-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                const staffId = this.getAttribute('data-staff-id');
+                const modalId = `editStaffModal${staffId}`;
+                const modalElement = document.getElementById(modalId);
+                
+                if (modalElement) {
+                    try {
+                        // Get existing modal instance or create new one
+                        let modalInstance = bootstrap.Modal.getInstance(modalElement);
+                        if (!modalInstance) {
+                            modalInstance = new bootstrap.Modal(modalElement, {
+                                backdrop: true,
+                                keyboard: true,
+                                focus: true
+                            });
+                        }
+                        modalInstance.show();
+                    } catch (error) {
+                        console.error('Error showing modal:', error);
+                        // Fallback: try to show modal using jQuery if available
+                        if (typeof $ !== 'undefined') {
+                            try {
+                                $(modalElement).modal('show');
+                            } catch (jqError) {
+                                console.error('Error showing modal with jQuery:', jqError);
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    }
+
+    // Initialize everything when the page loads
+    try {
+        initializeModals();
+        initializeEditButtons();
+        setupDeleteForms();
+        setupStaffAddForm();
+    } catch (error) {
+        console.error('Error during initialization:', error);
+    }
 </script>
 @endpush 

@@ -137,6 +137,13 @@ Route::middleware(['web'])
                 ->name('tenant.dashboard')
                 ->middleware('auth:admin');
 
+            // Profile Routes
+            Route::prefix('profile')->middleware(['auth:admin'])->group(function () {
+                Route::get('/', [App\Http\Controllers\Tenant\ProfileController::class, 'index'])->name('profile.index');
+                Route::put('/update', [App\Http\Controllers\Tenant\ProfileController::class, 'update'])->name('profile.update');
+                Route::put('/password', [App\Http\Controllers\Tenant\ProfileController::class, 'updatePassword'])->name('profile.password');
+            });
+
             // Requirements Routes
             Route::prefix('admin/requirements')->name('tenant.admin.requirements.')->group(function () {
                 Route::get('/', [App\Http\Controllers\Requirements\RequirementsController::class, 'index'])->name('index');

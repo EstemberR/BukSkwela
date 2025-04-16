@@ -32,32 +32,10 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <p class="mb-0 small">Switch between light and dark themes</p>
                         @php
-                            // Get the tenant's subscription plan
-                            $tenantData = tenant();
-                            
-                            // Get subscription plan from tenant data
-                            $isPremium = false;
-                            
-                            // Check tenant data
-                            if ($tenantData && isset($tenantData->subscription_plan) && $tenantData->subscription_plan === 'premium') {
-                                $isPremium = true;
-                            }
-                            
-                            // Check session
-                            if (session('is_premium') === true) {
-                                $isPremium = true;
-                            }
-                            
-                            // Check user's role/permissions - assuming administrators are premium
-                            if (Auth::guard('admin')->check()) {
-                                $isPremium = true;
-                            }
-                            
-                            // Force premium to true for debugging/fixing
+                            // Setting isPremium to true directly to enable all features
                             $isPremium = true;
                         @endphp
                         
-                        @if($isPremium)
                         <label class="switch">
                             <input type="checkbox" id="darkModeToggle" name="dark_mode" value="1" {{ $settings->dark_mode ? 'checked' : '' }}>
                             <span class="slider">
@@ -65,22 +43,8 @@
                                 <i class="fas fa-moon slider-icon dark-icon"></i>
                             </span>
                         </label>
-                        @else
-                        <div class="premium-feature-badge">
-                            <span class="badge bg-warning text-dark">
-                                <i class="fas fa-crown me-1"></i> Premium
-                            </span>
-                        </div>
-                        @endif
                     </div>
-                    @if($isPremium)
                     <p class="dark-mode-info small text-muted mt-2">Dark mode reduces eye strain in low-light environments and helps conserve battery life on mobile devices.</p>
-                    @else
-                    <p class="premium-feature-info small text-muted mt-2">
-                        <i class="fas fa-lock me-1"></i> Dark Mode is a premium feature. 
-                        <a href="javascript:void(0)" onclick="openSubscriptionModal()" class="text-warning">Upgrade now</a>
-                    </p>
-                    @endif
                 </div>
             </div>
             
@@ -89,16 +53,8 @@
                 <div class="settings-card">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="card-title mb-0"><i class="fas fa-credit-card mr-2"></i>Card Styles</h5>
-                        @if(!$isPremium)
-                        <div class="premium-feature-badge">
-                            <span class="badge bg-warning text-dark">
-                                <i class="fas fa-crown me-1"></i> Premium
-                            </span>
-                        </div>
-                        @endif
                     </div>
                     
-                    @if($isPremium)
                     <div class="card-style-container py-1 card-examples-wrapper">
                         <div class="row g-1">
                             <div class="col-md-4 col-sm-4 col-4">
@@ -132,41 +88,6 @@
                         <input type="hidden" name="card_style" id="cardStyleInput" value="{{ $settings->card_style ?? 'square' }}">
                     </div>
                     <p class="small text-muted mt-2">Choose a card style for your dashboard cards and UI components.</p>
-                    @else
-                    <div class="card-style-container py-1 card-examples-wrapper disabled" style="pointer-events: none; opacity: 0.7;">
-                        <div class="row g-1">
-                            <div class="col-md-4 col-sm-4 col-4">
-                                <div class="card-example card-example-square active">
-                                    <div class="text-center">
-                                        <i class="fas fa-book mb-1"></i>
-                                        <h5 class="small">Square</h5>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4 col-sm-4 col-4">
-                                <div class="card-example card-example-rounded">
-                                    <div class="text-center">
-                                        <i class="fas fa-book mb-1"></i>
-                                        <h5 class="small">Rounded</h5>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4 col-sm-4 col-4">
-                                <div class="card-example card-example-glass">
-                                    <div class="text-center">
-                                        <i class="fas fa-book mb-1"></i>
-                                        <h5 class="small">Glassy</h5>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <input type="hidden" name="card_style" id="cardStyleInput" value="square">
-                    </div>
-                    <p class="premium-feature-info small text-muted mt-2">
-                        <i class="fas fa-lock me-1"></i> Card style customization is a premium feature. 
-                        <a href="javascript:void(0)" onclick="openSubscriptionModal()" class="text-warning">Upgrade now</a>
-                    </p>
-                    @endif
                 </div>
             </div>
             
@@ -177,17 +98,9 @@
                 <div class="settings-card">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="card-title mb-0"><i class="fas fa-columns mr-2"></i>Dashboard Layout</h5>
-                        @if($isPremium)
                         <a href="#" class="btn btn-sm btn-outline-primary" id="editLayoutBtn">
                             <i class="fas fa-edit me-1"></i>Edit Layout
                         </a>
-                        @else
-                        <div class="premium-feature-badge">
-                            <span class="badge bg-warning text-dark">
-                                <i class="fas fa-crown me-1"></i> Premium
-                            </span>
-                        </div>
-                        @endif
                     </div>
                     
                     <div class="layout-options">
@@ -1085,45 +998,19 @@
     
     /* Premium feature styles */
     .premium-feature-badge .badge {
-        background-color: rgb(251, 191, 36) !important;
-        color: rgb(3, 1, 43) !important;
-        font-weight: 600;
-        padding: 0.5rem 0.75rem;
-        border-radius: 30px;
-        font-size: 0.8rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    
-    .premium-feature-badge .badge:hover {
-        background-color: rgb(245, 158, 11) !important;
-        transform: scale(1.05);
+        display: none;
     }
     
     .premium-feature-info {
-        color: #6c757d;
-        font-style: italic;
-    }
-    
-    .premium-feature-info a {
-        color: rgb(245, 158, 11);
-        text-decoration: none;
-        font-weight: 600;
-        transition: all 0.2s ease;
-    }
-    
-    .premium-feature-info a:hover {
-        color: rgb(251, 191, 36);
-        text-decoration: underline;
+        display: none;
     }
     
     body.dark-mode .premium-feature-info {
-        color: #a0aec0;
+        display: none;
     }
     
     body.dark-mode .premium-feature-badge .badge {
-        background-color: rgb(251, 191, 36) !important;
-        color: rgb(17, 24, 39) !important;
+        display: none;
     }
     
     /* Dashboard Layout Options */
@@ -1794,18 +1681,6 @@
         
         // Card style selection
         $('.card-example').on('click', function() {
-            // Check if user is premium
-            @if(!$isPremium)
-            // Show premium upgrade message for non-premium users
-            saveStatus.removeClass('alert-success alert-danger').addClass('alert-warning')
-                .html('<i class="fas fa-crown"></i> Card style customization is a premium feature. <a href="javascript:void(0)" onclick="openSubscriptionModal()" class="alert-link">Upgrade now</a>').show();
-                
-            setTimeout(() => {
-                saveStatus.fadeOut();
-            }, 3000);
-                return;
-            @endif
-            
             const cardStyle = $(this).data('card-style');
             $('.card-example').removeClass('active');
             $(this).addClass('active');
@@ -2128,6 +2003,12 @@
             default:
                 return "'Arial', sans-serif";
         }
+    }
+
+    // Empty function to replace any premium subscription references
+    function openSubscriptionModal() {
+        // Does nothing - all features are available by default
+        console.log("All features are already enabled");
     }
 });
 </script>

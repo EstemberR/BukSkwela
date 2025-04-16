@@ -227,8 +227,3 @@ Route::middleware(['auth:admin,staff'])->group(function () {
 Route::middleware(['web', 'tenant'])->group(function () {
     Route::get('/settings/get-layout', [\App\Http\Controllers\Settings\SettingsController::class, 'getLayout'])->name('tenant.settings.getLayout');
 });
-
-// Subscription update route - now inside middleware group
-Route::middleware(['web', 'tenant'])->group(function () {
-    Route::post('/update-subscription', [ProfileController::class, 'updateSubscription'])->name('profile.update-subscription');
-});
