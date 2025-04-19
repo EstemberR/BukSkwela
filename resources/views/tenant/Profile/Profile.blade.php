@@ -173,11 +173,7 @@
                             <h5 class="fw-bold mb-1">{{ $user->name }}</h5>
                             <p class="text-muted">{{ $user->email }}</p>
                             
-                            <div class="mt-3">
-                                <span class="badge bg-{{ $user->status == 'active' ? 'success' : 'warning' }} rounded-pill px-3 py-2">
-                                    {{ ucfirst($user->status) }}
-                                </span>
-                            </div>
+                           
                             
                             @if(!$isPremium)
                                 <div class="mt-3">
@@ -211,7 +207,7 @@
                                 <div class="tab-pane fade show active position-relative" id="profile-tab-pane" role="tabpanel" aria-labelledby="profile-tab" tabindex="0">
                                     @if(!$isPremium)
                                         <span class="premium-feature-tag">
-                                            <i class="fas fa-crown me-1"></i> Premium Feature
+                                            <i class="fas fa-crown text-warning ms-1"></i> Premium Feature
                                         </span>
                                     @endif
                                     
@@ -252,24 +248,13 @@
                                             </button>
                                         </div>
                                     </form>
-                                    
-                                    @if(!$isPremium)
-                                        <div class="premium-lock">
-                                            <i class="fas fa-crown"></i>
-                                            <h4>Premium Feature</h4>
-                                            <p>Profile editing is available exclusively for premium accounts. Upgrade your account to access this feature.</p>
-                                            <a href="#" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#upgradePremiumModal">
-                                                <i class="fas fa-crown me-2"></i>Upgrade to Premium
-                                            </a>
-                                        </div>
-                                    @endif
                                 </div>
                                 
                                 <!-- Password Tab -->
                                 <div class="tab-pane fade position-relative" id="password-tab-pane" role="tabpanel" aria-labelledby="password-tab" tabindex="0">
                                     @if(!$isPremium)
                                         <span class="premium-feature-tag">
-                                            <i class="fas fa-crown me-1"></i> Premium Feature
+                                            <i class="fas fa-crown text-warning ms-1"></i> Premium Feature
                                         </span>
                                     @endif
                                     
@@ -303,7 +288,7 @@
                                         </div>
                                         
                                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                            <button type="submit" class="btn btn-primary" id="updatePasswordBtn">
+                                            <button type="submit" class="btn btn-primary" id="updatePasswordBtn" {{ !$isPremium ? 'disabled' : '' }}>
                                                 <i class="fas fa-key me-2"></i>Update Password
                                             </button>
                                         </div>
@@ -313,6 +298,134 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Premium Upgrade Modal -->
+<div class="modal fade" id="upgradePremiumModal" tabindex="-1" aria-labelledby="upgradePremiumModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title" id="upgradePremiumModalLabel">
+                    <i class="fas fa-crown text-warning me-2"></i>Upgrade to Premium
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <div class="text-center mb-4">
+                    <div class="bg-warning bg-opacity-10 rounded-circle p-3 d-inline-block mb-3">
+                        <i class="fas fa-crown text-warning fs-1"></i>
+                    </div>
+                    <h4>Unlock Premium Features</h4>
+                    <p class="text-muted">Upgrade your account to access premium features and enhance your school management capabilities.</p>
+                </div>
+                
+                <div class="card border-warning mb-4">
+                    <div class="card-header bg-warning bg-opacity-10 border-warning">
+                        <h5 class="mb-0 text-warning"><i class="fas fa-star me-2"></i>Premium Benefits</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex align-items-center border-0 px-0">
+                                <i class="fas fa-check-circle text-success me-3"></i>
+                                <span>Profile customization</span>
+                            </li>
+                            <li class="list-group-item d-flex align-items-center border-0 px-0">
+                                <i class="fas fa-check-circle text-success me-3"></i>
+                                <span>Advanced reporting and analytics</span>
+                            </li>
+                            <li class="list-group-item d-flex align-items-center border-0 px-0">
+                                <i class="fas fa-check-circle text-success me-3"></i>
+                                <span>Unlimited staff accounts</span>
+                            </li>
+                            <li class="list-group-item d-flex align-items-center border-0 px-0">
+                                <i class="fas fa-check-circle text-success me-3"></i>
+                                <span>Priority customer support</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="card border-primary mb-4">
+                    <div class="card-header bg-primary bg-opacity-10 border-primary">
+                        <h5 class="mb-0 text-primary"><i class="fas fa-money-bill-wave me-2"></i>Subscription Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="fw-bold">Premium Plan:</span>
+                            <span class="badge bg-primary rounded-pill px-3 py-2">Monthly</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span>Price:</span>
+                            <span class="fw-bold fs-4">₱999.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span>Billing:</span>
+                            <span>Monthly, auto-renews</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <form action="{{ route('tenant.subscription.upgrade', ['tenant' => tenant('id')]) }}" method="POST" id="upgradeForm">
+                    @csrf
+                    <div class="mb-3">
+                        <label for="payment_method" class="form-label">Payment Method</label>
+                        <select class="form-select" id="payment_method" name="payment_method" required>
+                            <option value="">Select payment method</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="gcash">GCash</option>
+                            <option value="paymaya">PayMaya</option>
+                        </select>
+                    </div>
+                    
+                    <div id="bankTransferDetails" class="payment-details mb-3 d-none">
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Bank Transfer Instructions</h6>
+                            <p class="mb-0">Please transfer ₱999.00 to the following account:</p>
+                            <hr>
+                            <p class="mb-1"><strong>Bank:</strong> BDO</p>
+                            <p class="mb-1"><strong>Account Name:</strong> BukSkwela Inc.</p>
+                            <p class="mb-1"><strong>Account Number:</strong> 1234-5678-9012</p>
+                            <p class="mb-0"><strong>Reference:</strong> Premium-{{ tenant('id') }}</p>
+                        </div>
+                    </div>
+                    
+                    <div id="gcashDetails" class="payment-details mb-3 d-none">
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>GCash Instructions</h6>
+                            <p class="mb-0">Please send ₱999.00 to the following GCash number:</p>
+                            <hr>
+                            <p class="mb-1"><strong>GCash Number:</strong> 0917-123-4567</p>
+                            <p class="mb-1"><strong>Account Name:</strong> BukSkwela Inc.</p>
+                            <p class="mb-0"><strong>Reference:</strong> Premium-{{ tenant('id') }}</p>
+                        </div>
+                    </div>
+                    
+                    <div id="paymayaDetails" class="payment-details mb-3 d-none">
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>PayMaya Instructions</h6>
+                            <p class="mb-0">Please send ₱999.00 to the following PayMaya number:</p>
+                            <hr>
+                            <p class="mb-1"><strong>PayMaya Number:</strong> 0918-765-4321</p>
+                            <p class="mb-1"><strong>Account Name:</strong> BukSkwela Inc.</p>
+                            <p class="mb-0"><strong>Reference:</strong> Premium-{{ tenant('id') }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="reference_number" class="form-label">Reference Number</label>
+                        <input type="text" class="form-control" id="reference_number" name="reference_number" placeholder="Enter your payment reference number" required>
+                        <div class="form-text">Please enter the reference number from your payment transaction.</div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-crown me-2"></i>Upgrade Now
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -341,6 +454,20 @@
                 }
             };
             reader.readAsDataURL(file);
+        }
+    });
+    
+    // Handle payment method change to show appropriate instructions
+    document.getElementById('payment_method')?.addEventListener('change', function() {
+        // Hide all payment details
+        document.querySelectorAll('.payment-details').forEach(el => {
+            el.classList.add('d-none');
+        });
+        
+        // Show selected payment method details
+        const method = this.value;
+        if (method) {
+            document.getElementById(method + 'Details')?.classList.remove('d-none');
         }
     });
 </script>

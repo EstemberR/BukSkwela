@@ -3270,9 +3270,9 @@
                 
                 <ul class="nav flex-column px-3 flex-grow-1">
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('tenant.dashboard') || request()->routeIs('tenant.dashboard.*') ? 'active' : '' }}" 
+                        <a class="nav-link {{ request()->routeIs('tenant.dashboard') ? 'active' : '' }}" 
                            href="{{ route('tenant.dashboard', ['tenant' => tenant('id')]) }}">
-                            <i class="fas fa-home"></i> <span>Dashboard</span>
+                            <i class="fas fa-home"></i> Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
@@ -3333,7 +3333,22 @@
 
                 <!-- Upgrade to Pro Button -->
                 <div class="mt-auto">
-                    <!-- Premium features removed -->
+                    @php
+                        $currentTenant = \App\Models\Tenant::where('id', tenant('id'))->first();
+                        $isPremium = $currentTenant && $currentTenant->subscription_plan === 'premium';
+                    @endphp
+                    
+                    @if(!$isPremium)
+                        <a href="#" class="btn btn-sm btn-outline-warning w-100 mb-2 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#sidebarPremiumModal">
+                            <i class="fas fa-crown me-1"></i>
+                            <small>Upgrade to Premium</small>
+                        </a>
+                    @else
+                        <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center">
+                            <i class="fas fa-crown text-warning me-1"></i>
+                            <small>Premium Account</small>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -3452,296 +3467,22 @@
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Bootstrap Modal Fix -->
-    <script>
-        // Create a safe version of the Bootstrap Modal constructor
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof bootstrap !== 'undefined') {
-                // Store the original Modal constructor
-                const OriginalModal = bootstrap.Modal;
-                
-                // Create a proxy constructor that adds error handling
-                bootstrap.Modal = function(element, options) {
-                    try {
-                        // Apply default options if none provided
-                        const safeOptions = options || {
-                            backdrop: true,
-                            keyboard: true,
-                            focus: true
-                        };
-                        
-                        // Call the original constructor
-                        return new OriginalModal(element, safeOptions);
-                    } catch (error) {
-                        console.warn('Error creating Bootstrap modal:', error);
-                        
-                        // Return a dummy modal object to prevent further errors
-                        return {
-                            show: function() { console.warn('Modal show attempted but modal creation failed'); },
-                            hide: function() { console.warn('Modal hide attempted but modal creation failed'); },
-                            toggle: function() { console.warn('Modal toggle attempted but modal creation failed'); },
-                            dispose: function() { console.warn('Modal dispose attempted but modal creation failed'); },
-                            getInstance: function() { return null; }
-                        };
-                    }
-                };
-                
-                // Copy static methods from the original Modal
-                Object.keys(OriginalModal).forEach(key => {
-                    bootstrap.Modal[key] = OriginalModal[key];
-                });
-                
-                // Pre-initialize all modals on the page
-                const modalElements = document.querySelectorAll('.modal');
-                modalElements.forEach(function(modalElement) {
-                    try {
-                        // Don't initialize if it's already been initialized
-                        if (!bootstrap.Modal.getInstance(modalElement)) {
-                            new bootstrap.Modal(modalElement);
-                        }
-                    } catch (error) {
-                        console.warn('Error pre-initializing modal:', error);
-                    }
-                });
-            }
-        });
-    </script>
-    
     <!-- Initialize Bootstrap components -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize dark mode from localStorage
-            const savedDarkMode = localStorage.getItem('darkMode');
-            if (savedDarkMode === 'enabled') {
-                document.body.classList.add('dark-mode');
-            }
-            
-            // Keep Reports dropdown open when on a report page
-            const isReportPage = {{ request()->routeIs('tenant.reports.*') ? 'true' : 'false' }};
-            if (isReportPage) {
-                // Get the reports dropdown and menu elements
-                const reportsDropdownToggle = document.querySelector('.nav-item.dropdown .nav-link.dropdown-toggle.active');
-                const reportsDropdownMenu = document.querySelector('.nav-item.dropdown .dropdown-menu');
-                const reportsNavItem = document.querySelector('.nav-item.dropdown');
+            // Handle payment method change in sidebar modal
+            document.getElementById('sidebar_payment_method')?.addEventListener('change', function() {
+                // Hide all payment details
+                document.querySelectorAll('#sidebarPremiumModal .payment-details').forEach(el => {
+                    el.classList.add('d-none');
+                });
                 
-                if (reportsDropdownToggle && reportsDropdownMenu && reportsNavItem) {
-                    // Add the show class to both the toggle and menu
-                    reportsDropdownToggle.classList.add('show');
-                    reportsDropdownMenu.classList.add('show');
-                    reportsDropdownToggle.setAttribute('aria-expanded', 'true');
-                    
-                    // Add mouseover and mouseout handlers to prevent dropdown from closing on hover
-                    reportsNavItem.addEventListener('mouseover', function() {
-                        reportsDropdownMenu.classList.add('show');
-                        reportsDropdownToggle.classList.add('show');
-                        reportsDropdownToggle.setAttribute('aria-expanded', 'true');
-                    });
-                    
-                    // Prevent Bootstrap's mouseleave from closing dropdown
-                    reportsNavItem.addEventListener('mouseleave', function(e) {
-                        if (isReportPage) {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            
-                            // Ensure it stays open
-                            setTimeout(() => {
-                                reportsDropdownMenu.classList.add('show');
-                                reportsDropdownToggle.classList.add('show');
-                                reportsDropdownToggle.setAttribute('aria-expanded', 'true');
-                            }, 10);
-                        }
-                    });
-                    
-                    // Prevent dropdown from closing when clicking items or outside
-                    document.addEventListener('click', function(e) {
-                        // Check if click is outside the dropdown
-                        if (!reportsDropdownMenu.contains(e.target) && !reportsDropdownToggle.contains(e.target)) {
-                            // Prevent the dropdown from closing on outside clicks
-                            e.stopPropagation();
-                            
-                            // Make sure dropdown stays open
-                            setTimeout(() => {
-                                reportsDropdownMenu.classList.add('show');
-                                reportsDropdownToggle.classList.add('show');
-                                reportsDropdownToggle.setAttribute('aria-expanded', 'true');
-                            }, 10);
-                        }
-                    }, true);
-                    
-                    // Override Bootstrap's dropdown behavior
-                    const bootstrapDropdowns = document.querySelectorAll('.nav-item.dropdown');
-                    bootstrapDropdowns.forEach(dropdown => {
-                        if (dropdown.contains(reportsDropdownToggle)) {
-                            const originalToggle = bootstrap.Dropdown.getInstance(reportsDropdownToggle);
-                            if (originalToggle) {
-                                // Disable the hide method by overriding it
-                                const originalHide = originalToggle.hide;
-                                originalToggle.hide = function() {
-                                    if (!isReportPage) {
-                                        originalHide.call(this);
-                                    } else {
-                                        // For report pages, prevent hiding and force show
-                                        reportsDropdownMenu.classList.add('show');
-                                        reportsDropdownToggle.classList.add('show');
-                                        reportsDropdownToggle.setAttribute('aria-expanded', 'true');
-                                    }
-                                };
-                            }
-                        }
-                    });
-                    
-                    // Prevent dropdown from closing when clicking items
-                    document.querySelectorAll('.dropdown-item').forEach(item => {
-                        item.addEventListener('click', function(e) {
-                            // Don't prevent default to allow navigation
-                            e.stopPropagation(); // Prevent event from bubbling up to parent dropdown
-                        });
-                    });
-                    
-                    // Create a mutation observer to watch for changes to the dropdown
-                    const observer = new MutationObserver(function(mutations) {
-                        mutations.forEach(function(mutation) {
-                            if (mutation.attributeName === 'class' && 
-                                !reportsDropdownMenu.classList.contains('show')) {
-                                // If the show class was removed, add it back
-                                reportsDropdownMenu.classList.add('show');
-                                reportsDropdownToggle.classList.add('show');
-                                reportsDropdownToggle.setAttribute('aria-expanded', 'true');
-                            }
-                        });
-                    });
-                    
-                    // Start observing the dropdown menu
-                    observer.observe(reportsDropdownMenu, { attributes: true });
-                    
-                    // Make sure dropdown toggle keeps show class
-                    reportsDropdownToggle.addEventListener('click', function(e) {
-                        // Prevent the default toggle behavior on report pages
-                        e.preventDefault();
-                        e.stopPropagation();
-                        
-                        // Ensure dropdown stays open
-                        if (!reportsDropdownMenu.classList.contains('show')) {
-                            reportsDropdownMenu.classList.add('show');
-                            reportsDropdownToggle.classList.add('show');
-                            reportsDropdownToggle.setAttribute('aria-expanded', 'true');
-                        }
-                    });
-                    
-                    // IMPORTANT: Add inline style to force visibility
-                    reportsDropdownMenu.setAttribute('style', 'display: block !important; visibility: visible !important; opacity: 1 !important;');
-                    
-                    // Add a style tag to ensure the dropdown stays visible
-                    const styleTag = document.createElement('style');
-                    styleTag.textContent = `
-                        .nav-item.dropdown .dropdown-menu.show {
-                            display: block !important;
-                            visibility: visible !important;
-                            opacity: 1 !important;
-                            pointer-events: auto !important;
-                        }
-                        
-                        .nav-item.dropdown:hover .dropdown-menu.show {
-                            display: block !important;
-                            visibility: visible !important;
-                            opacity: 1 !important;
-                            pointer-events: auto !important;
-                        }
-                        
-                        /* Ensure active dropdown items are properly styled */
-                        .dropdown-item.active,
-                        .dropdown-item.active:hover,
-                        .dropdown-item.active:focus {
-                            background-color: var(--primary-color) !important;
-                            color: #ffffff !important;
-                        }
-                        
-                        .dropdown-item.active i,
-                        .dropdown-item.active:hover i,
-                        .dropdown-item.active:focus i {
-                            color: #ffffff !important;
-                        }
-                    `;
-                    document.head.appendChild(styleTag);
-                }
-            }
-            
-            // Check for dark mode flash message from backend
-            @if(session()->has('dark_mode_preference'))
-                const darkModePreference = "{{ session('dark_mode_preference') }}";
-                console.log('Dark mode preference received from backend:', darkModePreference);
-                
-                if (darkModePreference === 'enabled') {
-                    document.body.classList.add('dark-mode');
-                    localStorage.setItem('darkMode', 'enabled');
-                    
-                    // Update toggle if it exists
-                    const navbarToggle = document.getElementById('navbarDarkModeToggle');
-                    if (navbarToggle) navbarToggle.checked = true;
-                    
-                    const settingsToggle = document.getElementById('darkModeToggle');
-                    if (settingsToggle) settingsToggle.checked = true;
-                } else if (darkModePreference === 'disabled') {
-                    document.body.classList.remove('dark-mode');
-                    localStorage.setItem('darkMode', 'disabled');
-                    
-                    // Update toggle if it exists
-                    const navbarToggle = document.getElementById('navbarDarkModeToggle');
-                    if (navbarToggle) navbarToggle.checked = false;
-                    
-                    const settingsToggle = document.getElementById('darkModeToggle');
-                    if (settingsToggle) settingsToggle.checked = false;
-                }
-            @endif
-            
-            // Listen for dark mode toggle events
-            document.addEventListener('darkModeToggled', function(e) {
-                if (e.detail.isDarkMode) {
-                    document.body.classList.add('dark-mode');
-                } else {
-                    document.body.classList.remove('dark-mode');
+                // Show selected payment method details
+                const method = this.value;
+                if (method) {
+                    document.getElementById('sidebar_' + method + 'Details')?.classList.remove('d-none');
                 }
             });
-            
-            // Check premium status from multiple sources
-            function checkPremiumStatus() {
-                return false;
-            }
-            
-            // Set premium status if true from any source
-            const isPremium = checkPremiumStatus();
-            if (isPremium) {
-                // Store the premium status in both localStorage and cookie for persistence
-                localStorage.setItem('isPremium', 'true');
-                document.cookie = "is_premium=true; path=/; max-age=86400";
-                
-                // Update UI to reflect premium status
-                const freeTrialIndicators = document.querySelectorAll('.free-trial-indicator');
-                freeTrialIndicators.forEach(indicator => {
-                    // Remove the free trial badge
-                    const freeBadge = indicator.querySelector('.badge');
-                    if (freeBadge) {
-                        // Create and add premium indicator
-                        const premiumIndicator = document.createElement('div');
-                        premiumIndicator.className = 'navbar-premium-indicator';
-                        premiumIndicator.innerHTML = '<i class="fas fa-crown"></i> Premium';
-                        indicator.replaceChild(premiumIndicator, freeBadge);
-                    }
-                });
-                
-                // Hide upgrade buttons
-                const upgradeButtons = document.querySelectorAll('.upgrade-btn');
-                upgradeButtons.forEach(button => {
-                    button.style.display = 'none';
-                    // Add premium badge in place of the button
-                    const premiumBadge = document.createElement('div');
-                    premiumBadge.className = 'premium-indicator';
-                    premiumBadge.innerHTML = `
-                        <i class="fas fa-crown"></i> Premium Account
-                    `;
-                    button.parentNode.insertBefore(premiumBadge, button);
-                });
-            }
             
             // Initialize all dropdowns
             var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
@@ -3760,215 +3501,6 @@
             var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
                 return new bootstrap.Popover(popoverTriggerEl);
             });
-
-            // Initialize navbar dark mode toggle
-            const navbarDarkModeToggle = document.getElementById('navbarDarkModeToggle');
-            if (navbarDarkModeToggle) {
-                // Check if dark mode is enabled in localStorage
-                const savedDarkMode = localStorage.getItem('darkMode');
-                if (savedDarkMode === 'enabled') {
-                    navbarDarkModeToggle.checked = true;
-                }
-                
-                // Add event listener for toggle
-                navbarDarkModeToggle.addEventListener('change', function() {
-                    if (this.checked) {
-                        document.body.classList.add('dark-mode');
-                        localStorage.setItem('darkMode', 'enabled');
-                        
-                        // Sync with settings page toggle if it exists
-                        const settingsToggle = document.getElementById('darkModeToggle');
-                        if (settingsToggle) {
-                            settingsToggle.checked = true;
-                        }
-                        
-                        // Dispatch event for other components to listen
-                        document.dispatchEvent(new CustomEvent('darkModeToggled', { 
-                            detail: { isDarkMode: true } 
-                        }));
-                        
-                        // Send preference to server if user is logged in
-                        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                        const tenantId = "{{ tenant('id') }}";
-                        
-                        fetch(`/${tenantId}/settings/save`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': token,
-                                'Accept': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                dark_mode: true,
-                                tenant_id: tenantId
-                            })
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            console.log('Dark mode preference saved:', data);
-                            
-                            // Show toast notification
-                            const toast = document.getElementById('themeToast');
-                            if (toast) {
-                                // Set toast properties for dark mode
-                                toast.className = 'toast align-items-center text-white bg-dark border-0';
-                                
-                                // Update toast message
-                                const toastMessage = document.getElementById('toastMessage');
-                                if (toastMessage) {
-                                    toastMessage.textContent = 'Dark mode enabled and preference saved';
-                                }
-                                
-                                // Show the toast
-                                const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
-                                bsToast.show();
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error saving dark mode preference:', error);
-                        });
-                    } else {
-                        document.body.classList.remove('dark-mode');
-                        localStorage.setItem('darkMode', 'disabled');
-                        
-                        // Sync with settings page toggle if it exists
-                        const settingsToggle = document.getElementById('darkModeToggle');
-                        if (settingsToggle) {
-                            settingsToggle.checked = false;
-                        }
-                        
-                        // Dispatch event for other components to listen
-                        document.dispatchEvent(new CustomEvent('darkModeToggled', { 
-                            detail: { isDarkMode: false } 
-                        }));
-                        
-                        // Send preference to server if user is logged in
-                        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                        const tenantId = "{{ tenant('id') }}";
-                        
-                        fetch(`/${tenantId}/settings/save`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': token,
-                                'Accept': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                dark_mode: false,
-                                tenant_id: tenantId
-                            })
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            console.log('Dark mode preference saved:', data);
-                            
-                            // Show toast notification
-                            const toast = document.getElementById('themeToast');
-                            if (toast) {
-                                // Set toast properties for light mode
-                                toast.className = 'toast align-items-center text-dark bg-light border-0';
-                                
-                                // Update toast message
-                                const toastMessage = document.getElementById('toastMessage');
-                                if (toastMessage) {
-                                    toastMessage.textContent = 'Light mode enabled and preference saved';
-                                }
-                                
-                                // Show the toast
-                                const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
-                                bsToast.show();
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error saving dark mode preference:', error);
-                        });
-                    }
-                });
-            }
-
-            // Apply current settings on page load - wrapped in try-catch
-            try {
-                if (typeof $ === 'function') {
-                    $(function() {
-                        try {
-                            // Apply dark mode if enabled
-                            if($('#darkModeToggle').is(':checked')) {
-                                $('body').addClass('dark-mode');
-                            }
-                            
-                            // Apply saved dashboard layout if available
-                            const savedLayout = localStorage.getItem('selectedDashboardLayout');
-                            if (savedLayout) {
-                                // Apply the layout class
-                                if (savedLayout === 'compact') {
-                                    $('body').addClass('compact-sidebar');
-                                    console.log('Applied compact layout from localStorage');
-                                } else if (savedLayout === 'modern') {
-                                    $('body').addClass('layout-modern');
-                                    console.log('Applied modern layout from localStorage');
-                                } else {
-                                    // Default to standard
-                                    $('body').removeClass('compact-sidebar layout-modern');
-                                    console.log('Applied standard layout from localStorage');
-                                }
-                            }
-                            
-                            // Ensure tenant name is visible in sidebar
-                            const tenantNameEl = document.querySelector('.tenant-name');
-                            if (tenantNameEl) {
-                                // Force visibility of tenant name, especially on the settings page
-                                tenantNameEl.style.display = 'block';
-                                tenantNameEl.style.visibility = 'visible';
-                                tenantNameEl.style.opacity = '1';
-                                
-                                // Add special highlight when on settings page
-                                if (window.location.href.includes('/settings')) {
-                                    tenantNameEl.style.color = '#FF9900';
-                                    tenantNameEl.style.fontSize = '1.25rem';
-                                }
-                            }
-                        } catch (innerError) {
-                            console.error('Error in jQuery ready function:', innerError);
-                        }
-                    });
-                } else {
-                    // Fallback to vanilla JS if jQuery is not available
-                    console.warn('jQuery not available, using vanilla JS for page initialization');
-                    
-                    // Apply dark mode if toggle is checked
-                    const darkModeToggle = document.getElementById('darkModeToggle');
-                    if (darkModeToggle && darkModeToggle.checked) {
-                        document.body.classList.add('dark-mode');
-                    }
-                    
-                    // Apply saved dashboard layout
-                    const savedLayout = localStorage.getItem('selectedDashboardLayout');
-                    if (savedLayout) {
-                        if (savedLayout === 'compact') {
-                            document.body.classList.add('compact-sidebar');
-                        } else if (savedLayout === 'modern') {
-                            document.body.classList.add('layout-modern');
-                        } else {
-                            document.body.classList.remove('compact-sidebar', 'layout-modern');
-                        }
-                    }
-                    
-                    // Handle tenant name visibility
-                    const tenantNameEl = document.querySelector('.tenant-name');
-                    if (tenantNameEl) {
-                        tenantNameEl.style.display = 'block';
-                        tenantNameEl.style.visibility = 'visible';
-                        tenantNameEl.style.opacity = '1';
-                        
-                        if (window.location.href.includes('/settings')) {
-                            tenantNameEl.style.color = '#FF9900';
-                            tenantNameEl.style.fontSize = '1.25rem';
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Error initializing page UI:', error);
-            }
         });
     </script>
     @stack('scripts')
@@ -4277,5 +3809,225 @@
             }
         });
     </script>
+
+    <!-- Initialize all dropdowns -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle payment method change in sidebar modal
+            document.getElementById('sidebar_payment_method')?.addEventListener('change', function() {
+                // Hide all payment details
+                document.querySelectorAll('#sidebarPremiumModal .payment-details').forEach(el => {
+                    el.classList.add('d-none');
+                });
+                
+                // Show selected payment method details
+                const method = this.value;
+                if (method) {
+                    document.getElementById('sidebar_' + method + 'Details')?.classList.remove('d-none');
+                }
+            });
+
+            // Initialize all dropdowns
+            var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
+            var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+                return new bootstrap.Dropdown(dropdownToggleEl);
+            });
+        });
+    </script>
+
+    <!-- Sidebar Premium Modal Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle payment method change in sidebar modal
+            document.getElementById('sidebar_payment_method')?.addEventListener('change', function() {
+                // Hide all payment details
+                document.querySelectorAll('#sidebarPremiumModal .payment-details').forEach(el => {
+                    el.classList.add('d-none');
+                });
+                
+                // Show selected payment method details
+                const method = this.value;
+                if (method) {
+                    document.getElementById('sidebar_' + method + 'Details')?.classList.remove('d-none');
+                }
+            });
+
+            // Form validation and submission
+            const sidebarUpgradeForm = document.getElementById('sidebarUpgradeForm');
+            if (sidebarUpgradeForm) {
+                sidebarUpgradeForm.addEventListener('submit', function(e) {
+                    // Get form values
+                    const paymentMethod = document.getElementById('sidebar_payment_method').value;
+                    const referenceNumber = document.getElementById('sidebar_reference_number').value;
+                    
+                    // Basic validation
+                    if (!paymentMethod) {
+                        e.preventDefault();
+                        alert('Please select a payment method');
+                        return false;
+                    }
+                    
+                    if (!referenceNumber) {
+                        e.preventDefault();
+                        alert('Please enter your payment reference number');
+                        return false;
+                    }
+                    
+                    // Disable the button and show loading state
+                    const submitButton = document.getElementById('sidebarUpgradeButton');
+                    if (submitButton) {
+                        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Processing...';
+                        submitButton.disabled = true;
+                    }
+                    
+                    // Let the form submit (the controller will handle the upgrade process)
+                    return true;
+                });
+            }
+        });
+    </script>
+
+    <!-- Sidebar Premium Modal -->
+    <div class="modal fade" id="sidebarPremiumModal" tabindex="-1" aria-labelledby="sidebarPremiumModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title" id="sidebarPremiumModalLabel">
+                        <i class="fas fa-crown text-warning me-2"></i>Upgrade to Premium
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-2">
+                    <!-- Display session messages -->
+                    @if(session('success'))
+                        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                            {{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+                    
+                    @if(session('error'))
+                        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                            {{ session('error') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+                    
+                    <div class="text-center mb-4">
+                        <div class="bg-warning bg-opacity-10 rounded-circle p-3 d-inline-block mb-3">
+                            <i class="fas fa-crown text-warning fs-1"></i>
+                        </div>
+                        <h4>Unlock Premium Features</h4>
+                        <p class="text-muted">Upgrade your account to access premium features and enhance your school management capabilities.</p>
+                    </div>
+                    
+                    <div class="card border-warning mb-4">
+                        <div class="card-header bg-warning bg-opacity-10 border-warning">
+                            <h5 class="mb-0 text-warning"><i class="fas fa-star me-2"></i>Premium Benefits</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex align-items-center border-0 px-0">
+                                    <i class="fas fa-check-circle text-success me-3"></i>
+                                    <span>Profile customization</span>
+                                </li>
+                                <li class="list-group-item d-flex align-items-center border-0 px-0">
+                                    <i class="fas fa-check-circle text-success me-3"></i>
+                                    <span>Advanced reporting and analytics</span>
+                                </li>
+                                <li class="list-group-item d-flex align-items-center border-0 px-0">
+                                    <i class="fas fa-check-circle text-success me-3"></i>
+                                    <span>Unlimited staff accounts</span>
+                                </li>
+                                <li class="list-group-item d-flex align-items-center border-0 px-0">
+                                    <i class="fas fa-check-circle text-success me-3"></i>
+                                    <span>Priority customer support</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="card border-primary mb-4">
+                        <div class="card-header bg-primary bg-opacity-10 border-primary">
+                            <h5 class="mb-0 text-primary"><i class="fas fa-money-bill-wave me-2"></i>Subscription Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="fw-bold">Premium Plan:</span>
+                                <span class="badge bg-primary rounded-pill px-3 py-2">Monthly</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Price:</span>
+                                <span class="fw-bold fs-4">₱999.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span>Billing:</span>
+                                <span>Monthly, auto-renews</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form action="{{ route('tenant.subscription.upgrade', ['tenant' => tenant('id')]) }}" method="POST" id="sidebarUpgradeForm">
+                        @csrf
+                        <div class="mb-3">
+                            <label for="sidebar_payment_method" class="form-label">Payment Method</label>
+                            <select class="form-select" id="sidebar_payment_method" name="payment_method" required>
+                                <option value="">Select payment method</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                                <option value="gcash">GCash</option>
+                                <option value="paymaya">PayMaya</option>
+                            </select>
+                        </div>
+                        
+                        <div id="sidebar_bankTransferDetails" class="payment-details mb-3 d-none">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Bank Transfer Instructions</h6>
+                                <p class="mb-0">Please transfer ₱999.00 to the following account:</p>
+                                <hr>
+                                <p class="mb-1"><strong>Bank:</strong> BDO</p>
+                                <p class="mb-1"><strong>Account Name:</strong> BukSkwela Inc.</p>
+                                <p class="mb-1"><strong>Account Number:</strong> 1234-5678-9012</p>
+                                <p class="mb-0"><strong>Reference:</strong> Premium-{{ tenant('id') }}</p>
+                            </div>
+                        </div>
+                        
+                        <div id="sidebar_gcashDetails" class="payment-details mb-3 d-none">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>GCash Instructions</h6>
+                                <p class="mb-0">Please send ₱999.00 to the following GCash number:</p>
+                                <hr>
+                                <p class="mb-1"><strong>GCash Number:</strong> 0917-123-4567</p>
+                                <p class="mb-1"><strong>Account Name:</strong> BukSkwela Inc.</p>
+                                <p class="mb-0"><strong>Reference:</strong> Premium-{{ tenant('id') }}</p>
+                            </div>
+                        </div>
+                        
+                        <div id="sidebar_paymayaDetails" class="payment-details mb-3 d-none">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>PayMaya Instructions</h6>
+                                <p class="mb-0">Please send ₱999.00 to the following PayMaya number:</p>
+                                <hr>
+                                <p class="mb-1"><strong>PayMaya Number:</strong> 0918-765-4321</p>
+                                <p class="mb-1"><strong>Account Name:</strong> BukSkwela Inc.</p>
+                                <p class="mb-0"><strong>Reference:</strong> Premium-{{ tenant('id') }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="sidebar_reference_number" class="form-label">Reference Number</label>
+                            <input type="text" class="form-control" id="sidebar_reference_number" name="reference_number" placeholder="Enter your payment reference number" required>
+                            <div class="form-text">Please enter the reference number from your payment transaction.</div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-warning" id="sidebarUpgradeButton">
+                                <i class="fas fa-crown me-2"></i>Upgrade Now
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

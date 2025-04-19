@@ -111,6 +111,7 @@ Route::middleware(['web'])
             Route::get('/', [App\Http\Controllers\SuperAdmin\PaymentController::class, 'index'])->name('index');
             Route::get('/{payment}', [App\Http\Controllers\SuperAdmin\PaymentController::class, 'show'])->name('show');
             Route::post('/{payment}/mark-paid', [App\Http\Controllers\SuperAdmin\PaymentController::class, 'markAsPaid'])->name('mark-paid');
+            Route::put('/upgrades/{id}/approve', [App\Http\Controllers\SuperAdmin\PaymentController::class, 'approveUpgrade'])->name('approve-upgrade');
             Route::get('/export', [App\Http\Controllers\SuperAdmin\PaymentController::class, 'export'])->name('export');
         });
 
@@ -142,6 +143,11 @@ Route::middleware(['web'])
                 Route::get('/', [App\Http\Controllers\Tenant\ProfileController::class, 'index'])->name('profile.index');
                 Route::put('/update', [App\Http\Controllers\Tenant\ProfileController::class, 'update'])->name('profile.update');
                 Route::put('/password', [App\Http\Controllers\Tenant\ProfileController::class, 'updatePassword'])->name('profile.password');
+            });
+
+            // Subscription Routes
+            Route::prefix('subscription')->middleware(['auth:admin'])->group(function () {
+                Route::post('/upgrade', [App\Http\Controllers\Tenant\SubscriptionController::class, 'upgrade'])->name('tenant.subscription.upgrade');
             });
 
             // Requirements Routes

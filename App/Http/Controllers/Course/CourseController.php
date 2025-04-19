@@ -18,7 +18,7 @@ class CourseController extends Controller
             $query = Course::on('tenant');
 
             // Apply search filter
-            if ($request->has('search')) {
+            if ($request->has('search') && !empty($request->get('search'))) {
                 $search = $request->get('search');
                 $query->where(function($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
@@ -27,11 +27,14 @@ class CourseController extends Controller
             }
 
             // Apply status filter
-            if ($request->has('status') && $request->get('status') !== '') {
+            if ($request->has('status') && !empty($request->get('status')) && $request->get('status') !== 'all') {
                 $query->where('status', $request->get('status'));
             }
 
             $courses = $query->paginate(10);
+            
+            // Get instructors for dropdown
+            $instructors = Staff::on('tenant')->where('role', 'instructor')->get();
             
             // Log that we're viewing the courses
             \Log::info('Viewing courses index', [
@@ -40,7 +43,7 @@ class CourseController extends Controller
                 'count' => $courses->count()
             ]);
 
-            return view('tenant.courses.index', compact('courses'));
+            return view('tenant.courses.index', compact('courses', 'instructors'));
         } catch (\Exception $e) {
             // Log the error
             \Log::error('Error viewing courses index', [

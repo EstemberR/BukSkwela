@@ -155,6 +155,38 @@
     .plan-options .badge {
         animation: pulse 2s infinite;
     }
+    
+    /* Fix for SweetAlert modals */
+    .swal2-container {
+        z-index: 9999 !important; 
+    }
+    
+    .swal2-popup {
+        border-radius: 0.75rem !important;
+        box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    .swal2-title {
+        font-weight: 600 !important;
+    }
+    
+    .swal2-html-container {
+        margin-top: 1rem !important;
+    }
+    
+    /* Plan card in SweetAlert */
+    .plan-card {
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+    }
+    
+    .plan-card-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
 </style>
 @endsection
 
@@ -264,11 +296,10 @@
                                     <td>{{ $tenant->tenant_email }}</td>
                                     <td>
                                         <div class="subscription-status">
-                                            <div class="btn-group">
                                                 <button type="button" 
-                                                        class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : 'btn-outline-secondary' }} dropdown-toggle" 
-                                                        data-bs-toggle="dropdown" 
-                                                        aria-expanded="false">
+                                                    class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : 'btn-outline-secondary' }}"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#subscriptionModal-{{ $tenant->id }}">
                                                     @if($tenant->subscription_plan === 'premium')
                                                         <i class="fas fa-crown text-warning me-1"></i>
                                                     @else
@@ -276,36 +307,111 @@
                                                     @endif
                                                     {{ ucfirst($tenant->subscription_plan) }}
                                                 </button>
-                                                <ul class="dropdown-menu">
-                                                    <li><h6 class="dropdown-header">Change Plan</h6></li>
-                                                    <li>
+
+                                            <!-- Subscription Plan Modal -->
+                                            <div class="modal fade" id="subscriptionModal-{{ $tenant->id }}" tabindex="-1" aria-labelledby="subscriptionModalLabel-{{ $tenant->id }}" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="subscriptionModalLabel-{{ $tenant->id }}">Manage Subscription: {{ $tenant->tenant_name }}</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <div class="current-plan mb-4">
+                                                                <h6 class="text-muted mb-3">Current Plan</h6>
+                                                                <div class="card bg-light">
+                                                                    <div class="card-body d-flex align-items-center">
+                                                                        <div class="me-3">
+                                                                            @if($tenant->subscription_plan === 'premium')
+                                                                                <div class="display-6 text-warning">
+                                                                                    <i class="fas fa-crown"></i>
+                                                                                </div>
+                                                                            @else
+                                                                                <div class="display-6 text-info">
+                                                                                    <i class="fas fa-cube"></i>
+                                                                                </div>
+                                                                            @endif
+                                                                        </div>
+                                                                        <div>
+                                                                            <h5 class="card-title mb-1">{{ ucfirst($tenant->subscription_plan) }}</h5>
+                                                                            <p class="card-text">
+                                                                                @if($tenant->subscription_plan === 'premium')
+                                                                                    Premium features with priority support
+                                                                                    @if(isset($tenant->data['subscription_ends_at']))
+                                                                                        <br><small class="text-muted">Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}</small>
+                                                                                    @endif
+                                                                                @else
+                                                                                    Basic features with standard support
+                                                                                @endif
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="change-plan">
+                                                                <h6 class="text-muted mb-3">Change Plan</h6>
+                                                                <div class="row">
+                                                                    @if($tenant->subscription_plan === 'basic')
+                                                                    <div class="col-12">
+                                                                        <div class="card border-warning">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-warning">
+                                                                                        <i class="fas fa-crown"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Premium</h5>
+                                                                                    <p class="card-text">₱5,000/month with advanced features</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
                                                         <button type="button" 
-                                                                class="dropdown-item subscription-change-btn"
+                                                                                        class="btn btn-warning subscription-change-btn"
                                                                 data-tenant-id="{{ $tenant->id }}"
                                                                 data-tenant-name="{{ $tenant->tenant_name }}"
                                                                 data-current-plan="{{ $tenant->subscription_plan }}"
-                                                                data-target-plan="{{ $tenant->subscription_plan === 'basic' ? 'premium' : 'basic' }}">
-                                                            @if($tenant->subscription_plan === 'basic')
-                                                                <i class="fas fa-crown text-warning me-2"></i>
-                                                                Upgrade to Premium
+                                                                                        data-target-plan="premium"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-up me-1"></i> Upgrade to Premium
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
                                                             @else
-                                                                <i class="fas fa-cube me-2"></i>
-                                                                Downgrade to Basic
-                                                            @endif
+                                                                    <div class="col-12">
+                                                                        <div class="card border-info">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-info">
+                                                                                        <i class="fas fa-cube"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Basic</h5>
+                                                                                    <p class="card-text">Free tier with limited features</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-info text-white subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="basic"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-down me-1"></i> Downgrade to Basic
                                                         </button>
-                                                    </li>
-                                                    @if($tenant->subscription_plan === 'premium' && isset($tenant->data['subscription_ends_at']))
-                                                        <li><hr class="dropdown-divider"></li>
-                                                        <li>
-                                                            <div class="dropdown-item-text">
-                                                                <small class="text-muted">
-                                                                    <i class="fas fa-clock me-1"></i>
-                                                                    Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}
-                                                                </small>
                                                             </div>
-                                                        </li>
+                                                                        </div>
+                                                                    </div>
                                                     @endif
-                                                </ul>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
@@ -443,11 +549,10 @@
                                     <td>{{ $tenant->tenant_email }}</td>
                                     <td>
                                         <div class="subscription-status">
-                                            <div class="btn-group">
                                                 <button type="button" 
-                                                        class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : 'btn-outline-secondary' }} dropdown-toggle" 
-                                                        data-bs-toggle="dropdown" 
-                                                        aria-expanded="false">
+                                                    class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : 'btn-outline-secondary' }}"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#subscriptionModal-{{ $tenant->id }}">
                                                     @if($tenant->subscription_plan === 'premium')
                                                         <i class="fas fa-crown text-warning me-1"></i>
                                                     @else
@@ -455,36 +560,111 @@
                                                     @endif
                                                     {{ ucfirst($tenant->subscription_plan) }}
                                                 </button>
-                                                <ul class="dropdown-menu">
-                                                    <li><h6 class="dropdown-header">Change Plan</h6></li>
-                                                    <li>
+
+                                            <!-- Subscription Plan Modal -->
+                                            <div class="modal fade" id="subscriptionModal-{{ $tenant->id }}" tabindex="-1" aria-labelledby="subscriptionModalLabel-{{ $tenant->id }}" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="subscriptionModalLabel-{{ $tenant->id }}">Manage Subscription: {{ $tenant->tenant_name }}</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <div class="current-plan mb-4">
+                                                                <h6 class="text-muted mb-3">Current Plan</h6>
+                                                                <div class="card bg-light">
+                                                                    <div class="card-body d-flex align-items-center">
+                                                                        <div class="me-3">
+                                                                            @if($tenant->subscription_plan === 'premium')
+                                                                                <div class="display-6 text-warning">
+                                                                                    <i class="fas fa-crown"></i>
+                                                                                </div>
+                                                                            @else
+                                                                                <div class="display-6 text-info">
+                                                                                    <i class="fas fa-cube"></i>
+                                                                                </div>
+                                                                            @endif
+                                                                        </div>
+                                                                        <div>
+                                                                            <h5 class="card-title mb-1">{{ ucfirst($tenant->subscription_plan) }}</h5>
+                                                                            <p class="card-text">
+                                                                                @if($tenant->subscription_plan === 'premium')
+                                                                                    Premium features with priority support
+                                                                                    @if(isset($tenant->data['subscription_ends_at']))
+                                                                                        <br><small class="text-muted">Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}</small>
+                                                                                    @endif
+                                                                                @else
+                                                                                    Basic features with standard support
+                                                                                @endif
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="change-plan">
+                                                                <h6 class="text-muted mb-3">Change Plan</h6>
+                                                                <div class="row">
+                                                                    @if($tenant->subscription_plan === 'basic')
+                                                                    <div class="col-12">
+                                                                        <div class="card border-warning">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-warning">
+                                                                                        <i class="fas fa-crown"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Premium</h5>
+                                                                                    <p class="card-text">₱5,000/month with advanced features</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
                                                         <button type="button" 
-                                                                class="dropdown-item subscription-change-btn"
+                                                                                        class="btn btn-warning subscription-change-btn"
                                                                 data-tenant-id="{{ $tenant->id }}"
                                                                 data-tenant-name="{{ $tenant->tenant_name }}"
                                                                 data-current-plan="{{ $tenant->subscription_plan }}"
-                                                                data-target-plan="{{ $tenant->subscription_plan === 'basic' ? 'premium' : 'basic' }}">
-                                                            @if($tenant->subscription_plan === 'basic')
-                                                                <i class="fas fa-crown text-warning me-2"></i>
-                                                                Upgrade to Premium
+                                                                                        data-target-plan="premium"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-up me-1"></i> Upgrade to Premium
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
                                                             @else
-                                                                <i class="fas fa-cube me-2"></i>
-                                                                Downgrade to Basic
-                                                            @endif
+                                                                    <div class="col-12">
+                                                                        <div class="card border-info">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-info">
+                                                                                        <i class="fas fa-cube"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Basic</h5>
+                                                                                    <p class="card-text">Free tier with limited features</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-info text-white subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="basic"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-down me-1"></i> Downgrade to Basic
                                                         </button>
-                                                    </li>
-                                                    @if($tenant->subscription_plan === 'premium' && isset($tenant->data['subscription_ends_at']))
-                                                        <li><hr class="dropdown-divider"></li>
-                                                        <li>
-                                                            <div class="dropdown-item-text">
-                                                                <small class="text-muted">
-                                                                    <i class="fas fa-clock me-1"></i>
-                                                                    Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}
-                                                                </small>
                                                             </div>
-                                                        </li>
+                                                                        </div>
+                                                                    </div>
                                                     @endif
-                                                </ul>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
@@ -551,11 +731,10 @@
                                     <td>{{ $tenant->tenant_email }}</td>
                                     <td>
                                         <div class="subscription-status">
-                                            <div class="btn-group">
                                                 <button type="button" 
-                                                        class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : 'btn-outline-secondary' }} dropdown-toggle" 
-                                                        data-bs-toggle="dropdown" 
-                                                        aria-expanded="false">
+                                                    class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : 'btn-outline-secondary' }}"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#subscriptionModal-{{ $tenant->id }}">
                                                     @if($tenant->subscription_plan === 'premium')
                                                         <i class="fas fa-crown text-warning me-1"></i>
                                                     @else
@@ -563,36 +742,111 @@
                                                     @endif
                                                     {{ ucfirst($tenant->subscription_plan) }}
                                                 </button>
-                                                <ul class="dropdown-menu">
-                                                    <li><h6 class="dropdown-header">Change Plan</h6></li>
-                                                    <li>
+
+                                            <!-- Subscription Plan Modal -->
+                                            <div class="modal fade" id="subscriptionModal-{{ $tenant->id }}" tabindex="-1" aria-labelledby="subscriptionModalLabel-{{ $tenant->id }}" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="subscriptionModalLabel-{{ $tenant->id }}">Manage Subscription: {{ $tenant->tenant_name }}</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <div class="current-plan mb-4">
+                                                                <h6 class="text-muted mb-3">Current Plan</h6>
+                                                                <div class="card bg-light">
+                                                                    <div class="card-body d-flex align-items-center">
+                                                                        <div class="me-3">
+                                                                            @if($tenant->subscription_plan === 'premium')
+                                                                                <div class="display-6 text-warning">
+                                                                                    <i class="fas fa-crown"></i>
+                                                                                </div>
+                                                                            @else
+                                                                                <div class="display-6 text-info">
+                                                                                    <i class="fas fa-cube"></i>
+                                                                                </div>
+                                                                            @endif
+                                                                        </div>
+                                                                        <div>
+                                                                            <h5 class="card-title mb-1">{{ ucfirst($tenant->subscription_plan) }}</h5>
+                                                                            <p class="card-text">
+                                                                                @if($tenant->subscription_plan === 'premium')
+                                                                                    Premium features with priority support
+                                                                                    @if(isset($tenant->data['subscription_ends_at']))
+                                                                                        <br><small class="text-muted">Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}</small>
+                                                                                    @endif
+                                                                                @else
+                                                                                    Basic features with standard support
+                                                                                @endif
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="change-plan">
+                                                                <h6 class="text-muted mb-3">Change Plan</h6>
+                                                                <div class="row">
+                                                                    @if($tenant->subscription_plan === 'basic')
+                                                                    <div class="col-12">
+                                                                        <div class="card border-warning">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-warning">
+                                                                                        <i class="fas fa-crown"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Premium</h5>
+                                                                                    <p class="card-text">₱5,000/month with advanced features</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
                                                         <button type="button" 
-                                                                class="dropdown-item subscription-change-btn"
+                                                                                        class="btn btn-warning subscription-change-btn"
                                                                 data-tenant-id="{{ $tenant->id }}"
                                                                 data-tenant-name="{{ $tenant->tenant_name }}"
                                                                 data-current-plan="{{ $tenant->subscription_plan }}"
-                                                                data-target-plan="{{ $tenant->subscription_plan === 'basic' ? 'premium' : 'basic' }}">
-                                                            @if($tenant->subscription_plan === 'basic')
-                                                                <i class="fas fa-crown text-warning me-2"></i>
-                                                                Upgrade to Premium
+                                                                                        data-target-plan="premium"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-up me-1"></i> Upgrade to Premium
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
                                                             @else
-                                                                <i class="fas fa-cube me-2"></i>
-                                                                Downgrade to Basic
-                                                            @endif
+                                                                    <div class="col-12">
+                                                                        <div class="card border-info">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-info">
+                                                                                        <i class="fas fa-cube"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Basic</h5>
+                                                                                    <p class="card-text">Free tier with limited features</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-info text-white subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="basic"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-down me-1"></i> Downgrade to Basic
                                                         </button>
-                                                    </li>
-                                                    @if($tenant->subscription_plan === 'premium' && isset($tenant->data['subscription_ends_at']))
-                                                        <li><hr class="dropdown-divider"></li>
-                                                        <li>
-                                                            <div class="dropdown-item-text">
-                                                                <small class="text-muted">
-                                                                    <i class="fas fa-clock me-1"></i>
-                                                                    Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}
-                                                                </small>
                                                             </div>
-                                                        </li>
+                                                                        </div>
+                                                                    </div>
                                                     @endif
-                                                </ul>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
@@ -649,11 +903,10 @@
                                     <td>{{ $tenant->tenant_email }}</td>
                                     <td>
                                         <div class="subscription-status">
-                                            <div class="btn-group">
                                                 <button type="button" 
-                                                        class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : 'btn-outline-secondary' }} dropdown-toggle" 
-                                                        data-bs-toggle="dropdown" 
-                                                        aria-expanded="false">
+                                                    class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : 'btn-outline-secondary' }}"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#subscriptionModal-{{ $tenant->id }}">
                                                     @if($tenant->subscription_plan === 'premium')
                                                         <i class="fas fa-crown text-warning me-1"></i>
                                                     @else
@@ -661,36 +914,111 @@
                                                     @endif
                                                     {{ ucfirst($tenant->subscription_plan) }}
                                                 </button>
-                                                <ul class="dropdown-menu">
-                                                    <li><h6 class="dropdown-header">Change Plan</h6></li>
-                                                    <li>
+
+                                            <!-- Subscription Plan Modal -->
+                                            <div class="modal fade" id="subscriptionModal-{{ $tenant->id }}" tabindex="-1" aria-labelledby="subscriptionModalLabel-{{ $tenant->id }}" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="subscriptionModalLabel-{{ $tenant->id }}">Manage Subscription: {{ $tenant->tenant_name }}</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <div class="current-plan mb-4">
+                                                                <h6 class="text-muted mb-3">Current Plan</h6>
+                                                                <div class="card bg-light">
+                                                                    <div class="card-body d-flex align-items-center">
+                                                                        <div class="me-3">
+                                                                            @if($tenant->subscription_plan === 'premium')
+                                                                                <div class="display-6 text-warning">
+                                                                                    <i class="fas fa-crown"></i>
+                                                                                </div>
+                                                                            @else
+                                                                                <div class="display-6 text-info">
+                                                                                    <i class="fas fa-cube"></i>
+                                                                                </div>
+                                                                            @endif
+                                                                        </div>
+                                                                        <div>
+                                                                            <h5 class="card-title mb-1">{{ ucfirst($tenant->subscription_plan) }}</h5>
+                                                                            <p class="card-text">
+                                                                                @if($tenant->subscription_plan === 'premium')
+                                                                                    Premium features with priority support
+                                                                                    @if(isset($tenant->data['subscription_ends_at']))
+                                                                                        <br><small class="text-muted">Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}</small>
+                                                                                    @endif
+                                                                                @else
+                                                                                    Basic features with standard support
+                                                                                @endif
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="change-plan">
+                                                                <h6 class="text-muted mb-3">Change Plan</h6>
+                                                                <div class="row">
+                                                                    @if($tenant->subscription_plan === 'basic')
+                                                                    <div class="col-12">
+                                                                        <div class="card border-warning">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-warning">
+                                                                                        <i class="fas fa-crown"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Premium</h5>
+                                                                                    <p class="card-text">₱5,000/month with advanced features</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
                                                         <button type="button" 
-                                                                class="dropdown-item subscription-change-btn"
+                                                                                        class="btn btn-warning subscription-change-btn"
                                                                 data-tenant-id="{{ $tenant->id }}"
                                                                 data-tenant-name="{{ $tenant->tenant_name }}"
                                                                 data-current-plan="{{ $tenant->subscription_plan }}"
-                                                                data-target-plan="{{ $tenant->subscription_plan === 'basic' ? 'premium' : 'basic' }}">
-                                                            @if($tenant->subscription_plan === 'basic')
-                                                                <i class="fas fa-crown text-warning me-2"></i>
-                                                                Upgrade to Premium
+                                                                                        data-target-plan="premium"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-up me-1"></i> Upgrade to Premium
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
                                                             @else
-                                                                <i class="fas fa-cube me-2"></i>
-                                                                Downgrade to Basic
-                                                            @endif
+                                                                    <div class="col-12">
+                                                                        <div class="card border-info">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-info">
+                                                                                        <i class="fas fa-cube"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Basic</h5>
+                                                                                    <p class="card-text">Free tier with limited features</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-info text-white subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="basic"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-down me-1"></i> Downgrade to Basic
                                                         </button>
-                                                    </li>
-                                                    @if($tenant->subscription_plan === 'premium' && isset($tenant->data['subscription_ends_at']))
-                                                        <li><hr class="dropdown-divider"></li>
-                                                        <li>
-                                                            <div class="dropdown-item-text">
-                                                                <small class="text-muted">
-                                                                    <i class="fas fa-clock me-1"></i>
-                                                                    Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}
-                                                                </small>
                                                             </div>
-                                                        </li>
+                                                                        </div>
+                                                                    </div>
                                                     @endif
-                                                </ul>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
@@ -794,56 +1122,70 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.subscription-change-btn').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
+            
+            // Get data attributes
             const tenantId = this.dataset.tenantId;
             const tenantName = this.dataset.tenantName;
             const targetPlan = this.dataset.targetPlan;
+            
+            // Handle subscription change
             handleSubscriptionChange(tenantId, tenantName, targetPlan);
         });
     });
 
-    // Initialize tabs and dropdowns
+    // Initialize tabs
     initializeTabs();
-    initializeDropdowns();
 });
 
 function handleSubscriptionChange(tenantId, tenantName, targetPlan) {
     const planDetails = {
         'basic': { 
             title: 'Basic Plan',
-            icon: '<i class="fas fa-cube text-info me-2"></i>',
+            icon: '<i class="fas fa-cube text-info"></i>',
             description: 'Free tier with limited features',
-            color: '#17a2b8'
+            color: '#17a2b8',
+            buttonClass: 'btn-info'
         },
         'premium': { 
             title: 'Premium Plan',
-            icon: '<i class="fas fa-crown text-warning me-2"></i>',
+            icon: '<i class="fas fa-crown text-warning"></i>',
             description: '₱5,000/month with advanced features',
-            color: '#ffc107'
+            color: '#ffc107',
+            buttonClass: 'btn-warning'
         }
     };
     
     Swal.fire({
-        title: `Change to ${planDetails[targetPlan].title}?`,
+        title: `Change Subscription Plan`,
         html: `
             <div class="text-center">
-                <div class="display-1 mb-3" style="color: ${planDetails[targetPlan].color}">
+                <div class="plan-card" style="background-color: ${planDetails[targetPlan].color}15; border: 2px solid ${planDetails[targetPlan].color}">
+                    <div class="plan-card-icon" style="color: ${planDetails[targetPlan].color}">
                     ${planDetails[targetPlan].icon}
                     </div>
-                <p>You are about to change the subscription for <strong>${tenantName}</strong> to:</p>
-                            <div class="alert alert-light border">
-                    <strong>${planDetails[targetPlan].title}</strong><br>
-                    <small>${planDetails[targetPlan].description}</small>
+                    <h4>${planDetails[targetPlan].title}</h4>
+                    <p>${planDetails[targetPlan].description}</p>
                 </div>
-                <p class="text-muted">This action will take effect immediately.</p>
+                <p>You are about to change the subscription for:</p>
+                <h5 class="mb-3">${tenantName}</h5>
+                            <div class="alert alert-light border">
+                    <p class="mb-0">This change will be applied immediately and may affect available features for this tenant.</p>
+                </div>
             </div>
         `,
-        icon: 'warning',
         showCancelButton: true,
+        confirmButtonText: `Yes, change to ${planDetails[targetPlan].title}`,
+        cancelButtonText: 'Cancel',
         confirmButtonColor: planDetails[targetPlan].color,
         cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Yes, change plan',
-        cancelButtonText: 'Cancel',
-        reverseButtons: true
+        reverseButtons: true,
+        customClass: {
+            confirmButton: planDetails[targetPlan].buttonClass,
+            title: 'text-dark',
+            popup: 'subscription-modal'
+        },
+        backdrop: 'rgba(0,0,0,0.4)',
+        focusConfirm: false
     }).then((result) => {
         if (result.isConfirmed) {
             submitPlanChange(tenantId);
@@ -856,18 +1198,23 @@ function submitPlanChange(tenantId) {
         const form = document.getElementById(`subscription-form-${tenantId}`);
         if (!form) {
             console.error('Form not found for tenant ID:', tenantId);
-            Swal.fire('Error', 'Could not process subscription change. Please try again.', 'error');
+            Swal.fire({
+                title: 'Error',
+                text: 'Could not process subscription change. Please try again.',
+                icon: 'error',
+                confirmButtonColor: '#dc3545'
+            });
             return;
         }
 
         // Show loading state
         Swal.fire({
-            title: 'Processing...',
-            html: 'Please wait while we update the subscription.',
+            title: 'Processing Subscription Change',
+            html: '<div class="d-flex flex-column align-items-center"><div class="spinner-border text-primary mb-3"></div><p>Please wait while we update the subscription plan...</p></div>',
             allowOutsideClick: false,
             allowEscapeKey: false,
             showConfirmButton: false,
-            willOpen: () => {
+            didOpen: () => {
                 Swal.showLoading();
             }
         });
@@ -877,7 +1224,12 @@ function submitPlanChange(tenantId) {
         
     } catch (error) {
         console.error('Error submitting form:', error);
-        Swal.fire('Error', 'An error occurred while processing your request. Please try again.', 'error');
+        Swal.fire({
+            title: 'Error',
+            text: 'An error occurred while processing your request. Please try again.',
+            icon: 'error',
+            confirmButtonColor: '#dc3545'
+        });
     }
 }
 

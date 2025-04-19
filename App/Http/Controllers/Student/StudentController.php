@@ -17,10 +17,27 @@ use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $students = Student::with('course')
-            ->paginate(10);
+        $query = Student::with('course');
+        
+        // Apply search filter if provided
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('name', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('student_id', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('email', 'like', '%' . $searchTerm . '%');
+            });
+        }
+        
+        // Apply course filter if provided
+        if ($request->has('course_id') && !empty($request->course_id)) {
+            $query->where('course_id', $request->course_id);
+        }
+        
+        // Get paginated results
+        $students = $query->paginate(10)->appends($request->query());
             
         // Ensure we're fetching with the correct connection
         $courses = Course::on('tenant')->where('status', 'active')->get();
