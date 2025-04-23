@@ -9,17 +9,26 @@ class TenantAdmin extends Authenticatable
     protected $fillable = [
         'name',
         'email',
-        'password',
-        'tenant_id'
+        'tenant_id',
+        'avatar',
+        'role',
+        'status',
+        'can_login_central'
     ];
 
-    protected $hidden = [
-        'password',
-    ];
+    protected $hidden = [];
 
     public function tenant()
     {
         return $this->belongsTo(Tenant::class);
+    }
+    
+    /**
+     * Get the credentials associated with this tenant admin.
+     */
+    public function credential()
+    {
+        return $this->hasOne(TenantCredential::class, 'tenant_admin_id');
     }
 
     public function hasRole($role)

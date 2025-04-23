@@ -12,25 +12,46 @@ class CheckTenantStatus
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @return mixed
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next)
     {
-        if (tenant()) {
-            // Skip status check if the user is already on the status page
-            if ($request->route()->getName() === 'tenant.status') {
+        // Get the current tenant
+        $tenant = tenant();
+        
+        // If no tenant is resolved, let the request pass
+        if (!$tenant) {
+            return $next($request);
+        }
+
+        // For API requests, return a JSON response for disabled tenants
+        if ($request->expectsJson() && $tenant->status === 'disabled') {
+            return response()->json([
+                'error' => 'This account has been disabled.',
+                'status' => 'disabled'
+            ], 403);
+        }
+        
+        // Check if the tenant is disabled - show the custom disabled page
+        if ($tenant->status === 'disabled') {
+            return response()->view('disabled', [
+                'tenant' => $tenant
+            ], 403);
+        }
+        
+        // Handle other statuses (pending, etc.) with your existing logic
+        if ($tenant->status !== 'approved') {
+            // Skip status check if the user is on the status page or login page
+            if ($request->route() && 
+                ($request->route()->getName() === 'tenant.status' || 
+                 $request->route()->getName() === 'tenant.login')) {
                 return $next($request);
             }
             
-            // Skip status check if the user is on the login page
-            if ($request->route()->getName() === 'tenant.login') {
-                return $next($request);
-            }
-            
-            $tenant = Tenant::find(tenant('id'));
-            
-            if (!$tenant || $tenant->status !== 'approved') {
-                // Instead of showing the inactive view directly, redirect to the status page
+            // Redirect to the status page for non-approved, non-disabled tenants
+            if ($request->route() && $request->route()->getName() !== 'tenant.status') {
                 return redirect()->route('tenant.status');
             }
         }

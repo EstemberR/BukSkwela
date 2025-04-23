@@ -3334,7 +3334,19 @@
                 <!-- Upgrade to Pro Button -->
                 <div class="mt-auto">
                     @php
-                        $currentTenant = \App\Models\Tenant::where('id', tenant('id'))->first();
+                        // Get current URL to extract tenant ID
+                        $url = request()->url();
+                        preg_match('/^https?:\/\/([^\.]+)\./', $url, $matches);
+                        $tenantDomain = $matches[1] ?? null;
+                        
+                        // Get tenant from domain or tenant helper
+                        if ($tenantDomain) {
+                            $currentTenant = \App\Models\Tenant::where('id', $tenantDomain)->first();
+                        } else {
+                            $tenantId = tenant('id') ?? null;
+                            $currentTenant = $tenantId ? \App\Models\Tenant::find($tenantId) : null;
+                        }
+                        
                         $isPremium = $currentTenant && $currentTenant->subscription_plan === 'premium';
                     @endphp
                     
@@ -3814,7 +3826,8 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Handle payment method change in sidebar modal
-            document.getElementById('sidebar_payment_method')?.addEventListener('change', function() {
+            document.querySelectorAll('#sidebarPremiumModal input[name="payment_method"]').forEach(input => {
+                input.addEventListener('change', function() {
                 // Hide all payment details
                 document.querySelectorAll('#sidebarPremiumModal .payment-details').forEach(el => {
                     el.classList.add('d-none');
@@ -3825,6 +3838,7 @@
                 if (method) {
                     document.getElementById('sidebar_' + method + 'Details')?.classList.remove('d-none');
                 }
+                });
             });
 
             // Initialize all dropdowns
@@ -3839,7 +3853,8 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Handle payment method change in sidebar modal
-            document.getElementById('sidebar_payment_method')?.addEventListener('change', function() {
+            document.querySelectorAll('input[name="payment_method"]').forEach(input => {
+                input.addEventListener('change', function() {
                 // Hide all payment details
                 document.querySelectorAll('#sidebarPremiumModal .payment-details').forEach(el => {
                     el.classList.add('d-none');
@@ -3850,6 +3865,7 @@
                 if (method) {
                     document.getElementById('sidebar_' + method + 'Details')?.classList.remove('d-none');
                 }
+                });
             });
 
             // Form validation and submission
@@ -3857,7 +3873,7 @@
             if (sidebarUpgradeForm) {
                 sidebarUpgradeForm.addEventListener('submit', function(e) {
                     // Get form values
-                    const paymentMethod = document.getElementById('sidebar_payment_method').value;
+                    const paymentMethod = document.querySelector('input[name="payment_method"]:checked')?.value;
                     const referenceNumber = document.getElementById('sidebar_reference_number').value;
                     
                     // Basic validation
@@ -3890,138 +3906,245 @@
     <!-- Sidebar Premium Modal -->
     <div class="modal fade" id="sidebarPremiumModal" tabindex="-1" aria-labelledby="sidebarPremiumModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-gradient-warning text-dark border-0">
                     <h5 class="modal-title" id="sidebarPremiumModalLabel">
                         <i class="fas fa-crown text-warning me-2"></i>Upgrade to Premium
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body pt-2">
+                <div class="modal-body p-4">
                     <!-- Display session messages -->
                     @if(session('success'))
                         <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle me-2"></i>
                             {{ session('success') }}
+                            </div>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     @endif
                     
                     @if(session('error'))
                         <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-circle me-2"></i>
                             {{ session('error') }}
+                            </div>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     @endif
                     
                     <div class="text-center mb-4">
-                        <div class="bg-warning bg-opacity-10 rounded-circle p-3 d-inline-block mb-3">
+                        <div class="bg-warning bg-opacity-10 rounded-circle p-4 d-inline-block mb-3">
                             <i class="fas fa-crown text-warning fs-1"></i>
                         </div>
-                        <h4>Unlock Premium Features</h4>
-                        <p class="text-muted">Upgrade your account to access premium features and enhance your school management capabilities.</p>
+                        <h4 class="fw-bold">Unlock Premium Features</h4>
+                        <p class="text-muted">Enhance your school management capabilities with our premium plan</p>
                     </div>
                     
-                    <div class="card border-warning mb-4">
-                        <div class="card-header bg-warning bg-opacity-10 border-warning">
-                            <h5 class="mb-0 text-warning"><i class="fas fa-star me-2"></i>Premium Benefits</h5>
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-gradient-light border-0">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-star text-warning me-2"></i>
+                                <h5 class="mb-0 fw-semibold">Premium Benefits</h5>
                         </div>
-                        <div class="card-body">
+                        </div>
+                        <div class="card-body p-0">
                             <ul class="list-group list-group-flush">
-                                <li class="list-group-item d-flex align-items-center border-0 px-0">
-                                    <i class="fas fa-check-circle text-success me-3"></i>
+                                <li class="list-group-item d-flex align-items-center border-0 py-3">
+                                    <div class="bg-success bg-opacity-10 p-2 rounded-circle me-3">
+                                        <i class="fas fa-check text-success"></i>
+                                    </div>
                                     <span>Profile customization</span>
                                 </li>
-                                <li class="list-group-item d-flex align-items-center border-0 px-0">
-                                    <i class="fas fa-check-circle text-success me-3"></i>
+                                <li class="list-group-item d-flex align-items-center border-0 py-3">
+                                    <div class="bg-success bg-opacity-10 p-2 rounded-circle me-3">
+                                        <i class="fas fa-check text-success"></i>
+                                    </div>
                                     <span>Advanced reporting and analytics</span>
                                 </li>
-                                <li class="list-group-item d-flex align-items-center border-0 px-0">
-                                    <i class="fas fa-check-circle text-success me-3"></i>
+                                <li class="list-group-item d-flex align-items-center border-0 py-3">
+                                    <div class="bg-success bg-opacity-10 p-2 rounded-circle me-3">
+                                        <i class="fas fa-check text-success"></i>
+                                    </div>
                                     <span>Unlimited staff accounts</span>
                                 </li>
-                                <li class="list-group-item d-flex align-items-center border-0 px-0">
-                                    <i class="fas fa-check-circle text-success me-3"></i>
+                                <li class="list-group-item d-flex align-items-center border-0 py-3">
+                                    <div class="bg-success bg-opacity-10 p-2 rounded-circle me-3">
+                                        <i class="fas fa-check text-success"></i>
+                                    </div>
                                     <span>Priority customer support</span>
                                 </li>
                             </ul>
                         </div>
                     </div>
                     
-                    <div class="card border-primary mb-4">
-                        <div class="card-header bg-primary bg-opacity-10 border-primary">
-                            <h5 class="mb-0 text-primary"><i class="fas fa-money-bill-wave me-2"></i>Subscription Details</h5>
-                        </div>
-                        <div class="card-body">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body p-4">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <span class="fw-bold">Premium Plan:</span>
-                                <span class="badge bg-primary rounded-pill px-3 py-2">Monthly</span>
+                                <h6 class="mb-0">Monthly Premium</h6>
+                                <span class="badge bg-primary rounded-pill">MOST POPULAR</span>
                             </div>
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <span>Price:</span>
-                                <span class="fw-bold fs-4">₱999.00</span>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h3 class="mb-0">₱999<span class="small text-muted">/month</span></h3>
+                                    <p class="text-muted small mb-0">Auto-renews monthly</p>
                             </div>
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <span>Billing:</span>
-                                <span>Monthly, auto-renews</span>
+                                <div>
+                                    <i class="fas fa-rocket text-primary fs-3"></i>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
                     <form action="{{ route('tenant.subscription.upgrade', ['tenant' => tenant('id')]) }}" method="POST" id="sidebarUpgradeForm">
                         @csrf
-                        <div class="mb-3">
-                            <label for="sidebar_payment_method" class="form-label">Payment Method</label>
-                            <select class="form-select" id="sidebar_payment_method" name="payment_method" required>
-                                <option value="">Select payment method</option>
-                                <option value="bank_transfer">Bank Transfer</option>
-                                <option value="gcash">GCash</option>
-                                <option value="paymaya">PayMaya</option>
-                            </select>
-                        </div>
-                        
-                        <div id="sidebar_bankTransferDetails" class="payment-details mb-3 d-none">
-                            <div class="alert alert-info">
-                                <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Bank Transfer Instructions</h6>
-                                <p class="mb-0">Please transfer ₱999.00 to the following account:</p>
-                                <hr>
-                                <p class="mb-1"><strong>Bank:</strong> BDO</p>
-                                <p class="mb-1"><strong>Account Name:</strong> BukSkwela Inc.</p>
-                                <p class="mb-1"><strong>Account Number:</strong> 1234-5678-9012</p>
-                                <p class="mb-0"><strong>Reference:</strong> Premium-{{ tenant('id') }}</p>
+                        <div class="mb-4">
+                            <label class="form-label fw-medium">Payment Method</label>
+                            <div class="row g-3">
+                                <div class="col-4">
+                                    <input type="radio" class="btn-check" name="payment_method" id="sidebar_bank_transfer" value="bank_transfer" required>
+                                    <label class="btn btn-outline-primary w-100 py-3 d-flex flex-column align-items-center" for="sidebar_bank_transfer">
+                                        <i class="fas fa-university fs-3 mb-2"></i>
+                                        <span class="small">Bank Transfer</span>
+                                    </label>
+                                </div>
+                                <div class="col-4">
+                                    <input type="radio" class="btn-check" name="payment_method" id="sidebar_gcash" value="gcash" required>
+                                    <label class="btn btn-outline-primary w-100 py-3 d-flex flex-column align-items-center" for="sidebar_gcash">
+                                        <i class="fas fa-wallet fs-3 mb-2"></i>
+                                        <span class="small">GCash</span>
+                                    </label>
+                                </div>
+                                <div class="col-4">
+                                    <input type="radio" class="btn-check" name="payment_method" id="sidebar_paymaya" value="paymaya" required>
+                                    <label class="btn btn-outline-primary w-100 py-3 d-flex flex-column align-items-center" for="sidebar_paymaya">
+                                        <i class="fas fa-credit-card fs-3 mb-2"></i>
+                                        <span class="small">PayMaya</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                         
-                        <div id="sidebar_gcashDetails" class="payment-details mb-3 d-none">
-                            <div class="alert alert-info">
-                                <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>GCash Instructions</h6>
-                                <p class="mb-0">Please send ₱999.00 to the following GCash number:</p>
-                                <hr>
-                                <p class="mb-1"><strong>GCash Number:</strong> 0917-123-4567</p>
-                                <p class="mb-1"><strong>Account Name:</strong> BukSkwela Inc.</p>
-                                <p class="mb-0"><strong>Reference:</strong> Premium-{{ tenant('id') }}</p>
+                        <div id="sidebar_bank_transferDetails" class="payment-details mb-4 d-none">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-light py-3">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-university text-primary me-2"></i>
+                                        <h6 class="mb-0">Bank Transfer Instructions</h6>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-3">Please transfer ₱999.00 to the following account:</p>
+                                    <div class="bg-light p-3 rounded mb-3">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <p class="mb-1 text-muted small">BANK</p>
+                                                <p class="mb-0 fw-medium">BDO</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p class="mb-1 text-muted small">ACCOUNT NAME</p>
+                                                <p class="mb-0 fw-medium">BukSkwela Inc.</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p class="mb-1 text-muted small">ACCOUNT NUMBER</p>
+                                                <p class="mb-0 fw-medium">1234-5678-9012</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p class="mb-1 text-muted small">REFERENCE</p>
+                                                <p class="mb-0 fw-medium">Premium-{{ tenant('id') }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="alert alert-warning d-flex align-items-center small p-2 rounded">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <span>Please include your reference code in the deposit slip/transfer notes</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
-                        <div id="sidebar_paymayaDetails" class="payment-details mb-3 d-none">
-                            <div class="alert alert-info">
-                                <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>PayMaya Instructions</h6>
-                                <p class="mb-0">Please send ₱999.00 to the following PayMaya number:</p>
-                                <hr>
-                                <p class="mb-1"><strong>PayMaya Number:</strong> 0918-765-4321</p>
-                                <p class="mb-1"><strong>Account Name:</strong> BukSkwela Inc.</p>
-                                <p class="mb-0"><strong>Reference:</strong> Premium-{{ tenant('id') }}</p>
+                        <div id="sidebar_gcashDetails" class="payment-details mb-4 d-none">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-light py-3">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-wallet text-primary me-2"></i>
+                                        <h6 class="mb-0">GCash Instructions</h6>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-3">Please send ₱999.00 to the following GCash account:</p>
+                                    <div class="bg-light p-3 rounded mb-3">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <p class="mb-1 text-muted small">GCASH NUMBER</p>
+                                                <p class="mb-0 fw-medium">0917-123-4567</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p class="mb-1 text-muted small">ACCOUNT NAME</p>
+                                                <p class="mb-0 fw-medium">BukSkwela Inc.</p>
+                                            </div>
+                                            <div class="col-12">
+                                                <p class="mb-1 text-muted small">REFERENCE</p>
+                                                <p class="mb-0 fw-medium">Premium-{{ tenant('id') }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="alert alert-warning d-flex align-items-center small p-2 rounded">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <span>Please include the reference code in the GCash notes</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="sidebar_reference_number" class="form-label">Reference Number</label>
+                        <div id="sidebar_paymayaDetails" class="payment-details mb-4 d-none">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-light py-3">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-credit-card text-primary me-2"></i>
+                                        <h6 class="mb-0">PayMaya Instructions</h6>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-3">Please send ₱999.00 to the following PayMaya account:</p>
+                                    <div class="bg-light p-3 rounded mb-3">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <p class="mb-1 text-muted small">PAYMAYA NUMBER</p>
+                                                <p class="mb-0 fw-medium">0918-765-4321</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p class="mb-1 text-muted small">ACCOUNT NAME</p>
+                                                <p class="mb-0 fw-medium">BukSkwela Inc.</p>
+                                            </div>
+                                            <div class="col-12">
+                                                <p class="mb-1 text-muted small">REFERENCE</p>
+                                                <p class="mb-0 fw-medium">Premium-{{ tenant('id') }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="alert alert-warning d-flex align-items-center small p-2 rounded">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <span>Please include your reference code in the PayMaya notes</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="sidebar_reference_number" class="form-label fw-medium">Reference Number</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="fas fa-hashtag"></i></span>
                             <input type="text" class="form-control" id="sidebar_reference_number" name="reference_number" placeholder="Enter your payment reference number" required>
+                            </div>
                             <div class="form-text">Please enter the reference number from your payment transaction.</div>
                         </div>
                         
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-warning" id="sidebarUpgradeButton">
-                                <i class="fas fa-crown me-2"></i>Upgrade Now
+                            <button type="submit" class="btn btn-warning btn-lg" id="sidebarUpgradeButton">
+                                <i class="fas fa-rocket me-2"></i>Upgrade Now
                             </button>
                         </div>
                     </form>

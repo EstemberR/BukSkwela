@@ -77,12 +77,14 @@ class Controller extends BaseController
             ]);
             $tenantDatabase->save();
 
-            // Create tenant admin with generated password
+            // Create tenant admin without password
             $tenantAdmin = new TenantAdmin([
                 'name' => $request->admin_name,
                 'email' => $request->admin_email,
-                'password' => Hash::make($password),
-                'tenant_id' => $tenant->id
+                'tenant_id' => $tenant->id,
+                'role' => 'admin',
+                'status' => 'active',
+                'can_login_central' => false
             ]);
             $tenantAdmin->save();
 
@@ -101,6 +103,50 @@ class Controller extends BaseController
                     'tenant' => $tenant->id
                 ]);
                 \Log::info("Database setup response: " . \Artisan::output());
+                
+                // Configure connection to use the new tenant database
+                $tenantDatabaseName = 'tenant_' . $subdomain;
+                config(['database.connections.tenant.database' => $tenantDatabaseName]);
+                \DB::purge('tenant');
+                \DB::reconnect('tenant');
+                
+                // Create tenant admin credentials in the tenant's own database
+                try {
+                    // Using the tenant connection explicitly
+                    
+                    // First, ensure the tenant_user_credentials table exists
+                    if (!\DB::connection('tenant')->getSchemaBuilder()->hasTable('tenant_user_credentials')) {
+                        \Log::info("Creating tenant_user_credentials table in tenant database: {$tenantDatabaseName}");
+                        \DB::connection('tenant')->statement("
+                            CREATE TABLE IF NOT EXISTS tenant_user_credentials (
+                                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                                email VARCHAR(255) NOT NULL,
+                                password VARCHAR(255) NOT NULL, 
+                                user_type ENUM('admin', 'staff', 'student') DEFAULT 'admin',
+                                user_id BIGINT UNSIGNED NULL,
+                                is_active TINYINT(1) DEFAULT 1,
+                                remember_token VARCHAR(100) NULL,
+                                created_at TIMESTAMP NULL,
+                                updated_at TIMESTAMP NULL,
+                                UNIQUE(email)
+                            ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+                        ");
+                    }
+                    
+                    // Insert the admin credentials
+                    \DB::connection('tenant')->table('tenant_user_credentials')->insert([
+                        'email' => $request->admin_email,
+                        'password' => Hash::make($password),
+                        'user_type' => 'admin',
+                        'is_active' => true,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                    
+                    \Log::info("Admin credentials created in tenant database: {$tenantDatabaseName}");
+                } catch (\Exception $e) {
+                    \Log::error("Error creating admin credentials in tenant database: " . $e->getMessage());
+                }
             } catch (\Exception $e) {
                 \Log::error("Error auto-setting up database: " . $e->getMessage());
                 // We continue even if database setup fails

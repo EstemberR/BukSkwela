@@ -15,10 +15,10 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
-            $table->string('password');
-            $table->unsignedBigInteger('tenant_id')->nullable();
+            $table->string('tenant_id')->nullable();
             $table->enum('role', ['super_admin', 'admin'])->default('admin');
             $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->boolean('can_login_central')->default(false);
             $table->rememberToken();
             $table->timestamps();
 

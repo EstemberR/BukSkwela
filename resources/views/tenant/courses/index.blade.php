@@ -46,6 +46,8 @@
                                    name="search"
                                    value="{{ request('search') }}"
                                    autocomplete="off">
+                                   <button type="submit" class="btn btn-primary">Search</button>
+
                         </div>
                 </div>
                 <div class="col-md-6 text-end">
@@ -83,7 +85,7 @@
                                 <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#editCourseModal{{ $course->id }}">
                                     Edit
                                 </button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteCourse({{ $course->id }})">
+                                <button class="btn btn-sm btn-danger" onclick="showDeleteConfirmation('{{ $course->id }}')">
                                     Delete
                                 </button>
                             </td>
@@ -181,20 +183,20 @@
 <div class="modal fade" id="cannotDeleteCourseModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
+            <div class="modal-header" style="background-color: #152238; color: white;">
                 <h5 class="modal-title">Cannot Delete Course</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="text-center mb-3">
-                    <i class="fas fa-exclamation-triangle text-warning fa-4x"></i>
+                    <i class="fas fa-exclamation-triangle fa-4x" style="color: #DAA520;"></i>
                 </div>
                 <p id="cannotDeleteMessage" class="text-center"></p>
                 <p class="text-center mt-3">Please reassign these students to another course before deleting.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <a href="{{ route('tenant.students.index', ['tenant' => tenant('id')]) }}" class="btn btn-primary">
+                <a href="{{ route('tenant.students.index', ['tenant' => tenant('id')]) }}" class="btn" style="background-color: #DAA520; color: white;">
                     <i class="fas fa-users me-1"></i> Manage Students
                 </a>
             </div>
@@ -202,7 +204,35 @@
     </div>
 </div>
 
+<!-- Full Screen Loader Overlay -->
+<div id="fullScreenLoader" class="full-screen-loader d-none">
+    <div class="loader-container">
+        @include('Loaders.Loaders')
+    </div>
+</div>
+
+<style>
+.full-screen-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loader-container {
+    transform: scale(2); /* Make the loader twice as big */
+}
+</style>
+
 @push('scripts')
+<!-- Add SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <!-- Make sure Bootstrap JS is loaded properly -->
 <script>
 // Check if Bootstrap is available
@@ -240,45 +270,80 @@ function initializeModals() {
     });
 }
 
-function deleteCourse(courseId) {
-    if (confirm('Are you sure you want to delete this course?')) {
-        // Create a fetch request to check for enrolled students first
-        const url = "{{ route('tenant.courses.delete.direct', ['tenant' => tenant('id'), 'id' => ':id']) }}".replace(':id', courseId);
-        
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Course was deleted successfully, reload the page
-                window.location.reload();
-            } else {
-                // Show the modal with the error message
-                document.getElementById('cannotDeleteMessage').textContent = data.message;
-                try {
-                    const modal = new bootstrap.Modal(document.getElementById('cannotDeleteCourseModal'));
-                    modal.show();
-                } catch (error) {
-                    console.error('Error showing modal:', error);
-                    alert(data.message);
+function showDeleteConfirmation(courseId) {
+    Swal.fire({
+        title: 'Delete Course',
+        text: "Are you sure you want to delete this course? This action cannot be undone.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show the full screen loader
+            const fullScreenLoader = document.getElementById('fullScreenLoader');
+            fullScreenLoader.classList.remove('d-none');
+            
+            // Create a fetch request to check for enrolled students first
+            const url = "{{ route('tenant.courses.delete.direct', ['tenant' => tenant('id'), 'id' => ':id']) }}".replace(':id', courseId);
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
                 }
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while deleting the course. Please try again.');
-        });
-    }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide the loader
+                fullScreenLoader.classList.add('d-none');
+                
+                if (data.success) {
+                    // Course was deleted successfully
+                    Swal.fire({
+                        title: 'Deleted!',
+                        text: 'The course has been deleted successfully.',
+                        icon: 'success'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    // Show the modal with the error message
+                    document.getElementById('cannotDeleteMessage').textContent = data.message;
+                    try {
+                        const modal = new bootstrap.Modal(document.getElementById('cannotDeleteCourseModal'));
+                        modal.show();
+                    } catch (error) {
+                        console.error('Error showing modal:', error);
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.message,
+                            icon: 'error'
+                        });
+                    }
+                }
+            })
+            .catch(error => {
+                // Hide the loader
+                fullScreenLoader.classList.add('d-none');
+                
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'An error occurred while deleting the course. Please try again.',
+                    icon: 'error'
+                });
+            });
+        }
+    });
 }
 
-// Search and filter functionality
 document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
     const searchForm = document.getElementById('searchForm');
     const searchInput = document.getElementById('searchCourse');
     let searchTimeout;

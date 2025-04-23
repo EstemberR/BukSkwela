@@ -165,6 +165,8 @@
                                                name="search"
                                                value="{{ request('search') }}"
                                                autocomplete="off">
+                                               <button type="submit" class="btn btn-primary">Search</button>
+
                                     </div>
                                 </form>
                             </div>

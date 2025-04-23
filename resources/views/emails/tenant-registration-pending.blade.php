@@ -21,6 +21,7 @@
             <p style="margin: 10px 0;"><strong style="color: #003366;">Subdomain:</strong> {{ $tenant->id }}.{{ env('CENTRAL_DOMAIN') }}</p>
             <p style="margin: 10px 0;"><strong style="color: #003366;">Admin Email:</strong> {{ $tenant->tenant_email }}</p>
             <p style="margin: 10px 0;"><strong style="color: #003366;">Temporary Password:</strong> {{ $password }}</p>
+            <p style="margin: 10px 0;"><strong style="color: #003366;">Login URL:</strong> <a href="{{ $loginUrl }}" style="color: #003366; text-decoration: underline;">{{ $loginUrl }}</a></p>
         </div>
         
         <p style="font-size: 16px; margin-top: 25px;"><strong style="color: #003366;">Important Notes:</strong></p>
@@ -31,11 +32,11 @@
             <li style="margin-bottom: 10px;">Please save your login credentials securely</li>
         </ul>
         
-        <p style="font-size: 16px; margin-top: 25px;">You can check your registration status by visiting:</p>
+        <p style="font-size: 16px; margin-top: 25px;">You can log in to your account using the credentials above by clicking the button below:</p>
         <table cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
             <tr>
                 <td>
-                    <a href="{{ $loginUrl }}" style="display: inline-block; padding: 12px 24px; background-color: #003366; color: #FFD700; text-decoration: none; border-radius: 5px; font-weight: bold; border: 2px solid #FFD700;">Check Status</a>
+                    <a href="{{ $loginUrl }}" style="display: inline-block; padding: 12px 24px; background-color: #003366; color: #FFD700; text-decoration: none; border-radius: 5px; font-weight: bold; border: 2px solid #FFD700;">Login to Your Account</a>
                 </td>
             </tr>
         </table>

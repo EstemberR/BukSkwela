@@ -30,7 +30,7 @@ class StaffCredentialsUpdated extends Mailable
         
         // Generate the login URL with the tenant domain
         $domain = tenant('id');
-        $this->loginUrl = "http://{$domain}.localhost/login";
+        $this->loginUrl = "http://{$domain}.localhost:8000/login";
     }
 
     /**

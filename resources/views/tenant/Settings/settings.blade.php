@@ -32,19 +32,43 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <p class="mb-0 small">Switch between light and dark themes</p>
                         @php
-                            // Setting isPremium to true directly to enable all features
-                            $isPremium = true;
+                            // Get current URL to extract tenant ID
+                            $url = request()->url();
+                            preg_match('/^https?:\/\/([^\.]+)\./', $url, $matches);
+                            $tenantDomain = $matches[1] ?? null;
+                            
+                            // Get tenant from domain or tenant helper
+                            if ($tenantDomain) {
+                                $currentTenant = \App\Models\Tenant::where('id', $tenantDomain)->first();
+                            } else {
+                                $tenantId = tenant('id') ?? null;
+                                $currentTenant = $tenantId ? \App\Models\Tenant::find($tenantId) : null;
+                            }
+                            
+                            $isPremium = $currentTenant && $currentTenant->subscription_plan === 'premium';
                         @endphp
                         
                         <label class="switch">
-                            <input type="checkbox" id="darkModeToggle" name="dark_mode" value="1" {{ $settings->dark_mode ? 'checked' : '' }}>
+                            <input type="checkbox" id="darkModeToggle" name="dark_mode" value="1" {{ $settings->dark_mode ? 'checked' : '' }} {{ !$isPremium ? 'disabled' : '' }}>
                             <span class="slider">
                                 <i class="fas fa-sun slider-icon light-icon"></i>
                                 <i class="fas fa-moon slider-icon dark-icon"></i>
                             </span>
                         </label>
                     </div>
+                    @if(!$isPremium)
+                    <p class="premium-feature-info small text-muted mt-2">
+                        <i class="fas fa-lock me-1"></i> Dark mode is a premium feature. 
+                        <a href="javascript:void(0)" onclick="openSubscriptionModal()" class="text-warning">Upgrade now</a>
+                    </p>
+                    <div class="premium-lock-overlay">
+                        <div class="premium-lock-badge">
+                            <i class="fas fa-crown"></i> Premium Feature
+                        </div>
+                    </div>
+                    @else
                     <p class="dark-mode-info small text-muted mt-2">Dark mode reduces eye strain in low-light environments and helps conserve battery life on mobile devices.</p>
+                    @endif
                 </div>
             </div>
             
@@ -66,7 +90,7 @@
                                 </div>
                             </div>
                             <div class="col-md-4 col-sm-4 col-4">
-                                <div class="card-example card-example-rounded {{ $settings->card_style == 'rounded' ? 'active' : '' }}" data-card-style="rounded">
+                                <div class="card-example card-example-rounded {{ $settings->card_style == 'rounded' ? 'active' : '' }}" data-card-style="rounded" {{ !$isPremium ? 'style="pointer-events: none; opacity: 0.6;"' : '' }}>
                                     <div class="text-center">
                                         <i class="fas fa-book mb-1"></i>
                                         <h5 class="small">Rounded</h5>
@@ -74,7 +98,7 @@
                                 </div>
                             </div>
                             <div class="col-md-4 col-sm-4 col-4">
-                                <div class="card-example card-example-glass {{ $settings->card_style == 'glass' ? 'active' : '' }}" data-card-style="glass">
+                                <div class="card-example card-example-glass {{ $settings->card_style == 'glass' ? 'active' : '' }}" data-card-style="glass" {{ !$isPremium ? 'style="pointer-events: none; opacity: 0.6;"' : '' }}>
                                     <div class="text-center">
                                         <i class="fas fa-book mb-1"></i>
                                         <h5 class="small">Glassy</h5>
@@ -87,7 +111,19 @@
                         </div>
                         <input type="hidden" name="card_style" id="cardStyleInput" value="{{ $settings->card_style ?? 'square' }}">
                     </div>
+                    @if(!$isPremium)
+                    <p class="premium-feature-info small text-muted mt-2" style="display: block;">
+                        <i class="fas fa-lock me-1"></i> Custom card styles are premium features. Only the Square style is available for free.
+                        <a href="javascript:void(0)" onclick="openSubscriptionModal()" class="text-warning">Upgrade now</a>
+                    </p>
+                    <div class="premium-lock-overlay">
+                        <div class="premium-lock-badge">
+                            <i class="fas fa-crown"></i> Premium Feature
+                        </div>
+                    </div>
+                    @else
                     <p class="small text-muted mt-2">Choose a card style for your dashboard cards and UI components.</p>
+                    @endif
                 </div>
             </div>
             
@@ -98,7 +134,7 @@
                 <div class="settings-card">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="card-title mb-0"><i class="fas fa-columns mr-2"></i>Dashboard Layout</h5>
-                        <a href="#" class="btn btn-sm btn-outline-primary" id="editLayoutBtn">
+                        <a href="#" class="btn btn-sm btn-outline-primary" id="editLayoutBtn" {{ !$isPremium ? 'disabled style="pointer-events: none; opacity: 0.6;"' : '' }}>
                             <i class="fas fa-edit me-1"></i>Edit Layout
                         </a>
                     </div>
@@ -125,7 +161,7 @@
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <div class="layout-option {{ $settings->dashboard_layout == 'compact' ? 'active' : '' }}" data-layout="compact">
+                                <div class="layout-option {{ $settings->dashboard_layout == 'compact' ? 'active' : '' }}" data-layout="compact" {{ !$isPremium ? 'style="pointer-events: none; opacity: 0.6;"' : '' }}>
                                     <div class="layout-preview compact-layout">
                                         <div class="mini-sidebar"></div>
                                         <div class="mini-content-area">
@@ -143,7 +179,7 @@
                                 </div>
                             </div>
                             <div class="col-md-4">
-                                <div class="layout-option {{ $settings->dashboard_layout == 'modern' ? 'active' : '' }}" data-layout="modern">
+                                <div class="layout-option {{ $settings->dashboard_layout == 'modern' ? 'active' : '' }}" data-layout="modern" {{ !$isPremium ? 'style="pointer-events: none; opacity: 0.6;"' : '' }}>
                                     <div class="layout-preview modern-layout">
                                         <div class="mini-sidebar"></div>
                                         <div class="mini-content-area">
@@ -165,25 +201,21 @@
                     <input type="hidden" name="dashboard_layout" id="dashboardLayoutInput" value="{{ $settings->dashboard_layout ?? 'standard' }}">
                     
                     @if(!$isPremium)
-                    <p class="premium-feature-info small text-muted mt-2">
-                        <i class="fas fa-lock me-1"></i> Dashboard layout customization is a premium feature. 
+                    <p class="premium-feature-info small text-muted mt-2" style="display: block;">
+                        <i class="fas fa-lock me-1"></i> Dashboard layout customization is a premium feature. Only the Standard layout is available for free.
                         <a href="javascript:void(0)" onclick="openSubscriptionModal()" class="text-warning">Upgrade now</a>
                     </p>
+                    <div class="premium-lock-overlay">
+                        <div class="premium-lock-badge">
+                            <i class="fas fa-crown"></i> Premium Feature
+                        </div>
+                    </div>
                     @endif
                 </div>
             </div>
             
             <!-- Save Button -->
-            <div class="col-12 mt-3">
-                <div class="d-flex justify-content-end">
-                    <button type="button" id="resetBtn" class="btn btn-outline-secondary me-2">
-                        <i class="fas fa-undo me-1"></i>Reset to Defaults
-                    </button>
-                    <button type="submit" id="saveSettingsBtn" class="btn btn-primary">
-                        <i class="fas fa-save me-1"></i>Save Changes
-                    </button>
-                </div>
-            </div>
+           
         </div>
     </form>
     @else
@@ -542,8 +574,11 @@
     }
     
     body.dark-mode .card-example-glass {
-        background-color: rgba(255, 255, 255, 0.8) !important;
+        background-color: rgba(31, 41, 55, 0.7) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 0.5rem !important;
         backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
     }
     
     body.dark-mode .card-style-container {
@@ -686,8 +721,11 @@
     
     /* Dark mode styles */
     body.dark-mode .card-example-glass {
-        background-color: #1a1a1a;
-        border-color: #2d2d2d;
+        background-color: rgba(31, 41, 55, 0.7) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 0.5rem !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
     }
     
     body.dark-mode .card-example-glass:hover {
@@ -977,9 +1015,9 @@
     }
     
     body.dark-mode .card-example-glass {
-        background-color: rgba(255, 255, 255, 0.8) !important;
+        background-color: rgba(31, 41, 55, 0.7) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 0.5rem !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
         backdrop-filter: blur(10px) !important;
         -webkit-backdrop-filter: blur(10px) !important;
     }
@@ -997,20 +1035,114 @@
     }
     
     /* Premium feature styles */
+    .premium-feature-info {
+        display: block;
+        font-style: italic;
+        margin-top: 0.5rem;
+        color: #6c757d;
+    }
+    
     .premium-feature-badge .badge {
         display: none;
     }
     
-    .premium-feature-info {
-        display: none;
+    .premium-lock-overlay {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 10;
+    }
+    
+    .premium-lock-badge {
+        display: inline-flex;
+        align-items: center;
+        background: linear-gradient(45deg, #FFB347, #ffcc33);
+        color: #000;
+        padding: 0.35rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.16);
+        border: 2px solid rgba(255,255,255,0.5);
+        animation: pulse-badge 2s infinite;
+    }
+    
+    .premium-lock-badge i {
+        margin-right: 0.5rem;
+        color: #000;
+    }
+    
+    @keyframes pulse-badge {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.16);
+        }
+        50% {
+            transform: scale(1.05);
+            box-shadow: 0 5px 12px rgba(255, 193, 7, 0.4);
+        }
+        100% {
+            transform: scale(1);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.16);
+        }
+    }
+    
+    /* Custom Premium Feature Lock Effect */
+    .settings-card {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .premium-feature-gradient {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 5;
+        pointer-events: none;
+        background: linear-gradient(45deg, rgba(255, 217, 0, 0.1) 0%, rgba(248, 183, 0, 0.2) 100%);
+        border: 2px dashed rgba(255, 193, 7, 0.5);
+        border-radius: 8px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .settings-card:hover .premium-feature-gradient {
+        opacity: 1;
+    }
+    
+    /* Highlight premium button */
+    .text-warning {
+        position: relative;
+        font-weight: bold;
+        text-decoration: underline;
+        background: linear-gradient(45deg, #FFB347, #ffcc33);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: shine 2s linear infinite;
+    }
+    
+    @keyframes shine {
+        0% {
+            background-position: 0;
+        }
+        60% {
+            background-position: 0;
+        }
+        100% {
+            background-position: 100px;
+        }
     }
     
     body.dark-mode .premium-feature-info {
-        display: none;
+        display: block;
+        color: #bdc3c7;
     }
     
-    body.dark-mode .premium-feature-badge .badge {
-        display: none;
+    body.dark-mode .premium-lock-badge {
+        background: linear-gradient(45deg, #f39c12, #f1c40f);
     }
     
     /* Dashboard Layout Options */
@@ -1157,262 +1289,6 @@
     body.dark-mode .mini-sidebar,
     body.dark-mode .mini-header {
         background-color: #1a202c;
-    }
-    
-    /* Layout Editor Modal */
-    .layout-editor-container {
-        min-height: 500px;
-    }
-    
-    .layout-editor-sidebar {
-        background-color: #f8f9fa;
-        border-right: 1px solid #dee2e6;
-        height: 100%;
-        padding: 15px;
-    }
-    
-    .layout-editor-main {
-        padding: 15px;
-    }
-    
-    .layout-editor-item {
-        background-color: #fff;
-        border: 1px solid #dee2e6;
-        border-radius: 4px;
-        padding: 10px;
-        margin-bottom: 10px;
-        cursor: move;
-        transition: all 0.2s ease;
-    }
-    
-    .layout-editor-item:hover {
-        background-color: #f8f9fa;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    
-    .layout-editor-preview {
-        min-height: 400px;
-        border: 2px dashed #dee2e6;
-        border-radius: 4px;
-        padding: 15px;
-    }
-    
-    .layout-editor-preview .dropzone {
-        min-height: 80px;
-        border: 1px dashed #ced4da;
-        border-radius: 4px;
-        margin-bottom: 15px;
-        padding: 10px;
-        background-color: #f8f9fa;
-    }
-    
-    .layout-editor-preview .dropzone.active {
-        background-color: rgba(0, 123, 255, 0.1);
-        border-color: #007bff;
-    }
-    
-    /* Dark mode editor */
-    body.dark-mode .layout-editor-sidebar {
-        background-color: #2d3748;
-        border-color: #4a5568;
-    }
-    
-    body.dark-mode .layout-editor-item {
-        background-color: #3a4a5e;
-        border-color: #4a5568;
-        color: #e2e8f0;
-    }
-    
-    body.dark-mode .layout-editor-item:hover {
-        background-color: #4a5568;
-    }
-    
-    body.dark-mode .layout-editor-preview {
-        border-color: #4a5568;
-    }
-    
-    body.dark-mode .layout-editor-preview .dropzone {
-        background-color: #2d3748;
-        border-color: #4a5568;
-    }
-    
-    /* Layout Success Modal styling */
-    #layoutSuccessModal .modal-header {
-        border-bottom: 0;
-    }
-    
-    #layoutSuccessModal .modal-content {
-        border-radius: 1rem;
-        overflow: hidden;
-    }
-    
-    #layoutSuccessModal .modal-footer {
-        border-top: 0;
-    }
-    
-    #layoutSuccessModal .fas.fa-columns {
-        background-color: rgba(40, 167, 69, 0.1);
-        border-radius: 50%;
-        padding: 1.5rem;
-        color: #28a745;
-    }
-    
-    /* Dark mode layout success modal */
-    body.dark-mode #layoutSuccessModal .modal-content {
-        background-color: #1F2937;
-        color: #f3f4f6;
-    }
-    
-    body.dark-mode #layoutSuccessModal .modal-header {
-        background-color: #10B981 !important; /* A more modern green for dark mode */
-    }
-    
-    body.dark-mode #layoutSuccessModal .text-muted {
-        color: #9CA3AF !important;
-    }
-    
-    body.dark-mode #layoutSuccessModal .fas.fa-columns {
-        background-color: rgba(16, 185, 129, 0.1);
-        color: #10B981;
-    }
-    
-    body.dark-mode #layoutSuccessModal .btn-secondary {
-        background-color: #4B5563;
-        border-color: #4B5563;
-        color: #F3F4F6;
-    }
-    
-    body.dark-mode #layoutSuccessModal .btn-primary {
-        background-color: #3B82F6;
-        border-color: #3B82F6;
-    }
-    
-    /* Card Style Success Modal styling */
-    #cardStyleSuccessModal .modal-header {
-        border-bottom: 0;
-    }
-
-    #cardStyleSuccessModal .modal-content {
-        border-radius: 1rem;
-        overflow: hidden;
-        border: 1px solid rgba(0, 51, 102, 0.2);
-    }
-
-    #cardStyleSuccessModal .modal-footer {
-        border-top: 0;
-    }
-
-    .buksu-icon-container {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 100px;
-        height: 100px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #003366, #0066cc);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .buksu-icon-container::before {
-        content: '';
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        background: radial-gradient(circle at top right, rgba(255, 215, 0, 0.5), transparent 60%);
-    }
-
-    .buksu-icon-container .fas {
-        color: #FFD700;
-        position: relative;
-        z-index: 1;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    }
-
-    #cardStyleSuccessModal #newCardStyleName {
-        color: #003366;
-        border-bottom: 2px solid #FFD700;
-        padding-bottom: 2px;
-    }
-
-    /* Dark mode card style success modal */
-    body.dark-mode #cardStyleSuccessModal .modal-content {
-        background-color: #1F2937;
-        color: #f3f4f6;
-        border-color: #003366;
-    }
-
-    body.dark-mode #cardStyleSuccessModal .modal-header {
-        background-color: #003366 !important;
-    }
-
-    body.dark-mode #cardStyleSuccessModal .text-muted {
-        color: #9CA3AF !important;
-    }
-
-    body.dark-mode #cardStyleSuccessModal #newCardStyleName {
-        color: #FFD700;
-        border-bottom: 2px solid #FFD700;
-    }
-
-    body.dark-mode #cardStyleSuccessModal .btn-outline-secondary {
-        color: #e2e8f0;
-        border-color: #4B5563;
-    }
-
-    body.dark-mode #cardStyleSuccessModal .btn-outline-secondary:hover {
-        background-color: #4B5563;
-        color: #e2e8f0;
-    }
-
-    /* Card examples - static previews without hover effects */
-    .card-example {
-        height: 120px;
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 0.5rem;
-        cursor: pointer;
-        border: 2px solid transparent;
-        background-color: white;
-        color: var(--text-color);
-    }
-    
-    .card-example.active {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(0, 51, 102, 0.2);
-    }
-    
-    /* Square card preview */
-    .card-example-square {
-        border-radius: 0;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        border: 1px solid var(--border-color);
-    }
-    
-    /* Rounded card preview */
-    .card-example-rounded {
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        border: 1px solid var(--border-color);
-    }
-    
-    /* Glass card preview */
-    .card-example-glass {
-        background: rgba(255, 255, 255, 0.7) !important;
-        backdrop-filter: blur(10px) !important;
-        -webkit-backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    /* Dark mode card example styles */
-    body.dark-mode .card-example-glass {
-        background: rgba(31, 41, 55, 0.7) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
 </style>
 @endpush
@@ -1682,6 +1558,15 @@
         // Card style selection
         $('.card-example').on('click', function() {
             const cardStyle = $(this).data('card-style');
+            // Only allow non-square styles for premium users
+            if (cardStyle !== 'square') {
+                @if(!$isPremium)
+                // Show premium upgrade modal instead
+                openSubscriptionModal();
+                return;
+                @endif
+            }
+            
             $('.card-example').removeClass('active');
             $(this).addClass('active');
             $('#cardStyleInput').val(cardStyle);
@@ -1736,6 +1621,15 @@
         $('.layout-option').on('click', function() {
             const layoutType = $(this).data('layout');
             console.log('Layout option selected:', layoutType);
+            
+            // Only allow non-standard layouts for premium users
+            if (layoutType !== 'standard') {
+                @if(!$isPremium)
+                // Show premium upgrade modal instead
+                openSubscriptionModal();
+                return;
+                @endif
+            }
             
             $('.layout-option').removeClass('active');
             $(this).addClass('active');
@@ -2007,8 +1901,15 @@
 
     // Empty function to replace any premium subscription references
     function openSubscriptionModal() {
-        // Does nothing - all features are available by default
-        console.log("All features are already enabled");
+        // Show the sidebar premium modal
+        const sidebarPremiumModal = document.getElementById('sidebarPremiumModal');
+        if (sidebarPremiumModal) {
+            const modal = new bootstrap.Modal(sidebarPremiumModal);
+            modal.show();
+        } else {
+            // If sidebar modal doesn't exist, use alert to inform user
+            alert('Please upgrade to premium to access this feature. Click the "Upgrade to Premium" button in the sidebar.');
+        }
     }
 });
 </script>

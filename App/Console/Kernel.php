@@ -41,6 +41,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\FixTenantRelationships::class,
         \App\Console\Commands\CreateTenant::class,
         \App\Console\Commands\MigrateTenantToSeparateDb::class,
+        \App\Console\Commands\CheckTenantDatabase::class,
     ];
 
     /**

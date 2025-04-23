@@ -135,11 +135,12 @@ class FixTenantDatabase extends Command
      */
     protected function updateTenantDatabaseRecord($tenant, $databaseName, $username, $password, $host, $port)
     {
-        // Check if the tenant database record exists
+        // Look for an existing record
         $tenantDatabase = TenantDatabase::where('tenant_id', $tenant)->first();
         
         if ($tenantDatabase) {
             $this->info("Updating existing TenantDatabase record for tenant {$tenant}");
+            // Password will be automatically encrypted by the model's mutator
             $tenantDatabase->update([
                 'database_name' => $databaseName,
                 'database_username' => $username,
@@ -149,6 +150,7 @@ class FixTenantDatabase extends Command
             ]);
         } else {
             $this->info("Creating new TenantDatabase record for tenant {$tenant}");
+            // Password will be automatically encrypted by the model's mutator
             TenantDatabase::create([
                 'tenant_id' => $tenant,
                 'database_name' => $databaseName,

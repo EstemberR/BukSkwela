@@ -23,7 +23,7 @@ class TenantRegistrationPending extends Mailable
     {
         $this->tenant = $tenant;
         $this->password = $password;
-        $this->loginUrl = "http://{$tenant->id}." . env('CENTRAL_DOMAIN') . "/login";
+        $this->loginUrl = "http://{$tenant->id}." . env('CENTRAL_DOMAIN') . ":8000/login";
     }
 
     /**

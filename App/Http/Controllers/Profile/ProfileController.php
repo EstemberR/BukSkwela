@@ -30,7 +30,7 @@ class ProfileController extends Controller
         }
         
         if (!$user) {
-            return redirect()->route('login')
+            return redirect()->route('tenant.login')
                 ->with('error', 'User not found');
         }
         

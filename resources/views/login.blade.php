@@ -49,7 +49,7 @@
                             </div>
                             <input type="email" class="form-control" name="email" 
                                 placeholder="Enter your email" required id="emailInput">
-                            <small class="form-text text-muted">For students, use your @student.buksu.edu.ph email address</small>
+                            <small class="form-text text-muted">For students, use your @student.buksu.edu.ph email </small>
                         </div>
                     </div>
 

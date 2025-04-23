@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('tenant_id');
             $table->string('database_name');
             $table->string('database_username')->nullable();
-            $table->string('database_password')->nullable();
+            $table->text('database_password')->nullable();
             $table->string('database_host')->default('localhost');
             $table->string('database_port')->default('3306');
             $table->timestamps();

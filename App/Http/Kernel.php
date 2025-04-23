@@ -8,6 +8,7 @@ use App\Http\Middleware\PreventAccessFromCentralDomains;
 use App\Http\Middleware\EnsureTenantConnectionForStudent;
 use App\Http\Middleware\CheckTenantStatus;
 use App\Http\Middleware\CheckSubscriptionStatus;
+use App\Http\Middleware\RedirectIfTenantDisabled;
 
 class Kernel extends HttpKernel
 {
@@ -41,6 +42,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\TenantDatabaseMiddleware::class,
+            \App\Http\Middleware\RedirectIfTenantDisabled::class,
         ],
 
         'api' => [
@@ -80,6 +82,7 @@ class Kernel extends HttpKernel
         'superadmin' => \App\Http\Middleware\SuperAdminMiddleware::class,
         'tenant.approved' => \App\Http\Middleware\EnsureTenantIsApproved::class,
         'tenant.student' => \App\Http\Middleware\EnsureTenantConnectionForStudent::class,
+        'tenant.disabled' => \App\Http\Middleware\RedirectIfTenantDisabled::class,
     ];
 
     /**

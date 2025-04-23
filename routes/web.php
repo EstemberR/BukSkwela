@@ -32,7 +32,8 @@ Route::middleware(['web'])
         Route::get('/login', [LoginController::class, 'showLoginForm'])
             ->name('login');
         Route::post('/login', [LoginController::class, 'login'])
-            ->name('login.post');
+            ->name('login.post')
+            ->middleware(['tenant.disabled']);
         Route::post('/logout', [LoginController::class, 'logout'])
             ->name('logout');
 

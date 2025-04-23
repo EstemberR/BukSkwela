@@ -39,6 +39,7 @@ class FixTenantPermissions extends Command
         // Create user with the stored password
         try {
             $this->info("Creating user...");
+            // The password is automatically decrypted by the model accessor
             DB::statement("CREATE USER '{$tenantDB->database_username}'@'%' IDENTIFIED BY '{$tenantDB->database_password}'");
             $this->info("User created");
         } catch (\Exception $e) {
@@ -69,7 +70,7 @@ class FixTenantPermissions extends Command
                     'port' => $tenantDB->database_port,
                     'database' => $tenantDB->database_name,
                     'username' => $tenantDB->database_username,
-                    'password' => $tenantDB->database_password,
+                    'password' => $tenantDB->database_password, // Password is automatically decrypted by model accessor
                     'charset' => 'utf8mb4',
                     'collation' => 'utf8mb4_unicode_ci',
                     'prefix' => '',

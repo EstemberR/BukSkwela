@@ -44,6 +44,7 @@ class CustomMySQLDatabaseManager implements TenantDatabaseManager
                 \Log::info("Database {$databaseName} already exists");
                 
                 // Update the database record if it doesn't exist
+                // The password will be automatically encrypted by the model's mutator
                 $tenantDB = TenantDatabase::updateOrCreate(
                     ['tenant_id' => $name],
                     [
@@ -67,7 +68,7 @@ class CustomMySQLDatabaseManager implements TenantDatabaseManager
                 // Drop user if exists to avoid errors
                 DB::connection($this->connection)->statement("DROP USER IF EXISTS '{$username}'@'%'");
                 
-                // Create user
+                // Create user - using the plain text password for MySQL user creation
                 DB::connection($this->connection)->statement("CREATE USER '{$username}'@'%' IDENTIFIED BY '{$password}'");
                 \Log::info("Created user {$username}");
                 
@@ -82,6 +83,7 @@ class CustomMySQLDatabaseManager implements TenantDatabaseManager
             
             // Store database credentials in the central database
             if ($tenant instanceof \App\Models\Tenant) {
+                // The password will be automatically encrypted by the model's mutator
                 $tenantDB = TenantDatabase::updateOrCreate(
                     ['tenant_id' => $name],
                     [

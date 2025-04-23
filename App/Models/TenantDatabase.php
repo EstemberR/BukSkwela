@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Crypt;
 
 class TenantDatabase extends Model
 {
@@ -56,5 +57,33 @@ class TenantDatabase extends Model
             'strict' => true,
             'engine' => null,
         ];
+    }
+    
+    /**
+     * Encrypt the password when it is set
+     *
+     * @param string $value
+     * @return void
+     */
+    public function setDatabasePasswordAttribute($value)
+    {
+        $this->attributes['database_password'] = Crypt::encryptString($value);
+    }
+    
+    /**
+     * Decrypt the password when it is accessed
+     *
+     * @param string $value
+     * @return string
+     */
+    public function getDatabasePasswordAttribute($value)
+    {
+        try {
+            return Crypt::decryptString($value);
+        } catch (\Exception $e) {
+            // If the value is not encrypted (for existing records),
+            // return it as is to maintain backward compatibility
+            return $value;
+        }
     }
 }

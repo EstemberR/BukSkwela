@@ -24,24 +24,37 @@ class EnsureTenantConnectionForStudent
             // Get host and extract subdomain
             $host = $request->getHost();
             $parts = explode('.', $host);
-            $subdomain = count($parts) > 1 ? $parts[0] : null;
+            $subdomain = null;
             
             // For localhost with port (e.g., testing.localhost:8000)
             if (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false) {
                 if (count($parts) >= 2) {
                     $subdomain = $parts[0];
                 }
+            } else if (count($parts) > 2) {
+                $subdomain = $parts[0];
             }
             
-            Log::info('Tenant detection', [
+            Log::info('EnsureTenantConnectionForStudent: Tenant detection', [
                 'host' => $host,
                 'parts' => $parts,
                 'subdomain' => $subdomain,
-                'path' => $request->path(),
-                'uri' => $request->getRequestUri()
+                'path' => $request->path()
             ]);
             
+            // Check if the tenant is disabled before proceeding
             if ($subdomain && $subdomain != 'www') {
+                try {
+                    // Check tenant status in central database
+                    $tenant = \App\Models\Tenant::find($subdomain);
+                    
+                    if ($tenant && in_array($tenant->status, ['disabled', 'rejected', 'denied'])) {
+                        return response()->view('disabled');
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Error checking tenant status: ' . $e->getMessage());
+                }
+                
                 // Database name for tenant
                 $tenantDb = "tenant_{$subdomain}";
                 
@@ -92,7 +105,7 @@ class EnsureTenantConnectionForStudent
                 ]);
             }
         } catch (\Exception $e) {
-            Log::error('Error in EnsureTenantConnectionForStudent middleware', [
+            Log::error('EnsureTenantConnectionForStudent: Error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

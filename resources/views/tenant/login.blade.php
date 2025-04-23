@@ -72,20 +72,7 @@
                 </div>
             </div>
         </form>
-        
-        <div class="mt-3 text-center">
-            <a href="{{ route('tenant.status') }}" class="text-primary">
-                <i class="fas fa-info-circle"></i> Check Account Status
-            </a>
-        </div>
-        
-        <div class="mt-3 text-center">
-            <a href="{{ route('tenant.student.login') }}" class="text-primary">
-                <i class="fas fa-user-graduate"></i> Student Login
-            </a>
-        </div>
-    </div>
-</div>
+      
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

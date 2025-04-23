@@ -73,7 +73,7 @@ class SetupTenantDatabase extends Command
                 $this->info("Note: User might not exist yet - continuing setup");
             }
             
-            // Create user
+            // Create user - using the plain text password for MySQL user creation
             DB::statement("CREATE USER '{$username}'@'%' IDENTIFIED BY '{$password}'");
             
             // Grant privileges - Only to the specific database
@@ -81,7 +81,8 @@ class SetupTenantDatabase extends Command
             DB::statement("FLUSH PRIVILEGES");
             
             // Update the tenant database record
-            TenantDatabase::updateOrCreate(
+            // The password will be automatically encrypted by the model's mutator
+            $tenantDb = TenantDatabase::updateOrCreate(
                 ['tenant_id' => $tenant->id],
                 [
                     'database_name' => $databaseName,

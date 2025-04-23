@@ -253,7 +253,10 @@ return [
     'migrate_after_creation' => true,
     'migration_parameters' => [
         '--force' => true, // Set this to true to be able to run migrations in production
-        '--path' => [database_path('migrations/tenant')], // Customize path to tenant migrations
+        '--path' => [
+            database_path('migrations/tenant'),
+            database_path('migrations/tenant_specific')
+        ], // Customize path to tenant migrations
     ],
 
     /**
