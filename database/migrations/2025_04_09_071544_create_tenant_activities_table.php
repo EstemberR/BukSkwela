@@ -18,10 +18,13 @@ return new class extends Migration
             $table->string('activity');
             $table->text('description')->nullable();
             $table->json('metadata')->nullable();
-            $table->timestamp('created_at')->useCurrent();
-            $table->timestamp('updated_at')->nullable();
+            $table->ipAddress('ip_address')->nullable();
+            $table->string('user_agent')->nullable();
+            $table->timestamp('created_at')->nullable();
             
-            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
+            $table->index('tenant_id');
+            $table->index('activity');
+            $table->index('created_at');
         });
     }
 

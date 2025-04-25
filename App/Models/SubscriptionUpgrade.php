@@ -10,6 +10,13 @@ class SubscriptionUpgrade extends Model
     use HasFactory;
 
     /**
+     * The connection name for the model.
+     *
+     * @var string
+     */
+    protected $connection = 'mysql'; // This ensures we use the central database
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array
@@ -18,15 +25,15 @@ class SubscriptionUpgrade extends Model
         'tenant_id',
         'from_plan',
         'to_plan',
-        'amount',
         'payment_method',
         'transaction_id',
         'receipt_number',
         'reference_number',
-        'notes',
+        'amount',
         'status',
         'processed_at',
         'processed_by',
+        'notes'
     ];
 
     /**
@@ -35,15 +42,15 @@ class SubscriptionUpgrade extends Model
      * @var array
      */
     protected $casts = [
-        'amount' => 'decimal:2',
         'processed_at' => 'datetime',
+        'amount' => 'decimal:2'
     ];
 
     /**
-     * Get the tenant that owns the subscription upgrade request.
+     * Get the tenant that owns the subscription upgrade.
      */
     public function tenant()
     {
-        return $this->belongsTo(Tenant::class, 'tenant_id', 'id');
+        return $this->belongsTo(Tenant::class);
     }
 } 

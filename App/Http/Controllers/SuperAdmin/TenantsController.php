@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Models\SubscriptionLog;
+use App\Mail\SubscriptionUpgraded;
 
 class TenantsController extends Controller
 {
@@ -249,108 +251,62 @@ class TenantsController extends Controller
         }
     }
 
-    public function updateSubscription($id, Request $request)
+    protected function validateSubscriptionUpdate(Request $request)
     {
-        try {
-            $request->validate([
-                'subscription_plan' => 'required|in:basic,premium'
-            ]);
-            
-            $tenant = Tenant::findOrFail($id);
-            
-            // Get the old plan for comparison
-            $oldPlan = $tenant->subscription_plan;
-            
-            // Skip if current plan is the same as requested plan
-            if ($oldPlan === $request->subscription_plan) {
-                return redirect()->back()
-                    ->with('info', 'Tenant is already on the ' . ucfirst($request->subscription_plan) . ' plan.');
-            }
-            
-            // Update subscription plan
-            $tenant->subscription_plan = $request->subscription_plan;
-            
-            // Set default data array if it doesn't exist
-            $data = $tenant->data ?? [];
-            
-            // Initialize payment history if it doesn't exist
-            if (!isset($data['payment_history'])) {
-                $data['payment_history'] = [];
-            }
-            
-            // Set subscription details based on plan
-            if ($request->subscription_plan === 'premium') {
-                $data['payment_status'] = 'paid';
-                $data['subscription_starts_at'] = now()->format('Y-m-d H:i:s');
-                $data['subscription_ends_at'] = now()->addYear()->format('Y-m-d H:i:s');
-                $data['last_payment_date'] = now()->format('Y-m-d H:i:s');
-                $data['payment_amount'] = 5000; // ₱5,000 for premium
-                
-                // Add payment record to history
-                $data['payment_history'][] = [
-                    'date' => now()->format('Y-m-d H:i:s'),
-                    'plan' => 'premium',
-                    'status' => 'paid',
-                    'amount' => 5000,
-                    'notes' => $oldPlan === 'basic' ? 'Upgraded from Basic plan' : null
-                ];
-            } else {
-                // Downgrading to basic
-                $data['payment_status'] = 'downgraded';
-                $data['subscription_ends_at'] = now()->format('Y-m-d H:i:s');
-                
-                // Add downgrade record to history
-                $data['payment_history'][] = [
-                    'date' => now()->format('Y-m-d H:i:s'),
-                    'plan' => 'basic',
-                    'status' => 'downgraded',
-                    'amount' => 0,
-                    'notes' => 'Downgraded from ' . ucfirst($oldPlan) . ' plan'
-                ];
-            }
-            
-            // Update the tenant data
-            $tenant->data = $data;
-            
-            // Save the tenant
-            $tenant->save();
-            
-            // Force refresh from database to ensure data is updated
-            $tenant->refresh();
-            
-            // Log the subscription change
-            Log::info('Tenant subscription updated', [
-                'tenant_id' => $id,
-                'old_plan' => $oldPlan,
-                'new_plan' => $request->subscription_plan,
-                'payment_status' => $data['payment_status'],
-                'subscription_ends_at' => $data['subscription_ends_at'] ?? null
-            ]);
-            
-            // Success message with more detail
-            $successMessage = "Subscription for <strong>{$tenant->tenant_name}</strong> updated from <span class='badge bg-secondary'>" . 
-                              ucfirst($oldPlan) . "</span> to <span class='badge bg-" . 
-                              ($request->subscription_plan === 'premium' ? 'warning' : 'info') . 
-                              "'>" . ucfirst($request->subscription_plan) . "</span> successfully.";
-            
-            // Add payment status and expiration to message
-            if ($request->subscription_plan === 'premium') {
-                $expirationDate = Carbon::parse($data['subscription_ends_at'])->format('M d, Y');
-                $successMessage .= "<br>Premium features activated until {$expirationDate}";
-            }
-            
-            return redirect()->back()->with('success', $successMessage);
-            
-        } catch(\Exception $e) {
-            Log::error('Failed to update tenant subscription: ' . $e->getMessage(), [
-                'tenant_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
+        return $request->validate([
+            'subscription_plan' => 'required|in:basic,premium,ultimate'
+        ]);
+    }
+
+    public function updateSubscription(Request $request, Tenant $tenant)
+    {
+        $oldPlan = $tenant->subscription_plan;
+        
+        // Validate request
+        $this->validateSubscriptionUpdate($request);
+        
+        // Check if plan is actually changing
+        if ($oldPlan === $request->subscription_plan) {
             return redirect()->back()
-                ->with('error', 'Failed to update subscription: ' . $e->getMessage());
+                ->with('info', 'Tenant is already on the ' . ucfirst($request->subscription_plan) . ' plan.');
         }
+        
+        // Update the subscription plan
+        $tenant->subscription_plan = $request->subscription_plan;
+        
+        // Set subscription end date for premium/ultimate plans
+        if ($request->subscription_plan === 'premium' || $request->subscription_plan === 'ultimate') {
+            $data = $tenant->data;
+            $data['subscription_ends_at'] = now()->addMonth()->toDateTimeString();
+            $tenant->data = $data;
+        }
+        
+        $tenant->save();
+        
+        // Create subscription log
+        $subscriptionLog = new SubscriptionLog([
+            'tenant_id' => $tenant->id,
+            'old_plan' => $oldPlan,
+            'new_plan' => $request->subscription_plan,
+            'changed_by' => auth()->id(),
+            'change_date' => now(),
+            'notes' => "Plan changed from {$oldPlan} to {$request->subscription_plan}"
+        ]);
+        
+        $subscriptionLog->save();
+        
+        // Prepare success message with colored badge
+        $message = "Tenant subscription has been changed to <span class='badge bg-" . 
+            ($request->subscription_plan === 'premium' ? 'warning' : 
+             ($request->subscription_plan === 'ultimate' ? 'primary' : 'info')) .
+            "'>" . ucfirst($request->subscription_plan) . "</span> successfully.";
+        
+        // Send email notification for premium/ultimate upgrades
+        if (($request->subscription_plan === 'premium' || $request->subscription_plan === 'ultimate') && $oldPlan === 'basic') {
+            Mail::to($tenant->tenant_email)->send(new SubscriptionUpgraded($tenant));
+        }
+        
+        return redirect()->back()->with('success', $message);
     }
 
     /**

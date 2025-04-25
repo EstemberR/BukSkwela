@@ -168,21 +168,21 @@
 /* Plan Card Styles - From Subscription.blade.php */
 .plan-cards-container {
     display: flex;
-    justify-content: center;
-    gap: 2rem;
-    flex-wrap: wrap;
-    margin: 2rem 0;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+    padding: 1rem;
 }
 
 .plan-card {
-    background: #fff;
-    width: 16rem;
+    flex: 1;
+    min-width: 0;
+    margin: 0;
     padding: 1.5rem;
     border-radius: 10px;
-    border-bottom: 4px solid rgb(3, 1, 43);
-    box-shadow: 0 6px 30px rgba(207, 212, 222, 0.3);
-    font-family: "Poppins", sans-serif;
-    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+    background: white;
 }
 
 .plan-card:hover {
@@ -331,6 +331,189 @@
     .premium-lock p {
         max-width: 95%;
     }
+}
+
+/* Ultimate Plan Card Styles */
+.plan-card.ultimate {
+    background: linear-gradient(135deg, #2a2a72 0%, #009ffd 100%);
+    color: white;
+}
+
+.plan-card.ultimate h2,
+.plan-card.ultimate h2 span,
+.plan-card.ultimate .benefits-list ul li span {
+    color: white;
+}
+
+.plan-card.ultimate .etiquet-price {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.plan-card.ultimate .etiquet-price p,
+.plan-card.ultimate .etiquet-price p:before {
+    color: white;
+}
+
+.plan-card.ultimate .benefits-list ul li svg {
+    fill: #64b5f6;
+}
+
+.plan-card.ultimate .button-get-plan a {
+    background: white;
+    color: #2a2a72;
+}
+
+.plan-card.ultimate .button-get-plan a:hover {
+    background: #ffed4a;
+    transform: translateY(-5px);
+}
+
+.plan-card.ultimate .button-get-plan .svg-rocket {
+    fill: #1a237e;
+}
+
+/* Premium Badge for Ultimate Plan */
+.plan-card.ultimate::before {
+    content: "Most Advanced";
+    position: absolute;
+    top: 1rem;
+    right: -2rem;
+    background: #ffd700;
+    color: #1a237e;
+    padding: 0.25rem 2rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+    transform: rotate(45deg);
+}
+
+/* Hover effects */
+.plan-card:hover {
+    transform: translateY(-10px);
+}
+
+.plan-card.ultimate:hover {
+    transform: translateY(-10px) scale(1.05);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .plan-card.ultimate {
+        transform: none;
+    }
+    
+    .plan-card.ultimate:hover {
+        transform: translateY(-10px);
+    }
+}
+
+/* Update modal size for horizontal layout */
+.modal-dialog.modal-dialog-centered {
+    max-width: 1200px;
+    width: 95%;
+    margin: 1.75rem auto;
+}
+
+@media (min-width: 992px) {
+    .modal-dialog.modal-dialog-centered {
+        max-width: 1140px;
+    }
+}
+
+/* Adjust plan card responsiveness */
+@media (max-width: 992px) {
+    .plan-card {
+        padding: 1rem;
+    }
+
+    .plan-card h2 {
+        font-size: 20px;
+    }
+
+    .etiquet-price p {
+        font-size: 1.5rem;
+    }
+
+    .benefits-list ul {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 768px) {
+    .plan-cards-container {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .plan-card {
+        width: 100%;
+    }
+}
+
+/* Update Premium Features Modal */
+#premiumFeaturesModal .modal-content {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: none;
+    border-radius: 1rem;
+}
+
+#premiumFeaturesModal .modal-header {
+    border-bottom: none;
+    padding: 1.5rem 2rem;
+}
+
+#premiumFeaturesModal .modal-body {
+    padding: 0 2rem 2rem;
+}
+
+/* Remove scroll indicators since we don't need them anymore */
+.scroll-indicator {
+    display: none;
+}
+
+/* Adjust content for smaller screens */
+@media (max-width: 992px) {
+    .plan-card {
+        padding: 1rem;
+    }
+
+    .plan-card h2 {
+        font-size: 20px;
+    }
+
+    .etiquet-price p {
+        font-size: 1.5rem;
+    }
+
+    .benefits-list ul {
+        font-size: 13px;
+    }
+}
+
+/* For very small screens, allow wrapping */
+@media (max-width: 768px) {
+    .plan-cards-container {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .plan-card {
+        width: 100%;
+    }
+}
+
+/* Dark mode adjustments */
+.dark-mode #premiumFeaturesModal .modal-content {
+    background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+}
+
+.dark-mode .scroll-indicator {
+    background: rgba(45, 55, 72, 0.9);
+    color: #fff;
+}
+
+.dark-mode .scroll-indicator:hover {
+    background: #2d3748;
 }
 </style>
 @endsection
@@ -545,12 +728,13 @@
                     
                     <form action="{{ route('tenant.subscription.upgrade', ['tenant' => tenant('id')]) }}" method="POST" id="upgradeForm">
                         @csrf
+                        <input type="hidden" name="target_plan" value="premium">
                         
                         <div class="mb-3">
                             <label for="payment_method" class="form-label">Payment Method</label>
                             <div class="position-relative">
-                                    <div class="input-icon-wrapper">
-                                        <i class="fas fa-credit-card input-icon"></i>
+                                <div class="input-icon-wrapper">
+                                    <i class="fas fa-credit-card input-icon"></i>
                                 </div>
                                 <select class="form-select ps-4" id="payment_method" name="payment_method" required>
                                     <option value="">Select payment method</option>
@@ -564,7 +748,7 @@
                         <div id="bankTransferDetails" class="payment-details mb-3 d-none">
                             <div class="alert alert-info">
                                 <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Bank Transfer Instructions</h6>
-                                <p class="mb-0">Please transfer ₱999.00 to the following account:</p>
+                                <p class="mb-0">Please transfer <span class="price">₱999.00</span> to the following account:</p>
                                 <hr>
                                 <p class="mb-1"><strong>Bank:</strong> BDO</p>
                                 <p class="mb-1"><strong>Account Name:</strong> BukSkwela Inc.</p>
@@ -576,7 +760,7 @@
                         <div id="gcashDetails" class="payment-details mb-3 d-none">
                             <div class="alert alert-info">
                                 <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>GCash Instructions</h6>
-                                <p class="mb-0">Please send ₱999.00 to the following GCash number:</p>
+                                <p class="mb-0">Please send <span class="price">₱999.00</span> to the following GCash number:</p>
                                 <hr>
                                 <p class="mb-1"><strong>GCash Number:</strong> 0917-123-4567</p>
                                 <p class="mb-1"><strong>Account Name:</strong> BukSkwela Inc.</p>
@@ -587,7 +771,7 @@
                         <div id="paymayaDetails" class="payment-details mb-3 d-none">
                             <div class="alert alert-info">
                                 <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>PayMaya Instructions</h6>
-                                <p class="mb-0">Please send ₱999.00 to the following PayMaya number:</p>
+                                <p class="mb-0">Please send <span class="price">₱999.00</span> to the following PayMaya number:</p>
                                 <hr>
                                 <p class="mb-1"><strong>PayMaya Number:</strong> 0918-765-4321</p>
                                 <p class="mb-1"><strong>Account Name:</strong> BukSkwela Inc.</p>
@@ -622,78 +806,140 @@
 <!-- Premium Features Modal -->
 <div class="modal fade" id="premiumFeaturesModal" tabindex="-1" aria-labelledby="premiumFeaturesModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content p-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="modal-title" id="premiumFeaturesModalLabel">Premium Plans</h5>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="premiumFeaturesModalLabel">
+                    <i class="fas fa-crown text-warning me-2"></i>Choose Your Plan
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                
-            <div class="plan-cards-container">
-                <div class="plan-card">
-                    <h2>Premium<span>Enhanced department features</span></h2>
-                    <div class="etiquet-price">
-                        <p>999</p>
-                        <div></div>
+            </div>
+            <div class="modal-body">
+                <div class="plan-cards-container">
+                    <!-- Basic Plan -->
+                    <div class="plan-card">
+                        <h2>Basic<span>Free tier with limited features</span></h2>
+                        <div class="etiquet-price">
+                            <p>0</p>
+                            <div></div>
+                        </div>
+                        <div class="benefits-list">
+                            <ul>
+                                <li>
+                                    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
+                                    </svg>
+                                    <span>Basic Features</span>
+                                </li>
+                                <li>
+                                    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
+                                    </svg>
+                                    <span>Standard Support</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="button-get-plan">
+                            <a href="#" class="disabled" style="opacity: 0.7; cursor: not-allowed;">
+                                <i class="fas fa-check me-2"></i>
+                                <span>CURRENT PLAN</span>
+                            </a>
+                        </div>
                     </div>
-                    <div class="benefits-list">
-                        <ul>
-                            <li>
-                                <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
+
+                    <!-- Premium Plan -->
+                    <div class="plan-card">
+                        <h2>Premium<span>Enhanced department features</span></h2>
+                        <div class="etiquet-price">
+                            <p>999</p>
+                            <div></div>
+                        </div>
+                        <div class="benefits-list">
+                            <ul>
+                                <li>
+                                    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
+                                    </svg>
+                                    <span>All Basic Features</span>
+                                </li>
+                                <li>
+                                    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
+                                    </svg>
+                                    <span>Priority Support</span>
+                                </li>
+                                <li>
+                                    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
+                                    </svg>
+                                    <span>Profile Customization</span>
+                                </li>
+                                <li>
+                                    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
+                                    </svg>
+                                    <span>Unlimited Staff Accounts</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="button-get-plan">
+                            <a href="#" data-bs-toggle="modal" data-bs-target="#upgradePremiumModal" data-bs-dismiss="modal">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="svg-rocket">
+                                    <path d="M156.6 384.9L125.7 353.1C117.2 345.5 114.2 333.1 117.1 321.8C120.1 312.9 124.1 301.3 129.8 288H24C15.38 288 7.414 283.4 3.146 275.9C-1.123 268.4-1.042 259.2 3.357 251.8L55.83 163.3C68.79 141.4 92.33 127.1 117.8 127.1H200C202.4 124 204.8 120.3 207.2 116.7C289.1-4.07 411.1-8.142 483.9 5.275C495.6 7.414 504.6 16.43 506.7 28.06C520.1 100.9 516.1 222.9 395.3 304.8C391.8 307.2 387.1 309.6 384 311.1V394.2C384 419.7 370.6 443.2 348.7 456.2L260.2 508.6C252.8 513 243.6 513.1 236.1 508.9C228.6 504.6 224 496.6 224 488V380.8C209.9 385.6 197.6 389.7 188.3 392.7C177.1 396.3 164.9 393.2 156.6 384.9V384.9zM384 167.1C406.1 167.1 424 150.1 424 127.1C424 105.9 406.1 87.1 384 87.1C361.9 87.1 344 105.9 344 127.1C344 150.1 361.9 167.1 384 167.1z"></path>
                                 </svg>
-                                <span>Instructor Management</span>
-                            </li>
-                            <li>
-                                <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
-                                </svg>
-                                <span>Student Management</span>
-                            </li>
-                            <li>
-                                <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
-                                </svg>
-                                <span>View Student Submission Status</span>
-                            </li>
-                            <li>
-                                <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
-                                </svg>
-                                <span>Probationary Status Management</span>
-                            </li>
-                            <li>
-                                <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
-                                </svg>
-                                <span>Custom Enrollment Requirements</span>
-                            </li>
-                            <li>
-                                <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
-                                </svg>
-                                <span>View Uploaded Documents</span>
-                            </li>
-                            <li>
-                                <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
-                                </svg>
-                                <span>Submission Reports</span>
-                            </li>
-                            <li>
-                                <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
-                                </svg>
-                                <span>Branding Customization</span>
-                            </li>
-                        </ul>
+                                <span>UPGRADE NOW</span>
+                            </a>
+                        </div>
                     </div>
-                    <div class="button-get-plan">
-                        <a href="#" data-bs-toggle="modal" data-bs-target="#upgradePremiumModal" data-bs-dismiss="modal">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="svg-rocket">
-                                <path d="M156.6 384.9L125.7 353.1C117.2 345.5 114.2 333.1 117.1 321.8C120.1 312.9 124.1 301.3 129.8 288H24C15.38 288 7.414 283.4 3.146 275.9C-1.123 268.4-1.042 259.2 3.357 251.8L55.83 163.3C68.79 141.4 92.33 127.1 117.8 127.1H200C202.4 124 204.8 120.3 207.2 116.7C289.1-4.07 411.1-8.142 483.9 5.275C495.6 7.414 504.6 16.43 506.7 28.06C520.1 100.9 516.1 222.9 395.3 304.8C391.8 307.2 387.1 309.6 384 311.1V394.2C384 419.7 370.6 443.2 348.7 456.2L260.2 508.6C252.8 513 243.6 513.1 236.1 508.9C228.6 504.6 224 496.6 224 488V380.8C209.9 385.6 197.6 389.7 188.3 392.7C177.1 396.3 164.9 393.2 156.6 384.9V384.9zM384 167.1C406.1 167.1 424 150.1 424 127.1C424 105.9 406.1 87.1 384 87.1C361.9 87.1 344 105.9 344 127.1C344 150.1 361.9 167.1 384 167.1z"></path>
-                            </svg>
-                            <span>UPGRADE NOW</span>
-                        </a>
+
+                    <!-- Ultimate Plan -->
+                    <div class="plan-card ultimate position-relative">
+                        <h2>Ultimate<span>Advanced reporting & analytics</span></h2>
+                        <div class="etiquet-price">
+                            <p>1999</p>
+                            <div></div>
+                        </div>
+                        <div class="benefits-list">
+                            <ul>
+                                <li>
+                                    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
+                                    </svg>
+                                    <span>All Premium Features</span>
+                                </li>
+                                <li>
+                                    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
+                                    </svg>
+                                    <span>Advanced Reports Access</span>
+                                </li>
+                                <li>
+                                    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
+                                    </svg>
+                                    <span>Comprehensive Analytics</span>
+                                </li>
+                                <li>
+                                    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
+                                    </svg>
+                                    <span>Custom Report Generation</span>
+                                </li>
+                                <li>
+                                    <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M243.8 339.8C232.9 350.7 215.1 350.7 204.2 339.8L140.2 275.8C129.3 264.9 129.3 247.1 140.2 236.2C151.1 225.3 168.9 225.3 179.8 236.2L224 280.4L332.2 172.2C343.1 161.3 360.9 161.3 371.8 172.2C382.7 183.1 382.7 200.9 371.8 211.8L243.8 339.8zM512 256C512 397.4 397.4 512 256 512C114.6 512 0 397.4 0 256C0 114.6 114.6 0 256 0C397.4 0 512 114.6 512 256zM256 48C141.1 48 48 141.1 48 256C48 370.9 141.1 464 256 464C370.9 464 464 370.9 464 256C464 141.1 370.9 48 256 48z"></path>
+                                    </svg>
+                                    <span>Data Export Capabilities</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="button-get-plan">
+                            <a href="#" data-bs-toggle="modal" data-bs-target="#upgradePremiumModal" data-bs-dismiss="modal">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="svg-rocket">
+                                    <path d="M156.6 384.9L125.7 353.1C117.2 345.5 114.2 333.1 117.1 321.8C120.1 312.9 124.1 301.3 129.8 288H24C15.38 288 7.414 283.4 3.146 275.9C-1.123 268.4-1.042 259.2 3.357 251.8L55.83 163.3C68.79 141.4 92.33 127.1 117.8 127.1H200C202.4 124 204.8 120.3 207.2 116.7C289.1-4.07 411.1-8.142 483.9 5.275C495.6 7.414 504.6 16.43 506.7 28.06C520.1 100.9 516.1 222.9 395.3 304.8C391.8 307.2 387.1 309.6 384 311.1V394.2C384 419.7 370.6 443.2 348.7 456.2L260.2 508.6C252.8 513 243.6 513.1 236.1 508.9C228.6 504.6 224 496.6 224 488V380.8C209.9 385.6 197.6 389.7 188.3 392.7C177.1 396.3 164.9 393.2 156.6 384.9V384.9zM384 167.1C406.1 167.1 424 150.1 424 127.1C424 105.9 406.1 87.1 384 87.1C361.9 87.1 344 105.9 344 127.1C344 150.1 361.9 167.1 384 167.1z"></path>
+                                </svg>
+                                <span>UPGRADE NOW</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -702,82 +948,26 @@
 </div>
 
 <script>
-    // Preview uploaded image
-    document.getElementById('avatar')?.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const profileImg = document.querySelector('.profile-img');
-                const avatarPlaceholder = document.querySelector('.avatar-placeholder');
-                
-                if (profileImg) {
-                    profileImg.src = e.target.result;
-                } else if (avatarPlaceholder) {
-                    // Replace placeholder with actual image
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.className = 'img-fluid rounded-circle profile-img';
-                    img.style = 'width: 150px; height: 150px; object-fit: cover;';
-                    
-                    avatarPlaceholder.parentNode.replaceChild(img, avatarPlaceholder);
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-    
-    // Handle payment method change to show appropriate instructions
-    document.getElementById('payment_method')?.addEventListener('change', function() {
-        // Hide all payment details
-        document.querySelectorAll('.payment-details').forEach(el => {
-            el.classList.add('d-none');
-        });
-        
-        // Show selected payment method details
-        const method = this.value;
-        if (method) {
-            document.getElementById(method + 'Details')?.classList.remove('d-none');
-        }
-    });
-
-    // Initialize tooltips
-    document.addEventListener('DOMContentLoaded', function() {
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.map(function(tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-        
-        // Add back button to payment modal
-        const upgradePremiumModal = document.getElementById('upgradePremiumModal');
-        if (upgradePremiumModal) {
-            const modalHeader = upgradePremiumModal.querySelector('.mb-4');
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle plan selection
+    const planButtons = document.querySelectorAll('.button-get-plan a[data-bs-toggle="modal"]');
+    planButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            const planCard = this.closest('.plan-card');
+            const planName = planCard.querySelector('h2').textContent.split('\n')[0].trim();
+            const planPrice = planCard.querySelector('.etiquet-price p').textContent.trim();
             
-            if (modalHeader) {
-                // Create back button
-                const backBtn = document.createElement('button');
-                backBtn.type = 'button';
-                backBtn.className = 'btn btn-link text-muted p-0 mb-2';
-                backBtn.innerHTML = '<i class="fas fa-arrow-left me-1"></i> Back to plans';
-                backBtn.setAttribute('data-bs-dismiss', 'modal');
-                backBtn.setAttribute('data-bs-toggle', 'modal');
-                backBtn.setAttribute('data-bs-target', '#premiumFeaturesModal');
-                
-                // Insert at beginning of header
-                modalHeader.insertBefore(backBtn, modalHeader.firstChild);
-            }
-        }
-        
-        // Make plan card hover effect work on touch devices
-        const planCards = document.querySelectorAll('.plan-card');
-        planCards.forEach(card => {
-            card.addEventListener('touchstart', function() {
-                this.style.transform = 'translateY(-10px)';
-            });
-            card.addEventListener('touchend', function() {
-                this.style.transform = '';
-            });
+            // Update modal title and price
+            document.querySelector('#upgradePremiumModal .modal-title').innerHTML = 
+                `Upgrade to ${planName} Plan`;
+            document.querySelector('#upgradePremiumModal .modal-body .price').innerHTML = 
+                `₱${planPrice}`;
+            
+            // Update hidden plan input
+            document.querySelector('input[name="target_plan"]').value = 
+                planName.toLowerCase();
         });
     });
+});
 </script>
 @endsection

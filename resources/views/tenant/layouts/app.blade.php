@@ -3301,16 +3301,40 @@
                     </li>
                    
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {{ request()->routeIs('tenant.reports.*') ? 'active' : '' }}" 
+                        @php
+                            // Get current URL to extract tenant ID
+                            $url = request()->url();
+                            preg_match('/^https?:\/\/([^\.]+)\./', $url, $matches);
+                            $tenantDomain = $matches[1] ?? null;
+                            
+                            // Get tenant from domain or tenant helper
+                            if ($tenantDomain) {
+                                $currentTenant = \App\Models\Tenant::where('id', $tenantDomain)->first();
+                            } else {
+                                $tenantId = tenant('id') ?? null;
+                                $currentTenant = $tenantId ? \App\Models\Tenant::find($tenantId) : null;
+                            }
+                            
+                            $isUltimate = $currentTenant && $currentTenant->subscription_plan === 'ultimate';
+                        @endphp
+                        
+                        <a class="nav-link dropdown-toggle {{ request()->routeIs('tenant.reports.*') ? 'active' : '' }} {{ !$isUltimate ? 'disabled' : '' }}" 
                            href="#"
                            data-bs-toggle="dropdown" 
-                           aria-expanded="{{ request()->routeIs('tenant.reports.*') ? 'true' : 'false' }}">
+                           aria-expanded="{{ request()->routeIs('tenant.reports.*') ? 'true' : 'false' }}"
+                           @if(!$isUltimate) 
+                           onclick="showUpgradeModal(); return false;" 
+                           @endif>
                             <div class="nav-content">
                                 <i class="fas fa-chart-bar"></i>
                                 <span>Reports</span>
+                                @if(!$isUltimate)
+                                    <i class="fas fa-lock ms-1 text-warning"></i>
+                                @endif
                             </div>
                             <i class="fas fa-chevron-down dropdown-icon"></i>
                         </a>
+                        @if($isUltimate)
                         <div class="dropdown-menu {{ request()->routeIs('tenant.reports.*') ? 'show' : '' }}">
                             <a class="dropdown-item {{ request()->routeIs('tenant.reports.students') || request()->routeIs('tenant.reports.students.*') ? 'active' : '' }}" 
                                href="{{ route('tenant.reports.students', ['tenant' => tenant('id')]) }}">
@@ -3328,6 +3352,7 @@
                                 <span>Course Reports</span>
                             </a>
                         </div>
+                        @endif
                     </li>
                 </ul>
 

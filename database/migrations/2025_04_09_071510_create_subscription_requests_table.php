@@ -21,9 +21,13 @@ return new class extends Migration
             $table->string('user_email')->nullable();
             $table->text('message')->nullable();
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->timestamp('processed_at')->nullable();
+            $table->string('processed_by')->nullable();
+            $table->text('admin_notes')->nullable();
             $table->timestamps();
             
-            $table->foreign('tenant_id')->references('id')->on('tenants')->onDelete('cascade');
+            $table->index('tenant_id');
+            $table->index('status');
         });
     }
 
