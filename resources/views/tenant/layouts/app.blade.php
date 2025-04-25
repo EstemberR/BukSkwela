@@ -958,6 +958,26 @@
             box-shadow: none;
         }
 
+        /* Remove hover effect specifically for Reports dropdown when on reports pages */
+        body.reports-page .sidebar .nav-item.dropdown .nav-link.dropdown-toggle:hover {
+            background: transparent;
+            color: var(--sidebar-text-color);
+        }
+        
+        body.reports-page .sidebar .nav-item.dropdown .nav-link.dropdown-toggle:hover i {
+            color: var(--sidebar-icon-color);
+        }
+        
+        /* Dark mode version */
+        body.dark-mode.reports-page .sidebar .nav-item.dropdown .nav-link.dropdown-toggle:hover {
+            background: transparent;
+            color: var(--sidebar-text-color);
+        }
+        
+        body.dark-mode.reports-page .sidebar .nav-item.dropdown .nav-link.dropdown-toggle:hover i {
+            color: var(--sidebar-icon-color);
+        }
+
         /* Navbar specific dropdown styles */
         .navbar .dropdown-menu {
             position: absolute !important;
@@ -3254,10 +3274,35 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
+
+        /* Remove hover effect specifically for Reports dropdown */
+        .sidebar .nav-item.dropdown .nav-link.dropdown-toggle:hover {
+            background: transparent;
+            color: var(--sidebar-text-color);
+        }
+        
+        .sidebar .nav-item.dropdown .nav-link.dropdown-toggle:hover i {
+            color: var(--sidebar-icon-color);
+        }
+
+        body.dark-mode .sidebar .nav-link.dropdown-toggle:hover .dropdown-icon,
+        body.dark-mode .sidebar .nav-link.dropdown-toggle.show .dropdown-icon {
+            color: #ffffff;
+        }
+        
+        /* Remove hover effect for Reports dropdown in dark mode */
+        body.dark-mode .sidebar .nav-item.dropdown .nav-link.dropdown-toggle:hover {
+            background: transparent;
+            color: var(--sidebar-text-color);
+        }
+        
+        body.dark-mode .sidebar .nav-item.dropdown .nav-link.dropdown-toggle:hover i {
+            color: var(--sidebar-icon-color);
+        }
     </style>
     @stack('styles')
 </head>
-<body class="{{ isset($settings) && $settings->dark_mode ? 'dark-mode' : '' }}" 
+<body class="{{ isset($settings) && $settings->dark_mode ? 'dark-mode' : '' }} {{ request()->routeIs('tenant.reports.*') ? 'reports-page' : '' }}" 
       data-card-style="{{ isset($settings) && $settings->card_style ? $settings->card_style : 'square' }}">
     <div x-data="{ isSidebarOpen: false }" class="layout-wrapper">
     <!-- Sidebar -->
@@ -3300,41 +3345,41 @@
                         </a>
                     </li>
                    
-                    <li class="nav-item dropdown">
-                        @php
-                            // Get current URL to extract tenant ID
-                            $url = request()->url();
-                            preg_match('/^https?:\/\/([^\.]+)\./', $url, $matches);
-                            $tenantDomain = $matches[1] ?? null;
-                            
-                            // Get tenant from domain or tenant helper
-                            if ($tenantDomain) {
-                                $currentTenant = \App\Models\Tenant::where('id', $tenantDomain)->first();
-                            } else {
-                                $tenantId = tenant('id') ?? null;
-                                $currentTenant = $tenantId ? \App\Models\Tenant::find($tenantId) : null;
-                            }
-                            
-                            $isUltimate = $currentTenant && $currentTenant->subscription_plan === 'ultimate';
-                        @endphp
+                    @php
+                        // Get current URL to extract tenant ID
+                        $url = request()->url();
+                        preg_match('/^https?:\/\/([^\.]+)\./', $url, $matches);
+                        $tenantDomain = $matches[1] ?? null;
                         
-                        <a class="nav-link dropdown-toggle {{ request()->routeIs('tenant.reports.*') ? 'active' : '' }} {{ !$isUltimate ? 'disabled' : '' }}" 
+                        // Get tenant from domain or tenant helper
+                        if ($tenantDomain) {
+                            $currentTenant = \App\Models\Tenant::where('id', $tenantDomain)->first();
+                        } else {
+                            $tenantId = tenant('id') ?? null;
+                            $currentTenant = $tenantId ? \App\Models\Tenant::find($tenantId) : null;
+                        }
+                        
+                        $isPremium = $currentTenant && $currentTenant->subscription_plan === 'premium';
+                        $isUltimate = $currentTenant && $currentTenant->subscription_plan === 'ultimate';
+                    @endphp
+
+                    <!-- Reports Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {{ request()->routeIs('tenant.reports.*') ? 'active' : '' }}" 
                            href="#"
-                           data-bs-toggle="dropdown" 
-                           aria-expanded="{{ request()->routeIs('tenant.reports.*') ? 'true' : 'false' }}"
-                           @if(!$isUltimate) 
-                           onclick="showUpgradeModal(); return false;" 
-                           @endif>
+                           data-bs-toggle="{{ $isPremium || $isUltimate ? 'dropdown' : 'modal' }}" 
+                           data-bs-target="{{ $isPremium || $isUltimate ? '' : '#premiumFeaturesModal' }}"
+                           aria-expanded="{{ request()->routeIs('tenant.reports.*') ? 'true' : 'false' }}">
                             <div class="nav-content">
                                 <i class="fas fa-chart-bar"></i>
                                 <span>Reports</span>
-                                @if(!$isUltimate)
-                                    <i class="fas fa-lock ms-1 text-warning"></i>
+                                @if(!$isPremium && !$isUltimate)
+                                    <i class="fas fa-crown text-warning ms-2" style="font-size: 0.75rem;"></i>
                                 @endif
                             </div>
                             <i class="fas fa-chevron-down dropdown-icon"></i>
                         </a>
-                        @if($isUltimate)
+                        @if($isPremium || $isUltimate)
                         <div class="dropdown-menu {{ request()->routeIs('tenant.reports.*') ? 'show' : '' }}">
                             <a class="dropdown-item {{ request()->routeIs('tenant.reports.students') || request()->routeIs('tenant.reports.students.*') ? 'active' : '' }}" 
                                href="{{ route('tenant.reports.students', ['tenant' => tenant('id')]) }}">
@@ -3350,6 +3395,34 @@
                                href="{{ route('tenant.reports.courses', ['tenant' => tenant('id')]) }}">
                                 <i class="fas fa-book-open"></i>
                                 <span>Course Reports</span>
+                            </a>
+                            <a class="dropdown-item {{ request()->routeIs('tenant.reports.requirements') || request()->routeIs('tenant.reports.requirements.*') ? 'active' : '' }}" 
+                               href="{{ route('tenant.reports.requirements', ['tenant' => tenant('id')]) }}">
+                                <i class="fas fa-clipboard-check"></i>
+                                <span>Requirements Reports</span>
+                            </a>
+                        </div>
+                        @else
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#premiumFeaturesModal">
+                                <i class="fas fa-user-graduate"></i>
+                                <span>Student Reports</span>
+                                <i class="fas fa-crown text-warning ms-2" style="font-size: 0.75rem;"></i>
+                            </a>
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#premiumFeaturesModal">
+                                <i class="fas fa-user-tie"></i>
+                                <span>Staff Reports</span>
+                                <i class="fas fa-crown text-warning ms-2" style="font-size: 0.75rem;"></i>
+                            </a>
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#premiumFeaturesModal">
+                                <i class="fas fa-book-open"></i>
+                                <span>Course Reports</span>
+                                <i class="fas fa-crown text-warning ms-2" style="font-size: 0.75rem;"></i>
+                            </a>
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#premiumFeaturesModal">
+                                <i class="fas fa-clipboard-check"></i>
+                                <span>Requirements Reports</span>
+                                <i class="fas fa-crown text-warning ms-2" style="font-size: 0.75rem;"></i>
                             </a>
                         </div>
                         @endif
@@ -3373,17 +3446,23 @@
                         }
                         
                         $isPremium = $currentTenant && $currentTenant->subscription_plan === 'premium';
+                        $isUltimate = $currentTenant && $currentTenant->subscription_plan === 'ultimate';
                     @endphp
                     
-                    @if(!$isPremium)
+                    @if(!$isPremium && !$isUltimate)
                         <a href="#" class="btn btn-sm btn-outline-warning w-100 mb-2 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#sidebarPremiumModal">
                             <i class="fas fa-crown me-1"></i>
                             <small>Upgrade to Premium</small>
                         </a>
-                    @else
+                    @elseif($isPremium)
                         <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center">
                             <i class="fas fa-crown text-warning me-1"></i>
                             <small>Premium Account</small>
+                        </div>
+                    @elseif($isUltimate)
+                        <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center" style="background-color: #e6eaff; color: #4361ee;">
+                            <i class="fas fa-star text-primary me-1"></i>
+                            <small>Ultimate Account</small>
                         </div>
                     @endif
                 </div>
@@ -3418,12 +3497,18 @@
                             }
                             
                             $isPremium = $currentTenant && $currentTenant->subscription_plan === 'premium';
+                            $isUltimate = $currentTenant && $currentTenant->subscription_plan === 'ultimate';
                         @endphp
 
                         @if($isPremium)
                             <div class="premium-badge me-3">
                                 <i class="fas fa-crown"></i>
                                 <span>Premium</span>
+                            </div>
+                        @elseif($isUltimate)
+                            <div class="premium-badge me-3" style="background-color: #e6eaff; color: #4361ee;">
+                                <i class="fas fa-star"></i>
+                                <span>Ultimate</span>
                             </div>
                         @endif
 
@@ -3455,6 +3540,10 @@
                                     @if($isPremium)
                                         <span class="badge bg-warning text-dark mt-1">
                                             <i class="fas fa-crown"></i> Premium
+                                        </span>
+                                    @elseif($isUltimate)
+                                        <span class="badge mt-1" style="background-color: #4361ee;">
+                                            <i class="fas fa-star"></i> Ultimate
                                         </span>
                                     @endif
                                 </div>

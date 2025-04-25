@@ -297,11 +297,13 @@
                                     <td>
                                         <div class="subscription-status">
                                                 <button type="button" 
-                                                    class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : 'btn-outline-secondary' }}"
+                                                    class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : ($tenant->subscription_plan === 'ultimate' ? 'btn-primary' : 'btn-outline-secondary') }}"
                                                     data-bs-toggle="modal" 
                                                     data-bs-target="#subscriptionModal-{{ $tenant->id }}">
                                                     @if($tenant->subscription_plan === 'premium')
                                                         <i class="fas fa-crown text-warning me-1"></i>
+                                                    @elseif($tenant->subscription_plan === 'ultimate')
+                                                        <i class="fas fa-star text-white me-1"></i>
                                                     @else
                                                         <i class="fas fa-cube me-1"></i>
                                                     @endif
@@ -326,6 +328,10 @@
                                                                                 <div class="display-6 text-warning">
                                                                                     <i class="fas fa-crown"></i>
                                                                                 </div>
+                                                                            @elseif($tenant->subscription_plan === 'ultimate')
+                                                                                <div class="display-6 text-primary">
+                                                                                    <i class="fas fa-star"></i>
+                                                                                </div>
                                                                             @else
                                                                                 <div class="display-6 text-info">
                                                                                     <i class="fas fa-cube"></i>
@@ -337,6 +343,11 @@
                                                                             <p class="card-text">
                                                                                 @if($tenant->subscription_plan === 'premium')
                                                                                     Premium features with priority support
+                                                                                    @if(isset($tenant->data['subscription_ends_at']))
+                                                                                        <br><small class="text-muted">Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}</small>
+                                                                                    @endif
+                                                                                @elseif($tenant->subscription_plan === 'ultimate')
+                                                                                    Ultimate features with advanced reports and analytics
                                                                                     @if(isset($tenant->data['subscription_ends_at']))
                                                                                         <br><small class="text-muted">Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}</small>
                                                                                     @endif
@@ -379,7 +390,33 @@
                                                                             </div>
                                                                         </div>
                                                                     </div>
-                                                            @else
+                                                                    <div class="col-12 mt-3">
+                                                                        <div class="card border-primary">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-primary">
+                                                                                        <i class="fas fa-star"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Ultimate</h5>
+                                                                                    <p class="card-text">₱9,990/month with all features including reports</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-primary subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="ultimate"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-up me-1"></i> Upgrade to Ultimate
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                            @elseif($tenant->subscription_plan === 'premium')
                                                                     <div class="col-12">
                                                                         <div class="card border-info">
                                                                             <div class="card-body d-flex align-items-center">
@@ -402,8 +439,87 @@
                                                                                         data-target-plan="basic"
                                                                                         data-bs-dismiss="modal">
                                                                                     <i class="fas fa-arrow-down me-1"></i> Downgrade to Basic
-                                                        </button>
-                                                            </div>
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-12 mt-3">
+                                                                        <div class="card border-primary">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-primary">
+                                                                                        <i class="fas fa-star"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Ultimate</h5>
+                                                                                    <p class="card-text">₱9,990/month with all features including reports</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-primary subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="ultimate"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-up me-1"></i> Upgrade to Ultimate
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                    @else
+                                                                    <div class="col-12">
+                                                                        <div class="card border-info">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-info">
+                                                                                        <i class="fas fa-cube"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Basic</h5>
+                                                                                    <p class="card-text">Free tier with limited features</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-info text-white subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="basic"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-down me-1"></i> Downgrade to Basic
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-12 mt-3">
+                                                                        <div class="card border-warning">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-warning">
+                                                                                        <i class="fas fa-crown"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Premium</h5>
+                                                                                    <p class="card-text">₱5,000/month with advanced features</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-warning subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="premium"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-down me-1"></i> Downgrade to Premium
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                     @endif
@@ -550,11 +666,13 @@
                                     <td>
                                         <div class="subscription-status">
                                                 <button type="button" 
-                                                    class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : 'btn-outline-secondary' }}"
+                                                    class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : ($tenant->subscription_plan === 'ultimate' ? 'btn-primary' : 'btn-outline-secondary') }}"
                                                     data-bs-toggle="modal" 
                                                     data-bs-target="#subscriptionModal-{{ $tenant->id }}">
                                                     @if($tenant->subscription_plan === 'premium')
                                                         <i class="fas fa-crown text-warning me-1"></i>
+                                                    @elseif($tenant->subscription_plan === 'ultimate')
+                                                        <i class="fas fa-star text-white me-1"></i>
                                                     @else
                                                         <i class="fas fa-cube me-1"></i>
                                                     @endif
@@ -579,6 +697,10 @@
                                                                                 <div class="display-6 text-warning">
                                                                                     <i class="fas fa-crown"></i>
                                                                                 </div>
+                                                                            @elseif($tenant->subscription_plan === 'ultimate')
+                                                                                <div class="display-6 text-primary">
+                                                                                    <i class="fas fa-star"></i>
+                                                                                </div>
                                                                             @else
                                                                                 <div class="display-6 text-info">
                                                                                     <i class="fas fa-cube"></i>
@@ -590,6 +712,11 @@
                                                                             <p class="card-text">
                                                                                 @if($tenant->subscription_plan === 'premium')
                                                                                     Premium features with priority support
+                                                                                    @if(isset($tenant->data['subscription_ends_at']))
+                                                                                        <br><small class="text-muted">Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}</small>
+                                                                                    @endif
+                                                                                @elseif($tenant->subscription_plan === 'ultimate')
+                                                                                    Ultimate features with advanced reports and analytics
                                                                                     @if(isset($tenant->data['subscription_ends_at']))
                                                                                         <br><small class="text-muted">Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}</small>
                                                                                     @endif
@@ -632,7 +759,33 @@
                                                                             </div>
                                                                         </div>
                                                                     </div>
-                                                            @else
+                                                                    <div class="col-12 mt-3">
+                                                                        <div class="card border-primary">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-primary">
+                                                                                        <i class="fas fa-star"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Ultimate</h5>
+                                                                                    <p class="card-text">₱9,990/month with all features including reports</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-primary subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="ultimate"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-up me-1"></i> Upgrade to Ultimate
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                            @elseif($tenant->subscription_plan === 'premium')
                                                                     <div class="col-12">
                                                                         <div class="card border-info">
                                                                             <div class="card-body d-flex align-items-center">
@@ -655,8 +808,87 @@
                                                                                         data-target-plan="basic"
                                                                                         data-bs-dismiss="modal">
                                                                                     <i class="fas fa-arrow-down me-1"></i> Downgrade to Basic
-                                                        </button>
-                                                            </div>
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-12 mt-3">
+                                                                        <div class="card border-primary">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-primary">
+                                                                                        <i class="fas fa-star"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Ultimate</h5>
+                                                                                    <p class="card-text">₱9,990/month with all features including reports</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-primary subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="ultimate"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-up me-1"></i> Upgrade to Ultimate
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                    @else
+                                                                    <div class="col-12">
+                                                                        <div class="card border-info">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-info">
+                                                                                        <i class="fas fa-cube"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Basic</h5>
+                                                                                    <p class="card-text">Free tier with limited features</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-info text-white subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="basic"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-down me-1"></i> Downgrade to Basic
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-12 mt-3">
+                                                                        <div class="card border-warning">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-warning">
+                                                                                        <i class="fas fa-crown"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Premium</h5>
+                                                                                    <p class="card-text">₱5,000/month with advanced features</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-warning subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="premium"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-down me-1"></i> Downgrade to Premium
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                     @endif
@@ -732,11 +964,13 @@
                                     <td>
                                         <div class="subscription-status">
                                                 <button type="button" 
-                                                    class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : 'btn-outline-secondary' }}"
+                                                    class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : ($tenant->subscription_plan === 'ultimate' ? 'btn-primary' : 'btn-outline-secondary') }}"
                                                     data-bs-toggle="modal" 
                                                     data-bs-target="#subscriptionModal-{{ $tenant->id }}">
                                                     @if($tenant->subscription_plan === 'premium')
                                                         <i class="fas fa-crown text-warning me-1"></i>
+                                                    @elseif($tenant->subscription_plan === 'ultimate')
+                                                        <i class="fas fa-star text-white me-1"></i>
                                                     @else
                                                         <i class="fas fa-cube me-1"></i>
                                                     @endif
@@ -761,6 +995,10 @@
                                                                                 <div class="display-6 text-warning">
                                                                                     <i class="fas fa-crown"></i>
                                                                                 </div>
+                                                                            @elseif($tenant->subscription_plan === 'ultimate')
+                                                                                <div class="display-6 text-primary">
+                                                                                    <i class="fas fa-star"></i>
+                                                                                </div>
                                                                             @else
                                                                                 <div class="display-6 text-info">
                                                                                     <i class="fas fa-cube"></i>
@@ -772,6 +1010,11 @@
                                                                             <p class="card-text">
                                                                                 @if($tenant->subscription_plan === 'premium')
                                                                                     Premium features with priority support
+                                                                                    @if(isset($tenant->data['subscription_ends_at']))
+                                                                                        <br><small class="text-muted">Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}</small>
+                                                                                    @endif
+                                                                                @elseif($tenant->subscription_plan === 'ultimate')
+                                                                                    Ultimate features with advanced reports and analytics
                                                                                     @if(isset($tenant->data['subscription_ends_at']))
                                                                                         <br><small class="text-muted">Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}</small>
                                                                                     @endif
@@ -814,7 +1057,33 @@
                                                                             </div>
                                                                         </div>
                                                                     </div>
-                                                            @else
+                                                                    <div class="col-12 mt-3">
+                                                                        <div class="card border-primary">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-primary">
+                                                                                        <i class="fas fa-star"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Ultimate</h5>
+                                                                                    <p class="card-text">₱9,990/month with all features including reports</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-primary subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="ultimate"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-up me-1"></i> Upgrade to Ultimate
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                            @elseif($tenant->subscription_plan === 'premium')
                                                                     <div class="col-12">
                                                                         <div class="card border-info">
                                                                             <div class="card-body d-flex align-items-center">
@@ -837,8 +1106,87 @@
                                                                                         data-target-plan="basic"
                                                                                         data-bs-dismiss="modal">
                                                                                     <i class="fas fa-arrow-down me-1"></i> Downgrade to Basic
-                                                        </button>
-                                                            </div>
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-12 mt-3">
+                                                                        <div class="card border-primary">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-primary">
+                                                                                        <i class="fas fa-star"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Ultimate</h5>
+                                                                                    <p class="card-text">₱9,990/month with all features including reports</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-primary subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="ultimate"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-up me-1"></i> Upgrade to Ultimate
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                    @else
+                                                                    <div class="col-12">
+                                                                        <div class="card border-info">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-info">
+                                                                                        <i class="fas fa-cube"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Basic</h5>
+                                                                                    <p class="card-text">Free tier with limited features</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-info text-white subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="basic"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-down me-1"></i> Downgrade to Basic
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-12 mt-3">
+                                                                        <div class="card border-warning">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-warning">
+                                                                                        <i class="fas fa-crown"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Premium</h5>
+                                                                                    <p class="card-text">₱5,000/month with advanced features</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-warning subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="premium"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-down me-1"></i> Downgrade to Premium
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                     @endif
@@ -904,11 +1252,13 @@
                                     <td>
                                         <div class="subscription-status">
                                                 <button type="button" 
-                                                    class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : 'btn-outline-secondary' }}"
+                                                    class="btn {{ $tenant->subscription_plan === 'premium' ? 'btn-warning' : ($tenant->subscription_plan === 'ultimate' ? 'btn-primary' : 'btn-outline-secondary') }}"
                                                     data-bs-toggle="modal" 
                                                     data-bs-target="#subscriptionModal-{{ $tenant->id }}">
                                                     @if($tenant->subscription_plan === 'premium')
                                                         <i class="fas fa-crown text-warning me-1"></i>
+                                                    @elseif($tenant->subscription_plan === 'ultimate')
+                                                        <i class="fas fa-star text-white me-1"></i>
                                                     @else
                                                         <i class="fas fa-cube me-1"></i>
                                                     @endif
@@ -933,6 +1283,10 @@
                                                                                 <div class="display-6 text-warning">
                                                                                     <i class="fas fa-crown"></i>
                                                                                 </div>
+                                                                            @elseif($tenant->subscription_plan === 'ultimate')
+                                                                                <div class="display-6 text-primary">
+                                                                                    <i class="fas fa-star"></i>
+                                                                                </div>
                                                                             @else
                                                                                 <div class="display-6 text-info">
                                                                                     <i class="fas fa-cube"></i>
@@ -944,6 +1298,11 @@
                                                                             <p class="card-text">
                                                                                 @if($tenant->subscription_plan === 'premium')
                                                                                     Premium features with priority support
+                                                                                    @if(isset($tenant->data['subscription_ends_at']))
+                                                                                        <br><small class="text-muted">Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}</small>
+                                                                                    @endif
+                                                                                @elseif($tenant->subscription_plan === 'ultimate')
+                                                                                    Ultimate features with advanced reports and analytics
                                                                                     @if(isset($tenant->data['subscription_ends_at']))
                                                                                         <br><small class="text-muted">Expires: {{ \Carbon\Carbon::parse($tenant->data['subscription_ends_at'])->format('M d, Y') }}</small>
                                                                                     @endif
@@ -986,7 +1345,33 @@
                                                                             </div>
                                                                         </div>
                                                                     </div>
-                                                            @else
+                                                                    <div class="col-12 mt-3">
+                                                                        <div class="card border-primary">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-primary">
+                                                                                        <i class="fas fa-star"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Ultimate</h5>
+                                                                                    <p class="card-text">₱9,990/month with all features including reports</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-primary subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="ultimate"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-up me-1"></i> Upgrade to Ultimate
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                            @elseif($tenant->subscription_plan === 'premium')
                                                                     <div class="col-12">
                                                                         <div class="card border-info">
                                                                             <div class="card-body d-flex align-items-center">
@@ -1009,8 +1394,87 @@
                                                                                         data-target-plan="basic"
                                                                                         data-bs-dismiss="modal">
                                                                                     <i class="fas fa-arrow-down me-1"></i> Downgrade to Basic
-                                                        </button>
-                                                            </div>
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-12 mt-3">
+                                                                        <div class="card border-primary">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-primary">
+                                                                                        <i class="fas fa-star"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Ultimate</h5>
+                                                                                    <p class="card-text">₱9,990/month with all features including reports</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-primary subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="ultimate"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-up me-1"></i> Upgrade to Ultimate
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                    @else
+                                                                    <div class="col-12">
+                                                                        <div class="card border-info">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-info">
+                                                                                        <i class="fas fa-cube"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Basic</h5>
+                                                                                    <p class="card-text">Free tier with limited features</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-info text-white subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="basic"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-down me-1"></i> Downgrade to Basic
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-12 mt-3">
+                                                                        <div class="card border-warning">
+                                                                            <div class="card-body d-flex align-items-center">
+                                                                                <div class="me-3">
+                                                                                    <div class="display-6 text-warning">
+                                                                                        <i class="fas fa-crown"></i>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <h5 class="card-title mb-1">Premium</h5>
+                                                                                    <p class="card-text">₱5,000/month with advanced features</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="card-footer bg-transparent border-0 text-end">
+                                                                                <button type="button" 
+                                                                                        class="btn btn-warning subscription-change-btn"
+                                                                                        data-tenant-id="{{ $tenant->id }}"
+                                                                                        data-tenant-name="{{ $tenant->tenant_name }}"
+                                                                                        data-current-plan="{{ $tenant->subscription_plan }}"
+                                                                                        data-target-plan="premium"
+                                                                                        data-bs-dismiss="modal">
+                                                                                    <i class="fas fa-arrow-down me-1"></i> Downgrade to Premium
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                     @endif
@@ -1085,6 +1549,7 @@
                             <option value="">All</option>
                             <option value="basic">Basic</option>
                             <option value="premium">Premium</option>
+                            <option value="ultimate">Ultimate</option>
                         </select>
                     </div>
                 </form>
@@ -1104,7 +1569,7 @@
           action="{{ route('superadmin.tenants.update-subscription', $tenant->id) }}" 
           method="POST">
         @csrf
-        <input type="hidden" name="subscription_plan" value="{{ $tenant->subscription_plan === 'basic' ? 'premium' : 'basic' }}">
+        <input type="hidden" name="subscription_plan" value="">
     </form>
     @endforeach
 </div>
@@ -1152,6 +1617,13 @@ function handleSubscriptionChange(tenantId, tenantName, targetPlan) {
             description: '₱5,000/month with advanced features',
             color: '#ffc107',
             buttonClass: 'btn-warning'
+        },
+        'ultimate': {
+            title: 'Ultimate Plan',
+            icon: '<i class="fas fa-star text-primary"></i>',
+            description: '₱9,990/month with all features including reports',
+            color: '#4361ee',
+            buttonClass: 'btn-primary'
         }
     };
     
@@ -1188,12 +1660,12 @@ function handleSubscriptionChange(tenantId, tenantName, targetPlan) {
         focusConfirm: false
     }).then((result) => {
         if (result.isConfirmed) {
-            submitPlanChange(tenantId);
+            submitPlanChange(tenantId, targetPlan);
         }
     });
 }
 
-function submitPlanChange(tenantId) {
+function submitPlanChange(tenantId, targetPlan) {
     try {
         const form = document.getElementById(`subscription-form-${tenantId}`);
         if (!form) {
@@ -1205,6 +1677,12 @@ function submitPlanChange(tenantId) {
                 confirmButtonColor: '#dc3545'
             });
             return;
+        }
+
+        // Update the hidden input value with the selected plan
+        const planInput = form.querySelector('input[name="subscription_plan"]');
+        if (planInput) {
+            planInput.value = targetPlan;
         }
 
         // Show loading state

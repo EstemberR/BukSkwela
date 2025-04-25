@@ -117,6 +117,7 @@
                                     <select name="subscription_plan" id="subscription_plan" class="form-select">
                                         <option value="basic" {{ $tenant->subscription_plan == 'basic' ? 'selected' : '' }}>Basic</option>
                                         <option value="premium" {{ $tenant->subscription_plan == 'premium' ? 'selected' : '' }}>Premium</option>
+                                        <option value="ultimate" {{ $tenant->subscription_plan == 'ultimate' ? 'selected' : '' }}>Ultimate</option>
                                         <option value="enterprise" {{ $tenant->subscription_plan == 'enterprise' ? 'selected' : '' }}>Enterprise</option>
                                     </select>
                                 </div>

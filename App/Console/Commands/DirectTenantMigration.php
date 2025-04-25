@@ -38,6 +38,24 @@ class DirectTenantMigration extends Command
             
             $this->info("Using database credentials: {$username}@{$host}");
             
+            // First check which tables already exist
+            $existingTables = [];
+            $tables = ['requirement_categories', 'courses', 'requirements', 'staff', 'students', 'student_requirements', 'user_settings'];
+            
+            foreach ($tables as $table) {
+                $result = DB::select("SELECT COUNT(*) as table_exists 
+                                      FROM information_schema.tables 
+                                      WHERE table_schema = '{$databaseName}' 
+                                      AND table_name = '{$table}'");
+                                      
+                if ($result[0]->table_exists > 0) {
+                    $existingTables[] = $table;
+                    $this->info("Table {$table} already exists in {$databaseName}");
+                } else {
+                    $this->info("Table {$table} will be created in {$databaseName}");
+                }
+            }
+            
             // Create requirement_categories table
             $this->info("Creating requirement_categories table...");
             $sql = "
@@ -147,6 +165,27 @@ class DirectTenantMigration extends Command
             ";
             DB::statement($sql);
             $this->info("student_requirements table created.");
+            
+            // Create user_settings table
+            $this->info("Creating user_settings table...");
+            $sql = "
+                CREATE TABLE IF NOT EXISTS `{$databaseName}`.`user_settings` (
+                    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    `user_id` BIGINT UNSIGNED NOT NULL,
+                    `user_type` VARCHAR(255) NOT NULL,
+                    `dark_mode` TINYINT(1) NOT NULL DEFAULT 0,
+                    `card_style` VARCHAR(255) NOT NULL DEFAULT 'square',
+                    `font_family` VARCHAR(255) NOT NULL DEFAULT 'Work Sans, sans-serif',
+                    `font_size` VARCHAR(255) NOT NULL DEFAULT '14px',
+                    `settings_json` JSON NULL,
+                    `created_at` TIMESTAMP NULL,
+                    `updated_at` TIMESTAMP NULL,
+                    PRIMARY KEY (`id`),
+                    INDEX `user_settings_user_id_user_type_index` (`user_id`, `user_type`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ";
+            DB::statement($sql);
+            $this->info("user_settings table created.");
             
             $this->info("All tables created successfully.");
             return Command::SUCCESS;

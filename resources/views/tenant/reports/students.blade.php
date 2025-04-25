@@ -2,6 +2,47 @@
 
 @section('title', 'Student Reports')
 
+@push('styles')
+<style>
+    /* Override hover effects for the Reports dropdown only */
+    .sidebar .nav-item.dropdown .nav-link.dropdown-toggle:hover {
+        background: transparent !important;
+        color: inherit !important;
+    }
+    
+    .sidebar .nav-item.dropdown .nav-link.dropdown-toggle:hover i {
+        color: inherit !important;
+    }
+    
+    /* Handle active state which should still be styled */
+    .sidebar .nav-item.dropdown .nav-link.dropdown-toggle.active {
+        background: var(--primary-color);
+        color: #ffffff;
+    }
+    
+    .sidebar .nav-item.dropdown .nav-link.dropdown-toggle.active i {
+        color: #ffffff;
+    }
+    
+    /* Fix z-index issues */
+    .sidebar {
+        z-index: 1050 !important;
+        position: fixed !important;
+        background-color: var(--sidebar-bg) !important;
+    }
+    
+    .sidebar-content {
+        position: relative;
+        z-index: 1051 !important;
+        background-color: var(--sidebar-bg) !important;
+    }
+    
+    .layout-wrapper {
+        overflow-x: hidden !important;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="container">
     <!-- Main Report Card -->

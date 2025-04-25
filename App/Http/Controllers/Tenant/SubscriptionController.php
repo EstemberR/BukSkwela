@@ -24,6 +24,7 @@ class SubscriptionController extends Controller
             $request->validate([
                 'payment_method' => 'required|in:bank_transfer,gcash,paymaya',
                 'reference_number' => 'required|string|max:255',
+                'plan' => 'nullable|in:premium,ultimate'
             ]);
 
             // Get current tenant
@@ -38,23 +39,34 @@ class SubscriptionController extends Controller
                 return back()->with('error', 'Unable to process your request. Please contact support.');
             }
 
-            // Check if tenant is already on premium plan
-            if ($tenant->subscription_plan === 'premium') {
-                return back()->with('info', 'Your account is already on the Premium plan.');
+            // Get requested plan or default to premium
+            $requestedPlan = $request->plan ?? 'premium';
+
+            // Check if tenant is already on the requested plan or higher
+            if ($tenant->subscription_plan === $requestedPlan) {
+                return back()->with('info', 'Your account is already on the ' . ucfirst($requestedPlan) . ' plan.');
+            }
+            
+            // If requesting premium but already on ultimate, inform them
+            if ($requestedPlan === 'premium' && $tenant->subscription_plan === 'ultimate') {
+                return back()->with('info', 'Your account is already on the Ultimate plan, which includes all Premium features.');
             }
             
             // Get the old plan for comparison
             $oldPlan = $tenant->subscription_plan;
             
+            // Set amount based on the requested plan
+            $amount = $requestedPlan === 'premium' ? 999.00 : 1999.00;
+            
             // Create subscription upgrade record with approved status
             $upgrade = new SubscriptionUpgrade();
             $upgrade->tenant_id = $tenantId;
             $upgrade->from_plan = $tenant->subscription_plan;
-            $upgrade->to_plan = 'premium';
+            $upgrade->to_plan = $requestedPlan;
             $upgrade->payment_method = $request->payment_method;
             $upgrade->receipt_number = $request->reference_number;
             $upgrade->reference_number = $request->reference_number;
-            $upgrade->amount = 999.00; // Standard premium upgrade fee
+            $upgrade->amount = $amount; // Set based on plan
             $upgrade->status = 'approved'; // Auto-approve
             $upgrade->processed_at = now(); // Set process time
             $upgrade->processed_by = 'Auto-System';
@@ -63,7 +75,7 @@ class SubscriptionController extends Controller
 
             // UPDATE THE TENANT'S SUBSCRIPTION PLAN IMMEDIATELY
             // Update the tenant's subscription plan
-            $tenant->subscription_plan = 'premium';
+            $tenant->subscription_plan = $requestedPlan;
             
             // Update tenant data with subscription details
             $data = $tenant->data ?? [];
@@ -83,7 +95,7 @@ class SubscriptionController extends Controller
             // Add payment record to history
             $data['payment_history'][] = [
                 'date' => now()->format('Y-m-d H:i:s'),
-                'plan' => 'premium',
+                'plan' => ucfirst($requestedPlan),
                 'status' => 'paid',
                 'amount' => $upgrade->amount,
                 'payment_method' => $request->payment_method,
@@ -102,12 +114,12 @@ class SubscriptionController extends Controller
                 'payment_method' => $request->payment_method,
                 'receipt_number' => $request->reference_number,
                 'old_plan' => $oldPlan,
-                'new_plan' => 'premium',
+                'new_plan' => ucfirst($requestedPlan),
                 'subscription_ends_at' => $data['subscription_ends_at']
             ]);
 
             return redirect()->route('profile.index', ['tenant' => $tenantId])
-                ->with('success', 'Your account has been successfully upgraded to Premium! All premium features are now available.');
+                ->with('success', 'Your account has been successfully upgraded to ' . ucfirst($requestedPlan) . '! All ' . ucfirst($requestedPlan) . ' features are now available.');
 
         } catch (\Exception $e) {
             Log::error('Error processing subscription upgrade', [
