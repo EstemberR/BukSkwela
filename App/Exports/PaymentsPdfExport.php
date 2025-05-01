@@ -79,7 +79,7 @@ class PaymentsPdfExport
         $completedTransactions = $this->mergedData->where('status', 'completed')->count();
         $pendingTransactions = $this->mergedData->where('status', 'pending')->count();
         $failedTransactions = $this->mergedData->where('status', 'failed')->count();
-        
+
         $pdf = PDF::loadView('exports.payments-pdf', [
             'transactions' => $this->mergedData,
             'filters' => $filters,

@@ -187,8 +187,8 @@ class PaymentController extends Controller
     public function export(Request $request)
     {
         try {
-            $filters = $request->only(['status', 'plan', 'date_from', 'date_to']);
-            $format = $request->get('format', 'csv');
+        $filters = $request->only(['status', 'plan', 'date_from', 'date_to']);
+        $format = $request->get('format', 'csv');
 
             // TESTING: Return simple CSV for debugging
             if ($request->has('test') && $request->test == 'true') {
@@ -248,15 +248,15 @@ class PaymentController extends Controller
                 'filters' => $filters
             ];
 
-            switch ($format) {
-                case 'excel':
+        switch ($format) {
+            case 'excel':
                     return Excel::download(new PaymentsExport($exportData), 'payments-report-' . date('Y-m-d') . '.xlsx');
-                
-                case 'pdf':
+            
+            case 'pdf':
                     $pdfExport = new PaymentsPdfExport($exportData);
-                    return $pdfExport->export();
-                
-                default:
+                return $pdfExport->export();
+            
+            default:
                     return Excel::download(new PaymentsExport($exportData), 'payments-report-' . date('Y-m-d') . '.csv');
             }
         } catch (\Exception $e) {
