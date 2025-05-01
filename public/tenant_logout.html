@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Redirecting to Main Site...</title>
+    <title>Redirecting to Login...</title>
     <script>
-        // Force redirection to central domain
-        window.location.href = 'http://127.0.0.1:8000/login';
+        // Get the current domain and redirect to login page on the same subdomain
+        const currentHost = window.location.host;
+        window.location.href = window.location.protocol + '//' + currentHost + '/login';
     </script>
-    <meta http-equiv="refresh" content="0;url=http://127.0.0.1:8000/login">
+    <meta http-equiv="refresh" content="0;url=login">
 </head>
 <body>
-    <h1>Redirecting to main site...</h1>
-    <p>If you are not redirected automatically, please <a href="http://127.0.0.1:8000/login">click here</a>.</p>
+    <h1>Redirecting to login page...</h1>
+    <p>If you are not redirected automatically, please <a href="login">click here</a>.</p>
 </body>
 </html> 

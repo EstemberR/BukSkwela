@@ -110,10 +110,10 @@ Route::middleware(['web'])
         // Payments Management
         Route::prefix('payments')->name('payments.')->group(function () {
             Route::get('/', [App\Http\Controllers\SuperAdmin\PaymentController::class, 'index'])->name('index');
+            Route::get('/export', [App\Http\Controllers\SuperAdmin\PaymentController::class, 'export'])->name('export');
             Route::get('/{payment}', [App\Http\Controllers\SuperAdmin\PaymentController::class, 'show'])->name('show');
             Route::post('/{payment}/mark-paid', [App\Http\Controllers\SuperAdmin\PaymentController::class, 'markAsPaid'])->name('mark-paid');
             Route::put('/upgrades/{id}/approve', [App\Http\Controllers\SuperAdmin\PaymentController::class, 'approveUpgrade'])->name('approve-upgrade');
-            Route::get('/export', [App\Http\Controllers\SuperAdmin\PaymentController::class, 'export'])->name('export');
         });
 
         // Account Settings
@@ -128,7 +128,6 @@ Route::middleware(['web'])
         Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
         Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
         Route::put('/payments/{payment}/mark-as-paid', [PaymentController::class, 'markAsPaid'])->name('payments.mark-as-paid');
-        Route::get('/payments/export', [PaymentController::class, 'export'])->name('payments.export');
     });
 
     // Tenant Routes

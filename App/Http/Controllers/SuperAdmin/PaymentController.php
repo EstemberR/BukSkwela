@@ -43,11 +43,24 @@ class PaymentController extends Controller
         $payments = $query->latest()->paginate(10);
         $plans = Plan::all();
 
-        // Calculate statistics
-        $totalRevenue = Payment::where('status', 'completed')->sum('amount');
+        // Calculate statistics - getting total sales from all payments and upgrades
+        $paymentsTotal = Payment::sum('amount');
+        $upgradesTotal = SubscriptionUpgrade::sum('amount');
+        $totalRevenue = $paymentsTotal + $upgradesTotal;
+        
+        // Debugging information
+        $debug = [
+            'payments_count' => Payment::count(),
+            'payments_total' => $paymentsTotal,
+            'upgrades_count' => SubscriptionUpgrade::count(),
+            'upgrades_total' => $upgradesTotal,
+            'total_revenue' => $totalRevenue
+        ];
+        
         $paidSubscriptions = Payment::where('status', 'completed')->count();
         $pendingPayments = Payment::where('status', 'pending')->count();
         $overduePayments = Payment::where('status', 'failed')->count();
+        $totalSubscribers = Tenant::count(); // Count all tenants/subscribers regardless of subscription type
 
         // Get premium upgrades
         $premiumUpgrades = SubscriptionUpgrade::with('tenant')->orderBy('created_at', 'desc')->get();
@@ -61,7 +74,9 @@ class PaymentController extends Controller
             'pendingPayments',
             'overduePayments',
             'premiumUpgrades',
-            'pendingUpgrades'
+            'pendingUpgrades',
+            'totalSubscribers',
+            'debug'
         ));
     }
 
@@ -171,19 +186,82 @@ class PaymentController extends Controller
 
     public function export(Request $request)
     {
-        $filters = $request->only(['status', 'plan', 'date_from', 'date_to']);
-        $format = $request->get('format', 'csv');
+        try {
+            $filters = $request->only(['status', 'plan', 'date_from', 'date_to']);
+            $format = $request->get('format', 'csv');
 
-        switch ($format) {
-            case 'excel':
-                return Excel::download(new PaymentsExport($filters), 'payments-report.xlsx');
+            // TESTING: Return simple CSV for debugging
+            if ($request->has('test') && $request->test == 'true') {
+                $headers = [
+                    'Content-Type' => 'text/csv',
+                    'Content-Disposition' => 'attachment; filename=test-export.csv',
+                ];
+                
+                $content = "id,name,amount\n1,Test Payment,100.00\n2,Another Payment,250.00";
+                return response($content, 200, $headers);
+            }
+
+            // Build the query with filters
+            $query = Payment::with(['user']);
+
+            // Try to load subscription relationship if it exists
+            try {
+                $query->with('subscription.plan');
+            } catch (\Exception $e) {
+                \Log::warning("Could not load subscription relationship: " . $e->getMessage());
+            }
             
-            case 'pdf':
-                $pdfExport = new PaymentsPdfExport($filters);
-                return $pdfExport->export();
+            // Apply filters
+            if ($request->has('status') && $request->status) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->has('plan') && $request->plan) {
+                try {
+                    $query->whereHas('subscription.plan', function ($q) use ($request) {
+                        $q->where('id', $request->plan);
+                    });
+                } catch (\Exception $e) {
+                    \Log::warning("Could not filter by plan: " . $e->getMessage());
+                }
+            }
+
+            if ($request->has('date_from') && $request->date_from) {
+                $query->whereDate('created_at', '>=', $request->date_from);
+            }
+
+            if ($request->has('date_to') && $request->date_to) {
+                $query->whereDate('created_at', '<=', $request->date_to);
+            }
             
-            default:
-                return Excel::download(new PaymentsExport($filters), 'payments-report.csv');
+            // Get data
+            $payments = $query->get();
+            
+            // Also include subscription upgrades in the export if no specific filters are applied
+            $includeUpgrades = !$request->has('status') && !$request->has('plan');
+            $upgrades = $includeUpgrades ? SubscriptionUpgrade::with('tenant')->get() : collect();
+            
+            // Initialize export class with data
+            $exportData = [
+                'payments' => $payments,
+                'upgrades' => $upgrades,
+                'filters' => $filters
+            ];
+
+            switch ($format) {
+                case 'excel':
+                    return Excel::download(new PaymentsExport($exportData), 'payments-report-' . date('Y-m-d') . '.xlsx');
+                
+                case 'pdf':
+                    $pdfExport = new PaymentsPdfExport($exportData);
+                    return $pdfExport->export();
+                
+                default:
+                    return Excel::download(new PaymentsExport($exportData), 'payments-report-' . date('Y-m-d') . '.csv');
+            }
+        } catch (\Exception $e) {
+            \Log::error("Export error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return redirect()->back()->with('error', 'Export failed: ' . $e->getMessage());
         }
     }
 } 

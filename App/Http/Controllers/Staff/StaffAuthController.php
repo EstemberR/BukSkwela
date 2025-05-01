@@ -45,6 +45,22 @@ class StaffAuthController extends Controller
         Auth::guard('staff')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+        
+        // Check if in tenant context and redirect accordingly
+        if (tenant()) {
+            return redirect()->route('tenant.login');
+        }
         return redirect()->route('login');
+    }
+    
+    public function tenantLogout(Request $request)
+    {
+        // Logout the staff user
+        Auth::guard('staff')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        
+        // Redirect to tenant login page using the current host
+        return redirect()->route('tenant.login');
     }
 }

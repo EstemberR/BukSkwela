@@ -178,6 +178,6 @@ class StudentAuthController extends Controller
 
         $request->session()->regenerateToken();
 
-        return redirect('/student/login');
+        return redirect()->route('tenant.student.login');
     }
 } 

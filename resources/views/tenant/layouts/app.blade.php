@@ -3705,10 +3705,10 @@
     <!-- Add this at the bottom of your layout file, before the closing </body> tag -->
     
     <script>
-        // Global function to redirect to central domain
+        // Global function to redirect to tenant login page
         function logoutToCentralDomain() {
-            // Use the tenant_logout.html page to perform a client-side redirect
-            window.location.href = '/tenant_logout.html';
+            // Use the proper tenant logout route instead of the HTML redirect file
+            window.location.href = '{{ route("tenant.logout") }}';
             return false; // Prevent default link behavior
         }
     </script>

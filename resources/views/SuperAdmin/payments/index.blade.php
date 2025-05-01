@@ -6,17 +6,91 @@
         <h2 class="mb-0">Payment Management</h2>
         <div class="d-flex gap-2">
             <div class="dropdown">
-                <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fas fa-file-export me-1"></i> Export
+                <button class="btn btn-primary dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-file-pdf me-1"></i> Export to PDF
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="exportDropdown">
-                    <li><a class="dropdown-item" href="{{ route('superadmin.payments.export') }}?format=csv"><i class="fas fa-file-csv me-2"></i> CSV</a></li>
-                    <li><a class="dropdown-item" href="{{ route('superadmin.payments.export') }}?format=excel"><i class="fas fa-file-excel me-2"></i> Excel</a></li>
-                    <li><a class="dropdown-item" href="{{ route('superadmin.payments.export') }}?format=pdf"><i class="fas fa-file-pdf me-2"></i> PDF</a></li>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="exportDropdown">
+                    <li><h6 class="dropdown-header">Export Options</h6></li>
+                    <li><a class="dropdown-item d-flex align-items-center" href="{{ url('superadmin/payments/export') }}?format=pdf">
+                        <i class="fas fa-file-pdf me-2 text-danger"></i> PDF Format
+                        <span class="badge bg-light text-dark ms-auto">Document</span>
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item d-flex align-items-center" href="#" data-bs-toggle="modal" data-bs-target="#exportOptionsModal">
+                        <i class="fas fa-sliders-h me-2 text-secondary"></i> Advanced Export
+                    </a></li>
                 </ul>
             </div>
         </div>
     </div>
+
+    <!-- Export Options Modal -->
+    <div class="modal fade" id="exportOptionsModal" tabindex="-1" aria-labelledby="exportOptionsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="exportOptionsModalLabel">
+                        <i class="fas fa-file-pdf me-2"></i>PDF Export Options
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ url('superadmin/payments/export') }}" method="GET">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="exportFormat" class="form-label">Export Format</label>
+                            <select class="form-select" id="exportFormat" name="format">
+                                <option value="pdf" selected>PDF Document (.pdf)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Data Range</label>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="date" class="form-control" id="date_from" name="date_from">
+                                        <label for="date_from">From Date</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="date" class="form-control" id="date_to" name="date_to">
+                                        <label for="date_to">To Date</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Payment Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">All Statuses</option>
+                                <option value="completed">Completed</option>
+                                <option value="pending">Pending</option>
+                                <option value="failed">Failed</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="plan" class="form-label">Subscription Plan</label>
+                            <select class="form-select" id="plan" name="plan">
+                                <option value="">All Plans</option>
+                                @foreach($plans ?? [] as $plan)
+                                    <option value="{{ $plan->id }}">{{ $plan->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-file-pdf me-1"></i> Generate PDF
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Information -->
+ 
 
     <!-- Statistics -->
     <div class="row mb-4">
@@ -25,7 +99,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <h6 class="card-subtitle mb-2 text-muted">Total Revenue</h6>
+                            <h6 class="card-subtitle mb-2 text-muted">Total Sales</h6>
                             <h4 class="card-title text-success mb-0">₱{{ number_format($totalRevenue, 2) }}</h4>
                         </div>
                         <div class="bg-success bg-opacity-10 rounded-circle p-3">
@@ -40,11 +114,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <h6 class="card-subtitle mb-2 text-muted">Premium Subscribers</h6>
-                            <h4 class="card-title text-primary mb-0">{{ $paidSubscriptions }}</h4>
+                            <h6 class="card-subtitle mb-2 text-muted">Total Subscribers</h6>
+                            <h4 class="card-title text-primary mb-0">{{ $totalSubscribers }}</h4>
                         </div>
                         <div class="bg-primary bg-opacity-10 rounded-circle p-3">
-                            <i class="fas fa-crown text-primary fs-4"></i>
+                            <i class="fas fa-users text-primary fs-4"></i>
                         </div>
                     </div>
                 </div>
@@ -73,10 +147,7 @@
             <h5 class="card-title mb-0 text-warning"><i class="fas fa-crown me-2"></i>Premium Subscription Upgrades</h5>
         </div>
         <div class="card-body">
-            <div class="alert alert-info mb-3">
-                <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Auto-Approval System</h6>
-                <p class="mb-0">Premium upgrades are now automatically processed when tenants submit their payment details. No manual approval is required.</p>
-            </div>
+           
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead>
@@ -191,10 +262,7 @@
                                                         </div>
                                                     </div>
                                                     
-                                                    <div class="alert alert-success mb-0">
-                                                        <h6><i class="fas fa-info-circle me-2"></i>Auto-Approval</h6>
-                                                        <p class="mb-0">Premium upgrades are automatically processed when tenants submit their payment details. The tenant has been upgraded to premium status.</p>
-                                                    </div>
+                                                    
                                                 </div>
                                                 <div class="modal-footer">
                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
