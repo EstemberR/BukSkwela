@@ -13,6 +13,29 @@
     <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom Login CSS -->
     <link href="{{ asset('assets/css/pages/login.css') }}" rel="stylesheet">
+    <style>
+        .input-icon-wrapper {
+            position: absolute;
+            left: 10px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            z-index: 10;
+        }
+        .input-icon {
+            color: #6c757d;
+        }
+        .fa-envelope.input-icon {
+            margin-bottom: 20px;
+        }
+        .form-control {
+            padding-left: 35px;
+            position: relative;
+        }
+        .position-relative {
+            margin-top: 5px;
+        }
+    </style>
 </head>
 
 <body>
@@ -45,7 +68,7 @@
                         <label>Email</label>
                         <div class="position-relative">
                             <div class="input-icon-wrapper">
-                                <i class="fas fa-envelope input-icon"></i>
+                                <i class="fas fa-envelope input-icon" style="margin-bottom: 20px"></i>
                             </div>
                             <input type="email" class="form-control" name="email" 
                                 placeholder="Enter your email" required id="emailInput">
@@ -74,7 +97,7 @@
                     </div>
 
                     <div class="mt-4">
-                        <button type="submit" class="btn btn-block btn-primary btn-lg auth-form-btn">
+                        <button type="submit" class="btn btn-block btn-primary btn-lg auth-form-btn" style="color: white;">
                             Login
                         </button>
 
