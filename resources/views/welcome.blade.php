@@ -166,67 +166,157 @@
                     <h2>Choose the Right Plan for You</h2>
                 </div>
 
-                <div class="row gy-4">
-                    <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
-                        <div class="pricing-item">
-                            <h3>Basic</h3>
-                            <h4><sup>₱</sup>0<span> / month</span></h4>
-                            <ul>
-                                <li><i class="bi bi-check"></i> Instructor Management</li>
-                                <li><i class="bi bi-check"></i> Student Management</li>
-                                <li><i class="bi bi-check"></i> Enrollment Document Upload</li>
-                                <li><i class="bi bi-check"></i> Email Notification</li>
-                                <li><i class="bi bi-check"></i> View Required Documents</li>
-                                <li class="na"><i class="bi bi-x"></i> <span>View Student Submission Status</span></li>
-                                <li class="na"><i class="bi bi-x"></i> <span>Probationary Status Management</span></li>
-                                <li class="na"><i class="bi bi-x"></i> <span>Custom Enrollment Requirements</span></li>
-                                <li class="na"><i class="bi bi-x"></i> <span>View Uploaded Documents</span></li>
-                                <li class="na"><i class="bi bi-x"></i> <span>Submission Reports</span></li>
-                                <li class="na"><i class="bi bi-x"></i> <span>Branding Customization</span></li>
-                            </ul>
-                            <a href="{{ url('/register') }}" class="btn-buy">Start for Free</a>
+                <div class="row justify-content-center gy-4">
+                    <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="100">
+                        <div class="pricing-card">
+                            <div class="card shadow-sm border-0 h-100">
+                                <div class="card-body p-4 d-flex flex-column">
+                                    <h4 class="text-center mb-3">Basic</h4>
+                                    <h2 class="price text-center mb-3" id="basic-price">₱0</h2>
+                                    <div class="price-subtitle text-center text-muted mb-3">/ month</div>
+                                    
+                                    <div class="features mt-3 mb-4">
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            <span>Instructor Management</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            <span>Student Management</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            <span>Enrollment Document Upload</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            <span>Email Notification</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            <span>View Required Documents</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-auto">
+                                        <a href="{{ url('/register') }}" class="btn btn-order w-100 py-2" style="background-color: #001c38; color: white;">Start for Free</a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
-                        <div class="pricing-item featured">
-                            <h3>Premium</h3>
-                            <h4><sup>₱</sup>5,000<span style="white-space: nowrap;"> / month per department</span></h4>
-                            <ul>
-                                <li><i class="bi bi-check"></i> Instructor Management</li>
-                                <li><i class="bi bi-check"></i> Student Management</li>
-                                <li><i class="bi bi-check"></i> Enrollment Document Upload</li>
-                                <li><i class="bi bi-check"></i> Email Notification</li>
-                                <li><i class="bi bi-check"></i> View Required Documents</li>
-                                <li><i class="bi bi-check"></i> View Student Submission Status</li>
-                                <li><i class="bi bi-check"></i> Probationary Status Management</li>
-                                <li><i class="bi bi-check"></i> Custom Enrollment Requirements</li>
-                                <li class="na"><i class="bi bi-x"></i> <span>View Uploaded Documents</span></li>
-                                <li class="na"><i class="bi bi-x"></i> <span>Submission Reports</span></li>
-                                <li class="na"><i class="bi bi-x"></i> <span>Branding Customization</span></li>
-                            </ul>
-                            <a href="{{ url('/register') }}" class="btn-buy">Upgrade to Premium</a>
+                    <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="200">
+                        <div class="pricing-card highlighted">
+                            <div class="card shadow border-0 h-100" style="background-color: #001c38; color: white;">
+                                <div class="card-body p-4 d-flex flex-column" style="background-color: #001c38;">
+                                    <h4 class="text-center mb-3">Premium</h4>
+                                    <h2 class="price text-center mb-3" id="premium-price">₱5,000</h2>
+                                    <div class="price-subtitle text-center text-muted mb-3" style="color: rgba(255, 255, 255, 0.7) !important;">/ month per department</div>
+                                    
+                                    <div class="features mt-3 mb-4" style="background-color: #001c38;">
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill me-2" style="color: #ffbd59;"></i>
+                                            <span>Instructor Management</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill me-2" style="color: #ffbd59;"></i>
+                                            <span>Student Management</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill me-2" style="color: #ffbd59;"></i>
+                                            <span>Enrollment Document Upload</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill me-2" style="color: #ffbd59;"></i>
+                                            <span>Email Notification</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill me-2" style="color: #ffbd59;"></i>
+                                            <span>View Required Documents</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill me-2" style="color: #ffbd59;"></i>
+                                            <span>View Student Submission Status</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill me-2" style="color: #ffbd59;"></i>
+                                            <span>Probationary Status Management</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill me-2" style="color: #ffbd59;"></i>
+                                            <span>Custom Enrollment Requirements</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-auto">
+                                        <a href="{{ url('/register') }}" class="btn btn-order w-100 py-2" style="background-color: #ffbd59; color: #001c38; font-weight: 600;">Upgrade to Premium</a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
-                        <div class="pricing-item featured ultimate">
-                            <h3>Ultimate</h3>
-                            <h4><sup>₱</sup>8,000<span style="white-space: nowrap;"> / month per department</span></h4>
-                            <ul>
-                                <li><i class="bi bi-check"></i> Instructor Management</li>
-                                <li><i class="bi bi-check"></i> Student Management</li>
-                                <li><i class="bi bi-check"></i> Enrollment Document Upload</li>
-                                <li><i class="bi bi-check"></i> Email Notification</li>
-                                <li><i class="bi bi-check"></i> View Required Documents</li>
-                                <li><i class="bi bi-check"></i> View Student Submission Status</li>
-                                <li><i class="bi bi-check"></i> Probationary Status Management</li>
-                                <li><i class="bi bi-check"></i> Custom Enrollment Requirements</li>
-                                <li><i class="bi bi-check"></i> View Uploaded Documents</li>
-                                <li><i class="bi bi-check"></i> Submission Reports</li>
-                                <li><i class="bi bi-check"></i> Branding Customization</li>
-                            </ul>
-                            <a href="{{ url('/register') }}" class="btn-buy">Get Ultimate</a>
+                    <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="300">
+                        <div class="pricing-card">
+                            <div class="card shadow-sm border-0 h-100">
+                                <div class="card-body p-4 d-flex flex-column">
+                                    <h4 class="text-center mb-3">Ultimate</h4>
+                                    <h2 class="price text-center mb-3" id="ultimate-price">₱8,000</h2>
+                                    <div class="price-subtitle text-center text-muted mb-3">/ month per department</div>
+                                    
+                                    <div class="features mt-3 mb-4">
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            <span>Instructor Management</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            <span>Student Management</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            <span>Enrollment Document Upload</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            <span>Email Notification</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            <span>View Required Documents</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            <span>View Student Submission Status</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            <span>Probationary Status Management</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            <span>Custom Enrollment Requirements</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            <span>View Uploaded Documents</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            <span>Submission Reports</span>
+                                        </div>
+                                        <div class="feature-item d-flex align-items-center mb-3">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            <span>Branding Customization</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-auto">
+                                        <a href="{{ url('/register') }}" class="btn btn-order w-100 py-2" style="background-color: #001c38; color: white;">Get Ultimate</a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -342,5 +432,78 @@
                 });
             });
         </script>
+
+        <style>
+            .pricing-card.highlighted .card,
+            .pricing-card.highlighted .card-body,
+            .pricing-card.highlighted .features,
+            .pricing-card.highlighted .feature-item {
+                background-color: #001c38 !important;
+            }
+            
+            .pricing-card.highlighted h4,
+            .pricing-card.highlighted h2,
+            .pricing-card.highlighted .feature-item span {
+                color: white;
+            }
+            
+            .pricing-card.highlighted .price-subtitle {
+                color: rgba(255, 255, 255, 0.7) !important;
+            }
+            
+            .pricing-card.highlighted .bi-check-circle-fill {
+                color: #ffbd59 !important;
+            }
+            
+            .pricing-card.highlighted .btn-order {
+                background-color: #ffbd59;
+                color: #001c38;
+                font-weight: 600;
+            }
+            
+            .pricing-card.highlighted .btn-order:hover {
+                background-color: #ffa726;
+            }
+            
+            .pricing-card {
+                transition: all 0.3s ease;
+                height: 100%;
+            }
+            
+            .pricing-card:hover {
+                transform: translateY(-10px);
+            }
+            
+            .pricing-card.highlighted {
+                position: relative;
+            }
+            
+            .price {
+                font-size: 2.5rem;
+                font-weight: 700;
+                color: #333;
+            }
+            
+            .btn-order {
+                background-color: #6c63ff;
+                color: white;
+                border: none;
+                font-weight: 500;
+                transition: all 0.3s ease;
+            }
+            
+            .btn-order:hover {
+                background-color: #5a52e5;
+                color: white;
+            }
+            
+            .features {
+                font-size: 0.9rem;
+            }
+            
+            .feature-item i {
+                font-size: 1rem;
+            }
+        </style>
     </body>
 </html>
