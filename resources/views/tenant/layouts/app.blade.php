@@ -3323,23 +3323,9 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-book"></i> <span>Courses</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-tasks"></i> <span>Assignments</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-chart-line"></i> <span>Grades</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-calendar-alt"></i> <span>Calendar</span>
+                        <a class="nav-link {{ request()->routeIs('tenant.student.enrollment') ? 'active' : '' }}" 
+                           href="{{ route('tenant.student.enrollment', ['tenant' => tenant('id')]) }}">
+                            <i class="fas fa-tasks"></i> <span>Enrollment</span>
                         </a>
                     </li>
                     @else
@@ -3480,21 +3466,23 @@
                         $isUltimate = $currentTenant && $currentTenant->subscription_plan === 'ultimate';
                     @endphp
                     
-                    @if(!$isPremium && !$isUltimate)
-                        <a href="#" class="btn btn-sm btn-outline-warning w-100 mb-2 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#sidebarPremiumModal">
-                            <i class="fas fa-crown me-1"></i>
-                            <small>Upgrade to Premium</small>
-                        </a>
-                    @elseif($isPremium)
-                        <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center">
-                            <i class="fas fa-crown text-warning me-1"></i>
-                            <small>Premium Account</small>
-                        </div>
-                    @elseif($isUltimate)
-                        <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center" style="background-color: #e6eaff; color: #4361ee;">
-                            <i class="fas fa-star text-primary me-1"></i>
-                            <small>Ultimate Account</small>
-                        </div>
+                    @if(!auth()->guard('student')->check())
+                        @if(!$isPremium && !$isUltimate)
+                            <a href="#" class="btn btn-sm btn-outline-warning w-100 mb-2 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#sidebarPremiumModal">
+                                <i class="fas fa-crown me-1"></i>
+                                <small>Upgrade to Premium</small>
+                            </a>
+                        @elseif($isPremium)
+                            <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-crown text-warning me-1"></i>
+                                <small>Premium Account</small>
+                            </div>
+                        @elseif($isUltimate)
+                            <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center" style="background-color: #e6eaff; color: #4361ee;">
+                                <i class="fas fa-star text-primary me-1"></i>
+                                <small>Ultimate Account</small>
+                            </div>
+                        @endif
                     @endif
                 </div>
             </div>
@@ -3531,16 +3519,18 @@
                             $isUltimate = $currentTenant && $currentTenant->subscription_plan === 'ultimate';
                         @endphp
 
-                        @if($isPremium)
-                            <div class="premium-badge me-3">
-                                <i class="fas fa-crown"></i>
-                                <span>Premium</span>
-                            </div>
-                        @elseif($isUltimate)
-                            <div class="premium-badge me-3" style="background-color: #e6eaff; color: #4361ee;">
-                                <i class="fas fa-star"></i>
-                                <span>Ultimate</span>
-                            </div>
+                        @if(!auth()->guard('student')->check())
+                            @if($isPremium)
+                                <div class="premium-badge me-3">
+                                    <i class="fas fa-crown"></i>
+                                    <span>Premium</span>
+                                </div>
+                            @elseif($isUltimate)
+                                <div class="premium-badge me-3" style="background-color: #e6eaff; color: #4361ee;">
+                                    <i class="fas fa-star"></i>
+                                    <span>Ultimate</span>
+                                </div>
+                            @endif
                         @endif
 
                         <!-- Dark Mode Toggle -->
@@ -4063,6 +4053,7 @@
     </script>
 
     <!-- Sidebar Premium Modal -->
+    @if(!auth()->guard('student')->check())
     <div class="modal fade" id="sidebarPremiumModal" tabindex="-1" aria-labelledby="sidebarPremiumModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
@@ -4311,5 +4302,6 @@
             </div>
         </div>
     </div>
+    @endif
 </body>
 </html>
