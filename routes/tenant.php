@@ -56,6 +56,10 @@ Route::middleware(['web', 'tenant', 'auth:student'])
         Route::get('/dashboard', function () {
             return view('tenant.students.dashboard');
         })->name('tenant.student.dashboard');
+        
+        Route::get('/enrollment', function () {
+            return view('tenant.students.enrollment');
+        })->name('tenant.student.enrollment');
     });
 
 // Protected tenant routes
