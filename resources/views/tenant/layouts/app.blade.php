@@ -3331,28 +3331,6 @@
         body.dark-mode .sidebar-upgrade-btn {
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
         }
-
-        /* Premium badge styles */
-        .premium-badge {
-            background-color: #ffeccc !important;
-            color: black !important;
-            border-color: #FF8C00 !important;
-        }
-        
-        .premium-badge i.fa-crown {
-            color: #FF8C00 !important;
-        }
-        
-        /* Ultimate badge styles */
-        .premium-badge.ultimate-badge {
-            background-color: #e6eaff !important;
-            color: black !important;
-            border-color: #4361ee !important;
-        }
-        
-        .premium-badge i.fa-star {
-            color: #4361ee !important;
-        }
     </style>
     @stack('styles')
 </head>
@@ -3377,9 +3355,23 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('tenant.student.enrollment') ? 'active' : '' }}" 
-                           href="{{ route('tenant.student.enrollment', ['tenant' => tenant('id')]) }}">
-                            <i class="fas fa-tasks"></i> <span>Enrollment</span>
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-book"></i> <span>Courses</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-tasks"></i> <span>Assignments</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-chart-line"></i> <span>Grades</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-calendar-alt"></i> <span>Calendar</span>
                         </a>
                     </li>
                     @else
@@ -3525,32 +3517,15 @@
                             <i class="fas fa-crown me-2"></i>Upgrade to Premium
                         </a>
                     @elseif($isPremium)
-                        <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center" style="background-color: #ffeccc !important; color: #000000 !important; border-color: #FF8C00 !important;">
+                        <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center" style="background-color: #ffeccc !important; color: #FF8C00 !important; border-color: #FF8C00 !important;">
                             <i class="fas fa-crown" style="color: #FF8C00 !important;"></i>
-                            <span style="color: #000000 !important;">Premium</span>
+                            <small style="color: #000000 !important;">Premium Account</small>
                         </div>
                     @elseif($isUltimate)
-                        <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center" style="background-color: #e6eaff !important; color: #000000 !important; border-color: #4361ee !important;">
+                        <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center" style="background-color: #e6eaff !important; color: #4361ee !important; border-color: #4361ee !important;">
                             <i class="fas fa-star" style="color: #4361ee !important;"></i>
-                            <span style="color: #000000 !important;">Ultimate</span>
+                            <small style="color: #4361ee !important;">Ultimate Account</small>
                         </div>
-                    @if(!auth()->guard('student')->check())
-                        @if(!$isPremium && !$isUltimate)
-                            <a href="#" class="btn btn-sm btn-outline-warning w-100 mb-2 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#sidebarPremiumModal">
-                                <i class="fas fa-crown me-1"></i>
-                                <small>Upgrade to Premium</small>
-                            </a>
-                        @elseif($isPremium)
-                            <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center">
-                                <i class="fas fa-crown text-warning me-1"></i>
-                                <small>Premium Account</small>
-                            </div>
-                        @elseif($isUltimate)
-                            <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center" style="background-color: #e6eaff; color: #4361ee;">
-                                <i class="fas fa-star text-primary me-1"></i>
-                                <small>Ultimate Account</small>
-                            </div>
-                        @endif
                     @endif
                 </div>
             </div>
@@ -3597,18 +3572,6 @@
                                 <i class="fas fa-star" style="color: #4361ee;"></i>
                                 <span>Ultimate</span>
                             </div>
-                        @if(!auth()->guard('student')->check())
-                            @if($isPremium)
-                                <div class="premium-badge me-3">
-                                    <i class="fas fa-crown"></i>
-                                    <span>Premium</span>
-                                </div>
-                            @elseif($isUltimate)
-                                <div class="premium-badge me-3" style="background-color: #e6eaff; color: #4361ee;">
-                                    <i class="fas fa-star"></i>
-                                    <span>Ultimate</span>
-                                </div>
-                            @endif
                         @endif
 
                         <!-- Dark Mode Toggle -->
@@ -4131,7 +4094,6 @@
     </script>
 
     <!-- Sidebar Premium Modal -->
-    @if(!auth()->guard('student')->check())
     <div class="modal fade" id="sidebarPremiumModal" tabindex="-1" aria-labelledby="sidebarPremiumModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
@@ -4384,7 +4346,6 @@
     <!-- Include the Upgrade Button for non-premium accounts -->
     @if(!$isPremium && !$isUltimate)
         @include('Modals.UpgradeButton')
-    @endif
     @endif
 </body>
 </html>
