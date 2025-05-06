@@ -54,7 +54,7 @@ Route::middleware(['web', 'tenant', 'auth:student'])
     ->prefix('student')
     ->group(function () {
         Route::get('/dashboard', function () {
-            return view('tenant.students.studentDashboard');
+            return view('tenant.students.dashboard');
         })->name('tenant.student.dashboard');
     });
 
