@@ -167,7 +167,7 @@
                 </div>
 
                 <div class="row gy-4">
-                    <div class="col-lg-6 col-md-6" data-aos="fade-up" data-aos-delay="100">
+                    <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
                         <div class="pricing-item">
                             <h3>Basic</h3>
                             <h4><sup>₱</sup>0<span> / month</span></h4>
@@ -188,10 +188,31 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-6 col-md-6" data-aos="fade-up" data-aos-delay="200">
+                    <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
                         <div class="pricing-item featured">
                             <h3>Premium</h3>
-                            <h4><sup>₱</sup>5,000<span> / month per department</span></h4>
+                            <h4><sup>₱</sup>5,000<span style="white-space: nowrap;"> / month per department</span></h4>
+                            <ul>
+                                <li><i class="bi bi-check"></i> Instructor Management</li>
+                                <li><i class="bi bi-check"></i> Student Management</li>
+                                <li><i class="bi bi-check"></i> Enrollment Document Upload</li>
+                                <li><i class="bi bi-check"></i> Email Notification</li>
+                                <li><i class="bi bi-check"></i> View Required Documents</li>
+                                <li><i class="bi bi-check"></i> View Student Submission Status</li>
+                                <li><i class="bi bi-check"></i> Probationary Status Management</li>
+                                <li><i class="bi bi-check"></i> Custom Enrollment Requirements</li>
+                                <li class="na"><i class="bi bi-x"></i> <span>View Uploaded Documents</span></li>
+                                <li class="na"><i class="bi bi-x"></i> <span>Submission Reports</span></li>
+                                <li class="na"><i class="bi bi-x"></i> <span>Branding Customization</span></li>
+                            </ul>
+                            <a href="{{ url('/register') }}" class="btn-buy">Upgrade to Premium</a>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
+                        <div class="pricing-item featured ultimate">
+                            <h3>Ultimate</h3>
+                            <h4><sup>₱</sup>8,000<span style="white-space: nowrap;"> / month per department</span></h4>
                             <ul>
                                 <li><i class="bi bi-check"></i> Instructor Management</li>
                                 <li><i class="bi bi-check"></i> Student Management</li>
@@ -205,7 +226,7 @@
                                 <li><i class="bi bi-check"></i> Submission Reports</li>
                                 <li><i class="bi bi-check"></i> Branding Customization</li>
                             </ul>
-                            <a href="{{ url('/register') }}" class="btn-buy">Upgrade to Premium</a>
+                            <a href="{{ url('/register') }}" class="btn-buy">Get Ultimate</a>
                         </div>
                     </div>
                 </div>
@@ -271,6 +292,28 @@
                     once: true,
                     mirror: false
                 });
+
+                // Add custom styling for Ultimate plan
+                document.head.insertAdjacentHTML('beforeend', `
+                    <style>
+                        .pricing-item.ultimate {
+                            border-color: #FF8C00;
+                            background-color: rgba(255, 140, 0, 0.03);
+                        }
+                        .pricing-item.ultimate .btn-buy {
+                            background-color: #FF8C00;
+                        }
+                        .pricing-item.ultimate .btn-buy:hover {
+                            background-color: #E67300;
+                        }
+                        .pricing-item h4 {
+                            display: flex;
+                            align-items: baseline;
+                            justify-content: center;
+                            flex-wrap: nowrap;
+                        }
+                    </style>
+                `);
 
                 // Dropdown menu functionality
                 const dropdowns = document.querySelectorAll('.dropdown');
