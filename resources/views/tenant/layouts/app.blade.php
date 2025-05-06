@@ -3299,6 +3299,60 @@
         body.dark-mode .sidebar .nav-item.dropdown .nav-link.dropdown-toggle:hover i {
             color: var(--sidebar-icon-color);
         }
+
+        /* Sidebar Upgrade Button Styles */
+        .sidebar-upgrade-btn {
+            background-color: #FF8C00 !important; /* Dark Orange */
+            color: white !important;
+            border-color: #FF8C00 !important;
+            width: calc(100% - 20px) !important; /* Added margin space */
+            margin-left: 10px !important; /* Left margin */
+            margin-right: 10px !important; /* Right margin */
+            text-align: center;
+            border-radius: 5px !important; /* 5px radius on all corners */
+            padding: 10px !important;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        
+        .sidebar-upgrade-btn:hover,
+        .sidebar-upgrade-btn:active,
+        .sidebar-upgrade-btn:focus {
+            background-color: #FF8C00 !important; /* Keep the same dark orange */
+            color: white !important;
+            border-color: #FF8C00 !important;
+        }
+        
+        /* Dark mode support */
+        body.dark-mode .sidebar-upgrade-btn {
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Premium badge styles */
+        .premium-badge {
+            background-color: #ffeccc !important;
+            color: black !important;
+            border-color: #FF8C00 !important;
+        }
+        
+        .premium-badge i.fa-crown {
+            color: #FF8C00 !important;
+        }
+        
+        /* Ultimate badge styles */
+        .premium-badge.ultimate-badge {
+            background-color: #e6eaff !important;
+            color: black !important;
+            border-color: #4361ee !important;
+        }
+        
+        .premium-badge i.fa-star {
+            color: #4361ee !important;
+        }
     </style>
     @stack('styles')
 </head>
@@ -3481,19 +3535,18 @@
                     @endphp
                     
                     @if(!$isPremium && !$isUltimate)
-                        <a href="#" class="btn btn-sm btn-outline-warning w-100 mb-2 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#sidebarPremiumModal">
-                            <i class="fas fa-crown me-1"></i>
-                            <small>Upgrade to Premium</small>
+                        <a href="#" class="btn btn-sm btn-block sidebar-upgrade-btn" data-bs-toggle="modal" data-bs-target="#sidebarPremiumModal">
+                            <i class="fas fa-crown me-2"></i>Upgrade to Premium
                         </a>
                     @elseif($isPremium)
-                        <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center">
-                            <i class="fas fa-crown text-warning me-1"></i>
-                            <small>Premium Account</small>
+                        <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center" style="background-color: #ffeccc !important; color: #000000 !important; border-color: #FF8C00 !important;">
+                            <i class="fas fa-crown" style="color: #FF8C00 !important;"></i>
+                            <span style="color: #000000 !important;">Premium</span>
                         </div>
                     @elseif($isUltimate)
-                        <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center" style="background-color: #e6eaff; color: #4361ee;">
-                            <i class="fas fa-star text-primary me-1"></i>
-                            <small>Ultimate Account</small>
+                        <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center" style="background-color: #e6eaff !important; color: #000000 !important; border-color: #4361ee !important;">
+                            <i class="fas fa-star" style="color: #4361ee !important;"></i>
+                            <span style="color: #000000 !important;">Ultimate</span>
                         </div>
                     @endif
                 </div>
@@ -3532,13 +3585,13 @@
                         @endphp
 
                         @if($isPremium)
-                            <div class="premium-badge me-3">
-                                <i class="fas fa-crown"></i>
+                            <div class="premium-badge me-3" style="background-color: #ffeccc; color: #FF8C00;">
+                                <i class="fas fa-crown" style="color: #FF8C00;"></i>
                                 <span>Premium</span>
                             </div>
                         @elseif($isUltimate)
                             <div class="premium-badge me-3" style="background-color: #e6eaff; color: #4361ee;">
-                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star" style="color: #4361ee;"></i>
                                 <span>Ultimate</span>
                             </div>
                         @endif
@@ -3574,7 +3627,7 @@
                                     <strong>{{ Auth::guard('admin')->user()->name ?? 'User' }}</strong>
                                     <p class="mb-0 text-muted small">{{ Auth::guard('admin')->user()->email ?? 'No email' }}</p>
                                     @if($isPremium)
-                                        <span class="badge bg-warning text-dark mt-1">
+                                        <span class="badge mt-1" style="background-color: #FF8C00; color: white;">
                                             <i class="fas fa-crown"></i> Premium
                                         </span>
                                     @elseif($isUltimate)
@@ -4311,5 +4364,10 @@
             </div>
         </div>
     </div>
+
+    <!-- Include the Upgrade Button for non-premium accounts -->
+    @if(!$isPremium && !$isUltimate)
+        @include('Modals.UpgradeButton')
+    @endif
 </body>
 </html>
