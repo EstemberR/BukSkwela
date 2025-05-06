@@ -25,7 +25,10 @@
                 </div>
 
                 <h4 class="mb-2">Welcome back!</h4>
-                <p class="text-muted mb-4">Log in to continue to your workspace</p>
+                <p class="text-muted mb-4">
+                    Log in to continue to your workspace
+                    <span id="tenant-display" class="d-none font-weight-bold"></span>
+                </p>
 
                 @if(session('error'))
                     <div class="alert alert-danger">
@@ -119,14 +122,35 @@
         document.addEventListener('DOMContentLoaded', function() {
             const loginForm = document.getElementById('loginForm');
             const emailInput = document.getElementById('emailInput');
+            const tenantDisplay = document.getElementById('tenant-display');
+            
+            // Get current hostname to check if we're on a tenant subdomain
+            const hostname = window.location.hostname;
+            const isTenantSubdomain = hostname !== '127.0.0.1' && hostname !== 'localhost' && !hostname.includes('bukskwela.com');
+            
+            // If on tenant subdomain, extract and display tenant name
+            if (isTenantSubdomain) {
+                const tenantName = hostname.split('.')[0];
+                tenantDisplay.textContent = ` for ${tenantName.toUpperCase()}`;
+                tenantDisplay.classList.remove('d-none');
+            }
             
             loginForm.addEventListener('submit', function(e) {
                 const email = emailInput.value;
                 
+                // Get current hostname to check if we're on a tenant subdomain
+                const hostname = window.location.hostname;
+                const isTenantSubdomain = hostname !== '127.0.0.1' && hostname !== 'localhost' && !hostname.includes('bukskwela.com');
+                
                 if (email.endsWith('@student.buksu.edu.ph')) {
                     e.preventDefault();
-                    // Update form action for student login
-                    loginForm.action = "{{ url('/student/login') }}";
+                    // If on a tenant subdomain, use tenant-specific student login
+                    if (isTenantSubdomain) {
+                        loginForm.action = `${window.location.origin}/student/login`;
+                    } else {
+                        // Use central domain student login
+                        loginForm.action = "{{ url('/student/login') }}";
+                    }
                     loginForm.submit();
                 }
                 // Otherwise, let it submit to the default admin login

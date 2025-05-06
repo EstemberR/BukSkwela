@@ -3314,6 +3314,36 @@
                 </div>
                 
                 <ul class="nav flex-column px-3 flex-grow-1">
+                    @if(auth()->guard('student')->check())
+                    <!-- Student Menu Items -->
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('tenant.student.dashboard') ? 'active' : '' }}" 
+                           href="{{ route('tenant.student.dashboard', ['tenant' => tenant('id')]) }}">
+                            <i class="fas fa-home"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-book"></i> <span>Courses</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-tasks"></i> <span>Assignments</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-chart-line"></i> <span>Grades</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-calendar-alt"></i> <span>Calendar</span>
+                        </a>
+                    </li>
+                    @else
+                    <!-- Admin/Staff Menu Items -->
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('tenant.dashboard') ? 'active' : '' }}" 
                            href="{{ route('tenant.dashboard', ['tenant' => tenant('id')]) }}">
@@ -3427,6 +3457,7 @@
                         </div>
                         @endif
                     </li>
+                    @endif
                 </ul>
 
                 <!-- Upgrade to Pro Button -->
@@ -3535,6 +3566,11 @@
                             </button>
                             <div class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                                 <div class="dropdown-header">
+                                    @if(auth()->guard('student')->check())
+                                    <strong>{{ auth()->guard('student')->user()->name ?? session('student_name', 'Student') }}</strong>
+                                    <p class="mb-0 text-muted small">{{ auth()->guard('student')->user()->email ?? session('student_email', 'No email') }}</p>
+                                    <span class="badge bg-info mt-1">Student</span>
+                                    @else
                                     <strong>{{ Auth::guard('admin')->user()->name ?? 'User' }}</strong>
                                     <p class="mb-0 text-muted small">{{ Auth::guard('admin')->user()->email ?? 'No email' }}</p>
                                     @if($isPremium)
@@ -3545,6 +3581,7 @@
                                         <span class="badge mt-1" style="background-color: #4361ee;">
                                             <i class="fas fa-star"></i> Ultimate
                                         </span>
+                                    @endif
                                     @endif
                                 </div>
                                 <div class="dropdown-divider"></div>
@@ -3557,7 +3594,16 @@
                                     <span>Settings</span>
                                 </a>
                                 <div class="dropdown-divider"></div>
-                                <a href="#" onclick="logoutToCentralDomain()" class="dropdown-item">
+                                @if(auth()->guard('student')->check())
+                                <form id="logout-form" action="{{ route('tenant.student.logout') }}" method="POST" style="display: none;">
+                                    @csrf
+                                </form>
+                                @else
+                                <form id="logout-form" action="{{ route('tenant.logout') }}" method="POST" style="display: none;">
+                                    @csrf
+                                </form>
+                                @endif
+                                <a class="dropdown-item" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                                     <i class="fas fa-sign-out-alt"></i>
                                     <span>Logout</span>
                                 </a>
@@ -3705,11 +3751,10 @@
     <!-- Add this at the bottom of your layout file, before the closing </body> tag -->
     
     <script>
-        // Global function to redirect to tenant login page
+        // Empty function that does nothing (keeping for compatibility with any existing calls)
         function logoutToCentralDomain() {
-            // Use the proper tenant logout route instead of the HTML redirect file
-            window.location.href = '{{ route("tenant.logout") }}';
-            return false; // Prevent default link behavior
+            // This function is deprecated - we now use form submission for proper POST logout
+            return false;
         }
     </script>
     
