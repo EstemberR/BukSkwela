@@ -35,6 +35,36 @@
         .position-relative {
             margin-top: 5px;
         }
+        /* Modal styling */
+        .modal-content {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .modal-header {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .modal-footer {
+            border-top: none;
+        }
+        .text-primary {
+            color: #001c38 !important;
+        }
+        #tenantSubdomainModal .alert-info {
+            background-color: #f5f9ff;
+            border-color: #d9e8ff;
+            color: #0055cc;
+            border-radius: 8px;
+        }
+        #tenantSubdomainModal .btn-secondary {
+            background-color: #001c38;
+            border-color: #001c38;
+            color: white;
+        }
+        #tenantSubdomainModal .btn-secondary:hover {
+            background-color: #00274f;
+        }
     </style>
 </head>
 
@@ -60,9 +90,19 @@
                 @endif
 
                 @error('email')
-                    <div class="alert alert-danger">
-                        {{ $message }}
-                    </div>
+                    @if(strpos($message, 'You are not authorized to login through the central system') !== false)
+                        <div id="unauthorizedAlert" class="alert alert-warning">
+                            Please use your tenant subdomain to login. <a href="#" data-toggle="modal" data-target="#tenantSubdomainModal">Learn more</a>
+                        </div>
+                    @elseif(strpos($message, 'Invalid credentials for this tenant') !== false)
+                        <div id="invalidTenantAlert" class="alert alert-warning">
+                            Your tenant credentials are invalid. <a href="#" data-toggle="modal" data-target="#invalidTenantModal">Learn more</a>
+                        </div>
+                    @else
+                        <div class="alert alert-danger">
+                            {{ $message }}
+                        </div>
+                    @endif
                 @enderror
 
                 <form method="POST" action="{{ url('/login') }}" id="loginForm">
@@ -128,6 +168,72 @@
     <!-- Include the Tenant Approval Modal -->
     @include('Modals.TenantApproval')
 
+    <!-- Tenant Subdomain Modal -->
+    <div class="modal fade" id="tenantSubdomainModal" tabindex="-1" role="dialog" aria-labelledby="tenantSubdomainModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tenantSubdomainModalLabel">Login with Tenant Subdomain</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <h4>Tenant-specific Login Required</h4>
+                    </div>
+                    
+                    <p>Your account is associated with a specific tenant (school/department) in BukSkwela.</p>
+                    <p>To log in, please use your tenant's specific subdomain, which should be in the format:</p>
+                    
+                    <div class="alert alert-info my-3">
+                        <code><strong>http://yourtenant.localhost:8000/login</strong></code>
+                    </div>
+                    
+                    <p>If you don't know your tenant subdomain, please contact your administrator.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invalid Tenant Credentials Modal -->
+    <div class="modal fade" id="invalidTenantModal" tabindex="-1" role="dialog" aria-labelledby="invalidTenantModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="invalidTenantModalLabel">Invalid Tenant Credentials</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <h4>Login Failed</h4>
+                    </div>
+                    
+                    <p>We couldn't authenticate you with the provided credentials for this tenant.</p>
+                    <p>There might be several reasons for this:</p>
+                    
+                    <ul class="mt-3">
+                        <li>You may have entered an incorrect password</li>
+                        <li>Your account may not be activated for this tenant</li>
+                        <li>Your account might have been removed from this tenant</li>
+                    </ul>
+                    
+                    <div class="alert alert-info my-3">
+                        <p class="mb-0">Please try again with the correct credentials or contact your tenant administrator for assistance.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" style="background-color: #001c38; border-color: #001c38;">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
@@ -140,6 +246,22 @@
         });
     </script>
     @endif
+
+    @error('email')
+    @if(strpos($message, 'You are not authorized to login through the central system') !== false)
+    <script>
+        $(document).ready(function() {
+            $('#tenantSubdomainModal').modal('show');
+        });
+    </script>
+    @elseif(strpos($message, 'Invalid credentials for this tenant') !== false)
+    <script>
+        $(document).ready(function() {
+            $('#invalidTenantModal').modal('show');
+        });
+    </script>
+    @endif
+    @enderror
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
