@@ -556,7 +556,7 @@
                                         </div>
                                         
                                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                            <button type="submit" class="btn btn-primary" id="updatePasswordBtn" {{ !$isPremium && !$isUltimate ? 'disabled' : '' }}>
+                                            <button type="submit" class="btn btn-primary" id="updatePasswordBtn" {{ !$isPremium && !$isUltimate ? 'disabled' : '' }} style="color: white;">
                                                 <i class="fas fa-key me-2"></i>Update Password
                                             </button>
                                         </div>
