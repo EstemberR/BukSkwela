@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->text('address')->nullable();
             $table->unsignedBigInteger('course_id')->nullable();
-            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->enum('status', ['active', 'inactive', 'regular', 'probation', 'irregular'])->default('regular');
             $table->string('tenant_id');
             $table->rememberToken();
             $table->timestamps();

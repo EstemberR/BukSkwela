@@ -260,16 +260,7 @@ class LoginController extends Controller
                         ]);
                         
                         // Check if the student is active
-                        if ($student->status !== 'active') {
-                            Log::warning('Student account is not active', [
-                                'email' => $request->email,
-                                'status' => $student->status
-                            ]);
-                            return back()->withErrors([
-                                'email' => 'Your student account is not active. Please contact your administrator.',
-                            ])->withInput($request->except('password'));
-                        }
-                        
+                       
                         // Verify password
                         if (Hash::check($request->password, $student->password)) {
                             // Login the student
