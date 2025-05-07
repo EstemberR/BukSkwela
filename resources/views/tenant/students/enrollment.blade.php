@@ -7,15 +7,26 @@
     <!-- Header Section -->
     <div class="row mb-4">
         <div class="col-md-12">
-            <div class="d-flex align-items-center">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="{{ route('tenant.student.dashboard', ['tenant' => tenant('id')]) }}">DASHBOARD</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Enrollment Overview</li>
-                    </ol>
-                </nav>
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="{{ route('tenant.student.dashboard', ['tenant' => tenant('id')]) }}">DASHBOARD</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Enrollment Overview</li>
+                        </ol>
+                    </nav>
+                    <h2 class="mt-2">Enrollment Overview</h2>
+                </div>
+                @if(isset($applications) && $applications->where('status', 'approved')->count() > 0)
+                    @php
+                        $approvedApplication = $applications->where('status', 'approved')->first();
+                        $approvedProgramName = $approvedApplication->program ? $approvedApplication->program->name : 'Unknown Program';
+                    @endphp
+                    <div class="alert alert-success alert-sm already-enrolled-alert mb-0">
+                        <i class="fas fa-check-circle me-1"></i> Already enrolled in <strong>{{ $approvedProgramName }}</strong>
+                    </div>
+                @endif
             </div>
-            <h2 class="mt-2">Enrollment Overview</h2>
         </div>
     </div>
 
@@ -48,10 +59,15 @@
                             <i class="fas fa-info-circle me-2"></i> No programs are currently available for enrollment. Please check back later.
                         </div>
                     @else
+                        @php
+                            // Check if the student has any approved applications
+                            $hasApprovedApplication = isset($applications) && $applications->where('status', 'approved')->count() > 0;
+                        @endphp
+                        
                         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                             @foreach($programs as $program)
                                 <div class="col">
-                                    <div class="card h-100 program-card">
+                                    <div class="card h-100 program-card {{ $hasApprovedApplication ? 'disabled-card' : '' }}">
                                         <div class="program-card-image">
                                             <img src="{{ asset('assets/images/BacgroundEnrollment.jpg') }}" class="card-img-top" alt="{{ $program->name }}">
                                             <div class="program-logo">
@@ -96,7 +112,11 @@
                                             <p class="card-text text-muted small">{{ Str::limit($program->description, 100) }}</p>
                                         </div>
                                         <div class="card-footer bg-white border-top-0">
-                                            @if($hasApplied)
+                                            @if($hasApprovedApplication)
+                                                <button class="btn btn-secondary btn-sm w-100" disabled>
+                                                    <i class="fas fa-ban me-1"></i> Already Enrolled
+                                                </button>
+                                            @elseif($hasApplied)
                                                 <button class="btn btn-secondary btn-sm w-100" disabled>
                                                     <i class="fas fa-check-circle me-1"></i> Already Applied
                                                 </button>
@@ -384,6 +404,32 @@
         font-weight: 500;
     }
     
+    /* Disabled program cards when already enrolled - no opacity effect */
+    .program-card.disabled-card {
+        position: relative;
+        pointer-events: none;
+        box-shadow: none !important;
+        transform: none !important;
+    }
+    
+    /* Removing the white overlay */
+    /* .program-card.opacity-50::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.1);
+        z-index: 10;
+        border-radius: inherit;
+    } */
+    
+    .program-card.disabled-card:hover {
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    
     /* Tab styling */
     #enrollmentTabs {
         border-bottom: 1px solid #dee2e6;
@@ -664,16 +710,35 @@
         border-color: #28a745;
         background-color: rgba(40, 167, 69, 0.05);
     }
+    
+    /* Already enrolled alert styling */
+    .already-enrolled-alert {
+        width: auto;
+        max-width: 350px;
+        padding: 0.5rem 1rem;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+    }
 </style>
 @endpush
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Check if student has an approved application
+    const hasApprovedApplication = {{ isset($applications) && $applications->where('status', 'approved')->count() > 0 ? 'true' : 'false' }};
+    
     // Handle apply button click to set program info in modal
     const applyButtons = document.querySelectorAll('.apply-btn');
     applyButtons.forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function(event) {
+            // If student already has an approved application, prevent opening the modal
+            if (hasApprovedApplication) {
+                event.preventDefault();
+                alert('You already have an approved enrollment. New applications are not permitted at this time.');
+                return;
+            }
+            
             const programId = this.dataset.programId;
             const programName = this.dataset.programName;
             const schoolYearStart = this.dataset.schoolYearStart || new Date().getFullYear();

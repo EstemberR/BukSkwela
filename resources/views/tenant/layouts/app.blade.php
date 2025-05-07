@@ -13,6 +13,275 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Alpine.js -->
     <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script>
+
+    <!-- Remove no-data-alert for instructors - ULTRA AGGRESSIVE APPROACH -->
+    @if(Auth::guard('staff')->check() && Auth::guard('staff')->user()->role === 'instructor')
+    <script>
+    // IIFE to ensure local scope and immediate execution
+    (function() {
+        console.log("INSTRUCTOR MODE: BLOCKING ALL STUDENT ALERTS");
+        
+        // STRATEGY 1: Override all related functions immediately
+        window.fetchStudentData = function() { 
+            console.log("Blocked fetchStudentData call");
+            return false; 
+        };
+        window.showNotification = function() { 
+            console.log("Blocked showNotification call");
+            return false; 
+        };
+        window.checkProfileData = function() { 
+            console.log("Blocked checkProfileData call");
+            return false; 
+        };
+        window.showLoading = function() { 
+            console.log("Blocked showLoading call");
+            return false;
+        };
+        window.hideLoading = function() { 
+            console.log("Blocked hideLoading call");
+            return false;
+        };
+        
+        // STRATEGY 2: Aggressive CSS blocking
+        const blockingCSS = `
+            /* IMPORTANT: Completely block no-data-alert and related elements */
+            #no-data-alert,
+            div[id="no-data-alert"],
+            .alert-warning,
+            .alert.alert-warning,
+            .alert:has(h5:contains("No Profile Data Found")),
+            .alert:has(.fa-exclamation-triangle),
+            .alert:has(button[onclick*="fetchStudentData"]),
+            .alert:has(p:contains("Your profile information is not yet set")),
+            [class*="alert"][class*="warning"],
+            div[class*="alert"][class*="warning"] {
+                display: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                height: 0 !important;
+                width: 0 !important;
+                max-height: 0 !important;
+                max-width: 0 !important;
+                overflow: hidden !important;
+                position: absolute !important;
+                pointer-events: none !important;
+                z-index: -9999 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+            }
+        `;
+        
+        // Create and append the style element
+        const blockingStyle = document.createElement('style');
+        blockingStyle.textContent = blockingCSS;
+        document.head.appendChild(blockingStyle);
+        
+        // STRATEGY 3: Element removal functions
+        const removeProfileAlerts = function() {
+            // Remove by ID
+            const alertElement = document.getElementById('no-data-alert');
+            if (alertElement) {
+                alertElement.remove();
+                console.log("Removed no-data-alert by ID");
+            }
+            
+            // Remove by classes and content
+            document.querySelectorAll('.alert, .alert-warning').forEach(el => {
+                if (el.innerHTML && (
+                    el.innerHTML.includes('No Profile Data Found') || 
+                    el.innerHTML.includes('Your profile information is not yet set') ||
+                    el.innerHTML.includes('Please update your personal') ||
+                    el.innerHTML.includes('fetchStudentData')
+                )) {
+                    el.remove();
+                    console.log("Removed alert with matching content");
+                }
+            });
+        };
+        
+        // STRATEGY 4: Prevent the alert from being shown after load
+        // We'll run this multiple times and at different lifecycle points
+        
+        // Run immediately
+        removeProfileAlerts();
+        
+        // Run when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Run multiple times after load
+            removeProfileAlerts();
+            
+            // Setup intervals to continue checking
+            const intervals = [10, 100, 500, 1000, 2000, 5000];
+            intervals.forEach(ms => {
+                setTimeout(removeProfileAlerts, ms);
+            });
+            
+            // STRATEGY 5: Continuous monitoring with setInterval
+            setInterval(removeProfileAlerts, 1000);
+            
+            // STRATEGY 6: Use MutationObserver to detect and remove alerts as they're added
+            const setupMutationObserver = function(targetNode, config = { childList: true, subtree: true }) {
+                const observer = new MutationObserver(function(mutations) {
+                    let needsCleanup = false;
+                    
+                    mutations.forEach(function(mutation) {
+                        if (mutation.addedNodes.length) {
+                            mutation.addedNodes.forEach(function(node) {
+                                // Check if the node itself is an alert
+                                if (node.nodeType === 1) { // Element node
+                                    if (
+                                        node.id === 'no-data-alert' || 
+                                        (node.classList && (
+                                            node.classList.contains('alert-warning') || 
+                                            node.classList.contains('alert')
+                                        ))
+                                    ) {
+                                        // Check if the alert contains the profile data text
+                                        if (
+                                            node.innerHTML && (
+                                                node.innerHTML.includes('No Profile Data Found') ||
+                                                node.innerHTML.includes('Your profile information is not yet set') ||
+                                                node.innerHTML.includes('Please update your personal') ||
+                                                node.innerHTML.includes('fetchStudentData')
+                                            )
+                                        ) {
+                                            node.remove();
+                                            console.log("Observer: Removed matching alert node");
+                                        }
+                                    }
+                                    
+                                    // Also check if it contains any matching alerts as children
+                                    const childAlerts = node.querySelectorAll('#no-data-alert, .alert-warning, .alert');
+                                    childAlerts.forEach(function(alert) {
+                                        if (
+                                            alert.innerHTML && (
+                                                alert.innerHTML.includes('No Profile Data Found') ||
+                                                alert.innerHTML.includes('Your profile information is not yet set') ||
+                                                alert.innerHTML.includes('Please update your personal') ||
+                                                alert.innerHTML.includes('fetchStudentData')
+                                            )
+                                        ) {
+                                            alert.remove();
+                                            console.log("Observer: Removed matching child alert");
+                                        }
+                                    });
+                                }
+                            });
+                            
+                            needsCleanup = true;
+                        }
+                    });
+                    
+                    if (needsCleanup) {
+                        removeProfileAlerts();
+                    }
+                });
+                
+                observer.observe(targetNode, config);
+                return observer;
+            };
+            
+            // Observe both body and document element for changes
+            setupMutationObserver(document.body);
+            setupMutationObserver(document.documentElement);
+            
+            // Also observe the main content area specifically if it exists
+            const mainContent = document.querySelector('.main-content');
+            if (mainContent) {
+                setupMutationObserver(mainContent);
+            }
+            
+            // STRATEGY 7: Intercept appendChild and insertBefore to block alert insertion
+            // This is an extreme measure but will prevent the alerts from being added
+            const originalAppendChild = Element.prototype.appendChild;
+            Element.prototype.appendChild = function(node) {
+                if (node && node.nodeType === 1) {
+                    // Check if this is an alert element we want to block
+                    if (
+                        node.id === 'no-data-alert' || 
+                        (node.classList && (
+                            node.classList.contains('alert-warning') || 
+                            node.classList.contains('alert')
+                        ))
+                    ) {
+                        // Check content
+                        if (
+                            node.innerHTML && (
+                                node.innerHTML.includes('No Profile Data Found') ||
+                                node.innerHTML.includes('Your profile information is not yet set') ||
+                                node.innerHTML.includes('Please update your personal') ||
+                                node.innerHTML.includes('fetchStudentData')
+                            )
+                        ) {
+                            console.log("Blocked alert insertion via appendChild");
+                            return document.createComment('Blocked alert insertion');
+                        }
+                    }
+                }
+                
+                return originalAppendChild.apply(this, arguments);
+            };
+            
+            const originalInsertBefore = Element.prototype.insertBefore;
+            Element.prototype.insertBefore = function(node, reference) {
+                if (node && node.nodeType === 1) {
+                    // Check if this is an alert element we want to block
+                    if (
+                        node.id === 'no-data-alert' || 
+                        (node.classList && (
+                            node.classList.contains('alert-warning') || 
+                            node.classList.contains('alert')
+                        ))
+                    ) {
+                        // Check content
+                        if (
+                            node.innerHTML && (
+                                node.innerHTML.includes('No Profile Data Found') ||
+                                node.innerHTML.includes('Your profile information is not yet set') ||
+                                node.innerHTML.includes('Please update your personal') ||
+                                node.innerHTML.includes('fetchStudentData')
+                            )
+                        ) {
+                            console.log("Blocked alert insertion via insertBefore");
+                            return document.createComment('Blocked alert insertion');
+                        }
+                    }
+                }
+                
+                return originalInsertBefore.apply(this, arguments);
+            };
+        });
+    })();
+    </script>
+    <style>
+    /* CRITICAL CSS: Hide instructor-incompatible elements immediately */
+    #no-data-alert, 
+    [id="no-data-alert"],
+    .alert.alert-warning:has(h5:contains("No Profile Data Found")),
+    .alert-warning,
+    .alert:has(.fa-exclamation-triangle),
+    .alert:has(p:contains("Your profile information is not yet set")),
+    .alert:has(button[onclick*="fetchStudentData"]) {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        width: 0 !important;
+        max-height: 0 !important;
+        max-width: 0 !important;
+        overflow: hidden !important;
+        position: absolute !important;
+        pointer-events: none !important;
+        z-index: -9999 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+    }
+    </style>
+    @endif
+
     <style>
         /* Reset and base styles */
         * {
@@ -3299,11 +3568,53 @@
         body.dark-mode .sidebar .nav-item.dropdown .nav-link.dropdown-toggle:hover i {
             color: var(--sidebar-icon-color);
         }
+
+        /* Hide dark mode toggle for instructors */
+        @if(Auth::guard('staff')->check() && Auth::guard('staff')->user()->role === 'instructor')
+        .navbar-dark-mode-toggle, 
+        .theme-switch,
+        #navbarDarkModeToggle,
+        body.dark-mode,
+        .dark-mode-related {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            position: absolute !important;
+            pointer-events: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+        }
+        
+        body {
+            background-color: #f3f4f6 !important;
+            color: #111827 !important;
+        }
+        @endif
     </style>
     @stack('styles')
 </head>
-<body class="{{ isset($settings) && $settings->dark_mode ? 'dark-mode' : '' }} {{ request()->routeIs('tenant.reports.*') ? 'reports-page' : '' }}" 
+<body class="{{ (isset($settings) && $settings->dark_mode && !(Auth::guard('staff')->check() && Auth::guard('staff')->user()->role === 'instructor')) ? 'dark-mode' : '' }} {{ request()->routeIs('tenant.reports.*') ? 'reports-page' : '' }}" 
       data-card-style="{{ isset($settings) && $settings->card_style ? $settings->card_style : 'square' }}">
+    
+    @if(Auth::guard('staff')->check() && Auth::guard('staff')->user()->role === 'instructor')
+    <script>
+    // Immediate script to ensure no dark mode for instructors
+    document.body.classList.remove('dark-mode');
+    localStorage.setItem('darkMode', 'disabled');
+    
+    // Find and remove any dark mode toggles that might still be visible
+    window.addEventListener('DOMContentLoaded', function() {
+        const darkModeElements = document.querySelectorAll('.navbar-dark-mode-toggle, .theme-switch, #navbarDarkModeToggle, .theme-slider');
+        darkModeElements.forEach(function(element) {
+            if (element && element.parentNode) {
+                element.parentNode.removeChild(element);
+            }
+        });
+    });
+    </script>
+    @endif
+    
     <div x-data="{ isSidebarOpen: false }" class="layout-wrapper">
     <!-- Sidebar -->
         <div class="sidebar" :class="{ 'show': isSidebarOpen }">
@@ -3540,6 +3851,7 @@
                             
                             $isPremium = $currentTenant && $currentTenant->subscription_plan === 'premium';
                             $isUltimate = $currentTenant && $currentTenant->subscription_plan === 'ultimate';
+                            $isInstructor = Auth::guard('staff')->check() && Auth::guard('staff')->user()->role === 'instructor';
                         @endphp
 
                         @if($isPremium)
@@ -3555,6 +3867,7 @@
                         @endif
 
                         <!-- Dark Mode Toggle -->
+                        @if(!(Auth::guard('staff')->check() && Auth::guard('staff')->user()->role === 'instructor'))
                         <div class="navbar-dark-mode-toggle me-3">
                             <label class="theme-switch" title="Toggle Dark Mode">
                                 <input type="checkbox" id="navbarDarkModeToggle">
@@ -3564,6 +3877,7 @@
                                 </span>
                             </label>
                         </div>
+                        @endif
 
                         <!-- Avatar with Dropdown -->
                         <div class="dropdown">
@@ -3804,6 +4118,18 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Example usage:
             // setupPagination('myTable', 20, 95); // 20 items per page, 95 total items
+            
+            // Disable dark mode for instructors completely
+            @if(Auth::guard('staff')->check() && Auth::guard('staff')->user()->role === 'instructor')
+            document.body.classList.remove('dark-mode');
+            localStorage.setItem('darkMode', 'disabled');
+            
+            // Hide any dark mode toggles that might be visible
+            const darkModeToggles = document.querySelectorAll('.navbar-dark-mode-toggle, .theme-switch');
+            darkModeToggles.forEach(toggle => {
+                toggle.style.display = 'none';
+            });
+            @endif
         });
     </script>
 
@@ -3963,155 +4289,45 @@
         
         // Also check when the window is loaded completely
         window.addEventListener('load', checkCompactMode);
-    });
+        
+        // Handle dark mode toggle only if not an instructor
+        @if(!(Auth::guard('staff')->check() && Auth::guard('staff')->user()->role === 'instructor'))
+        const darkModeToggle = document.getElementById('navbarDarkModeToggle');
+        if (darkModeToggle) {
+            // Set initial state based on body class
+            darkModeToggle.checked = document.body.classList.contains('dark-mode');
+            
+            // Add event listener for toggle
+            darkModeToggle.addEventListener('change', function() {
+                document.body.classList.toggle('dark-mode');
+                
+                // Save preference to localStorage
+                if (this.checked) {
+                    localStorage.setItem('darkMode', 'enabled');
+                    showToast('Dark mode enabled');
+                } else {
+                    localStorage.setItem('darkMode', 'disabled');
+                    showToast('Light mode enabled');
+                }
+            });
+            
+            // Apply saved preference from localStorage
+            const savedDarkMode = localStorage.getItem('darkMode');
+            if (savedDarkMode === 'enabled') {
+                document.body.classList.add('dark-mode');
+                darkModeToggle.checked = true;
+            } else if (savedDarkMode === 'disabled') {
+                document.body.classList.remove('dark-mode');
+                darkModeToggle.checked = false;
+            }
+                }
+            @endif
+        });
     </script>
 
     <!-- Global card style application -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Apply card style from localStorage on all pages
-        const cardStyle = localStorage.getItem('selectedCardStyle') || 'square';
-        
-        const applyGlobalCardStyle = () => {
-            console.log('Applying global card style:', cardStyle);
-            
-            // Target all card types across all layouts
-            const cardSelectors = '.card, .enrolled-card, .stat-card, .compact-content-card, .modern-stat-card, .modern-card';
-            
-            // Remove all card style classes first
-            document.querySelectorAll(cardSelectors).forEach(card => {
-                card.classList.remove('card-rounded', 'card-square', 'card-glass');
-                // Add the selected style class
-                card.classList.add(`card-${cardStyle}`);
-            });
-            
-            // If we're on a dashboard page that has its own applyCardStyle function,
-            // it will apply more specific styles later
-        };
-        
-        // Apply global styles
-        applyGlobalCardStyle();
-        
-        // Listen for changes
-        window.addEventListener('storage', function(e) {
-            if (e.key === 'selectedCardStyle') {
-                // Reapply global style
-                applyGlobalCardStyle();
-            }
-        });
-    });
-    </script>
-
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Apply card style from localStorage if available
-        try {
-            const savedCardStyle = localStorage.getItem('selectedCardStyle');
-            if (savedCardStyle) {
-                applyCardStyle(savedCardStyle);
-                console.log('Applied card style from localStorage:', savedCardStyle);
-            }
-        } catch (e) {
-            console.error('Error applying card style from localStorage:', e);
-        }
-        
-        // Listen for card style changes
-        document.addEventListener('cardStyleChanged', function(e) {
-            const cardStyle = e.detail.cardStyle;
-            applyCardStyle(cardStyle);
-            console.log('Applied card style from event:', cardStyle);
-        });
-        
-        // Listen for storage events (changes from other tabs)
-        window.addEventListener('storage', function(e) {
-            if (e.key === 'selectedCardStyle') {
-                applyCardStyle(e.newValue);
-                console.log('Applied card style from storage event:', e.newValue);
-            }
-        });
-        
-        /**
-         * Apply card style to all dashboard elements
-         */
-        function applyCardStyle(style) {
-            // Remove all style classes first
-            document.body.classList.remove('card-style-square', 'card-style-rounded', 'card-style-glass');
-            
-            // Add the selected style class
-            if (style) {
-                document.body.classList.add('card-style-' + style);
-            }
-        }
-    });
-    </script>
-
-    <!-- Include the Tenant Approval Modal -->
-    @include('Modals.TenantApproval')
-    
-    <!-- Scripts to handle tenant approval modal -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if approval modal session flag is set
-            @if(session('show_approval_modal'))
-                const loginEmail = document.querySelector('input[name="email"]')?.value || '';
-                console.log('Email for modal check:', loginEmail);
-                
-                // Only show approval modal if not a student email
-                if (!loginEmail.includes('@student.buksu.edu.ph')) {
-                    console.log('Not a student email, showing approval modal');
-                    
-                    // Check if modal should be prevented (student email was entered)
-                    if (sessionStorage.getItem('preventApprovalModal') !== 'true') {
-                        // Use Bootstrap 5 Modal API
-                        const approvalModal = document.getElementById('tenantApprovalModal');
-                        if (approvalModal) {
-                            const modal = new bootstrap.Modal(approvalModal);
-                            modal.show();
-                        }
-                    } else {
-                        console.log('Modal showing prevented by session storage flag');
-                    }
-                } else {
-                    console.log('Student email detected, not showing approval modal');
-                    // Remove the session flag
-                    @php
-                    if (session()->has('show_approval_modal')) {
-                        session()->forget('show_approval_modal');
-                    }
-                    @endphp
-                }
-            @endif
-            
-            // Special check for student emails when page loads
-            const emailInput = document.querySelector('input[name="email"]');
-            if (emailInput) {
-                const checkStudentEmail = function() {
-                    const email = emailInput.value || '';
-                    if (email.includes('@student.buksu.edu.ph')) {
-                        console.log('Student email detected in input');
-                        // Hide modal if it's currently shown
-                        const modalElement = document.getElementById('tenantApprovalModal');
-                        if (modalElement) {
-                            const bsModal = bootstrap.Modal.getInstance(modalElement);
-                            if (bsModal) {
-                                bsModal.hide();
-                                console.log('Hiding modal for student email');
-                            }
-                        }
-                    }
-                };
-                
-                // Check on input change
-                emailInput.addEventListener('input', checkStudentEmail);
-                
-                // Check on page load
-                checkStudentEmail();
-            }
-        });
-    </script>
-
-    <!-- Initialize all dropdowns -->
-    <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Handle payment method change in sidebar modal
             document.querySelectorAll('#sidebarPremiumModal input[name="payment_method"]').forEach(input => {

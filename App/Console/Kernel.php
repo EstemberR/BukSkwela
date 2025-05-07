@@ -111,6 +111,20 @@ class Kernel extends ConsoleKernel
     {
         parent::__construct($app, $events);
         
+        // Don't register tenancy listeners in the constructor
+        // $this->registerTenancyListeners();
+    }
+    
+    /**
+     * Bootstrap the application for artisan commands.
+     *
+     * @return void
+     */
+    public function bootstrap()
+    {
+        parent::bootstrap();
+        
+        // Register tenancy listeners after the application has been bootstrapped
         $this->registerTenancyListeners();
     }
 }
