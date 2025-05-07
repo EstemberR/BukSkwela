@@ -18,6 +18,8 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->string('tenant_id');
+            $table->year('school_year_start')->nullable();
+            $table->year('school_year_end')->nullable();
             $table->timestamps();
         });
     }

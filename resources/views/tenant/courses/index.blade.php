@@ -27,7 +27,11 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Courses</h5>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCourseModal">
+<<<<<<< HEAD
                 Enrollment Form
+=======
+                Add Enrollment Form
+>>>>>>> 18271a1d45712252c8ea93d3241b782d4a59f1a3
             </button>
         </div>
         <div class="card-body">
@@ -100,7 +104,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="4" class="text-center">No courses found</td>
+                            <td colspan="5" class="text-center">No courses found</td>
                         </tr>
                         @endforelse
                     </tbody>

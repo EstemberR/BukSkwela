@@ -127,6 +127,11 @@
         border: 1px solid #f0f0f0;
     }
     
+    /* Modal content */
+    .modal-content {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+    
     /* Drag drop zone styling */
     .drag-drop-zone {
         transition: all 0.3s ease;
@@ -145,9 +150,27 @@
         border-color: #0d6efd !important;
     }
     
-    /* Modal content */
-    .modal-content {
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    .drag-drop-zone i {
+        color: #6c757d;
+    }
+    
+    .drag-drop-zone:hover {
+        background-color: #f8f8f8;
+    }
+    
+    #filePreview {
+        transition: all 0.3s ease;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.01);
+    }
+    
+    #selectedFileName {
+        max-width: 250px;
+    }
+    
+    /* List group items */
+    .list-group-item {
+        border: 1px solid #f0f0f0;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.01);
     }
 </style>
 @endpush
@@ -158,7 +181,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Requirements</h5>
+                    <h5 class="mb-0">Instructor Requirements</h5>
                     <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createFolderModal">
                         <i class="fas fa-folder-plus"></i> Add New Requirements
                     </button>
@@ -558,7 +581,7 @@
             createFolderBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Creating...';
 
             try {
-                const response = await fetch('{{ route("tenant.admin.requirements.folder.create", ["tenant" => tenant("id")]) }}', {
+                const response = await fetch('{{ route("tenant.instructor.requirements.folder.create", ["tenant" => tenant("id")]) }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -689,7 +712,7 @@
                     newName
                 });
 
-                const response = await fetch('{{ route("tenant.admin.requirements.folder.rename", ["tenant" => tenant("id"), "folderId" => "__id__"]) }}'.replace('__id__', folderId), {
+                const response = await fetch('{{ route("tenant.instructor.requirements.folder.rename", ["tenant" => tenant("id"), "folderId" => "__id__"]) }}'.replace('__id__', folderId), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -857,7 +880,7 @@
         $('#folderContentsTable tbody').html('<tr><td colspan="3" class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
         
         // Use the Laravel route helper
-        let url = "{{ route('tenant.admin.requirements.folder.contents', ['tenant' => tenant('id')]) }}";
+        let url = "{{ route('tenant.instructor.requirements.folder.contents', ['tenant' => tenant('id')]) }}";
         if (folderId) {
             url += "/" + encodeURIComponent(folderId);
         }
@@ -997,7 +1020,7 @@
         console.log('Loading folder contents for modal:', folderId);
         
         // Use the Laravel route helper
-        let url = "{{ route('tenant.admin.requirements.folder.contents', ['tenant' => tenant('id')]) }}";
+        let url = "{{ route('tenant.instructor.requirements.folder.contents', ['tenant' => tenant('id')]) }}";
         if (folderId) {
             url += "/" + encodeURIComponent(folderId);
         }
@@ -1447,7 +1470,7 @@
 
         $('#firstFolderFilesTable tbody').html('<tr><td colspan="5" class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
 
-        let url = "{{ route('tenant.admin.requirements.folder.contents', ['tenant' => tenant('id')]) }}/" + encodeURIComponent(folderId);
+        let url = "{{ route('tenant.instructor.requirements.folder.contents', ['tenant' => tenant('id')]) }}/" + encodeURIComponent(folderId);
         
         $.ajax({
             url: url,
@@ -1486,7 +1509,7 @@
 
     // Load files for the current folder
     const folderId = currentFolderId || 'root';
-    fetch(`{{ route('tenant.admin.requirements.folder.contents', ['tenant' => tenant('id')]) }}/${folderId}`)
+    fetch(`{{ route('tenant.instructor.requirements.folder.contents', ['tenant' => tenant('id')]) }}/${folderId}`)
         .then(response => response.json())
         .then(result => {
             if (result.success) {
@@ -1753,7 +1776,7 @@ function setupModalFileUploadHandler() {
             uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
 
             // Use the Laravel route helper with the folderId parameter
-            const uploadUrl = "{{ route('tenant.admin.requirements.folder.upload', ['tenant' => tenant('id'), 'folderId' => '__FOLDER_ID__']) }}".replace('__FOLDER_ID__', folderId);
+            const uploadUrl = "{{ route('tenant.instructor.requirements.folder.upload', ['tenant' => tenant('id'), 'folderId' => '__FOLDER_ID__']) }}".replace('__FOLDER_ID__', folderId);
 
             console.log('Uploading file to:', uploadUrl);
 

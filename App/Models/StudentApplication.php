@@ -44,7 +44,9 @@ class StudentApplication extends Model
         'reviewed_by',
         'reviewed_at',
         'document_files',
-        'tenant_id'
+        'tenant_id',
+        'school_year_start',
+        'school_year_end'
     ];
 
     /**
@@ -54,7 +56,9 @@ class StudentApplication extends Model
      */
     protected $casts = [
         'reviewed_at' => 'datetime',
-        'document_files' => 'array'
+        'document_files' => 'array',
+        'school_year_start' => 'integer',
+        'school_year_end' => 'integer'
     ];
 
     /**

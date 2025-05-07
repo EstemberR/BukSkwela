@@ -7,38 +7,13 @@
 <div id="toast-container" class="position-fixed top-0 end-0 p-3" style="z-index: 1050;"></div>
 
 <!-- Debug Information (only shown during development) -->
-<div class="container mb-3" id="debug-info" style="display: none;">
-    <div class="alert alert-info">
-        <h5>Debug Information</h5>
-        <div id="debug-content">Loading debug info...</div>
-        <button class="btn btn-sm btn-outline-secondary mt-2" onclick="toggleDebugInfo()">Hide Debug Info</button>
-    </div>
-</div>
+
 
 <!-- Loading Spinner - Add this after the debug-info div -->
-<div id="loading-overlay" class="d-none">
-    <div class="spinner-container">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <p class="mt-2 text-primary">Loading your information...</p>
-    </div>
-</div>
+
 
 <!-- No Data Alert - Add after loading spinner -->
-<div id="no-data-alert" class="alert alert-warning mt-3 mb-3 d-none">
-    <div class="d-flex align-items-center">
-        <div class="flex-grow-1">
-            <h5 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i> No Profile Data Found</h5>
-            <p class="mb-0">Your profile information is not yet set. Please update your personal and academic information using the buttons above.</p>
-        </div>
-        <div>
-            <button class="btn btn-primary btn-sm ms-3" onclick="fetchStudentData()">
-                <i class="fas fa-sync-alt me-1"></i> Refresh Data
-            </button>
-        </div>
-    </div>
-</div>
+
 
 <div class="container">
     <!-- Information Card -->

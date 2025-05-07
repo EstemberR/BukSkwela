@@ -6,21 +6,26 @@
 <div class="container">
     <!-- Header Section -->
     <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="d-flex align-items-center">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="{{ route('tenant.student.dashboard', ['tenant' => tenant('id')]) }}">DASHBOARD</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Enrollment Overview</li>
-                    </ol>
-                </nav>
-            </div>
-            <h2 class="mt-2">Enrollment Overview</h2>
-        </div>
-        <div class="col-md-6 text-md-end">
-            <div class="d-flex justify-content-md-end gap-2">
-                <a href="#" class="btn btn-outline-secondary">Application History</a>
-                <a href="#" class="btn btn-success">Apply Enrollment</a>
+        <div class="col-md-12">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="{{ route('tenant.student.dashboard', ['tenant' => tenant('id')]) }}">DASHBOARD</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Enrollment Overview</li>
+                        </ol>
+                    </nav>
+                    <h2 class="mt-2">Enrollment Overview</h2>
+                </div>
+                @if(isset($applications) && $applications->where('status', 'approved')->count() > 0)
+                    @php
+                        $approvedApplication = $applications->where('status', 'approved')->first();
+                        $approvedProgramName = $approvedApplication->program ? $approvedApplication->program->name : 'Unknown Program';
+                    @endphp
+                    <div class="alert alert-success alert-sm already-enrolled-alert mb-0">
+                        <i class="fas fa-check-circle me-1"></i> Already enrolled in <strong>{{ $approvedProgramName }}</strong>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
@@ -54,10 +59,15 @@
                             <i class="fas fa-info-circle me-2"></i> No programs are currently available for enrollment. Please check back later.
                         </div>
                     @else
+                        @php
+                            // Check if the student has any approved applications
+                            $hasApprovedApplication = isset($applications) && $applications->where('status', 'approved')->count() > 0;
+                        @endphp
+                        
                         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                             @foreach($programs as $program)
                                 <div class="col">
-                                    <div class="card h-100 program-card">
+                                    <div class="card h-100 program-card {{ $hasApprovedApplication ? 'disabled-card' : '' }}">
                                         <div class="program-card-image">
                                             <img src="{{ asset('assets/images/BacgroundEnrollment.jpg') }}" class="card-img-top" alt="{{ $program->name }}">
                                             <div class="program-logo">
@@ -84,7 +94,7 @@
                                                     </div>
                                                 @elseif($applicationStatus == 'approved')
                                                     <div class="status-indicator approved">
-                                                        <i class="fas fa-check-circle"></i> Applied - Approved
+                                                        <i class="fas fa-check-circle"></i> Approved
                                                     </div>
                                                 @elseif($applicationStatus == 'rejected')
                                                     <div class="status-indicator rejected">
@@ -102,7 +112,11 @@
                                             <p class="card-text text-muted small">{{ Str::limit($program->description, 100) }}</p>
                                         </div>
                                         <div class="card-footer bg-white border-top-0">
-                                            @if($hasApplied)
+                                            @if($hasApprovedApplication)
+                                                <button class="btn btn-secondary btn-sm w-100" disabled>
+                                                    <i class="fas fa-ban me-1"></i> Already Enrolled
+                                                </button>
+                                            @elseif($hasApplied)
                                                 <button class="btn btn-secondary btn-sm w-100" disabled>
                                                     <i class="fas fa-check-circle me-1"></i> Already Applied
                                                 </button>
@@ -111,7 +125,9 @@
                                                    data-bs-toggle="modal" 
                                                    data-bs-target="#applyModal" 
                                                    data-program-id="{{ $program->id }}" 
-                                                   data-program-name="{{ $program->name }}">
+                                                   data-program-name="{{ $program->name }}"
+                                                   data-school-year-start="{{ $program->school_year_start ?? date('Y') }}"
+                                                   data-school-year-end="{{ $program->school_year_end ?? (date('Y') + 1) }}">
                                                     Apply for This Program
                                                 </a>
                                             @endif
@@ -172,6 +188,8 @@
                                                 data-year-level="{{ $application->year_level }}"
                                                 data-status="{{ $application->status }}"
                                                 data-submitted-date="{{ $application->created_at->format('M d, Y') }}"
+                                                data-school-year-start="{{ $application->school_year_start ?? '' }}"
+                                                data-school-year-end="{{ $application->school_year_end ?? '' }}"
                                                 data-notes="{{ $application->notes }}">
                                                 <i class="fas fa-eye me-1"></i> View Details
                                             </button>
@@ -240,6 +258,16 @@
                             <option value="3">Third Year</option>
                             <option value="4">Fourth Year</option>
                         </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="school_year" class="form-label">School Year (SY)</label>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <span id="school-year-display">School year is automatically set by the system</span>
+                        </div>
+                        <input type="hidden" id="school_year_start" name="school_year_start">
+                        <input type="hidden" id="school_year_end" name="school_year_end">
                     </div>
                     
                     <div class="mb-3">
@@ -316,10 +344,16 @@
                 </div>
                 
                 <div class="row mb-4">
-                    <div class="col-md-12">
+                    <div class="col-md-6">
                         <div class="mb-3">
                             <label class="fw-bold">Student Status:</label>
                             <div id="view-student-status" class="form-text-static"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="fw-bold">School Year:</label>
+                            <div id="view-school-year" class="form-text-static"></div>
                         </div>
                     </div>
                 </div>
@@ -368,6 +402,32 @@
     
     .badge {
         font-weight: 500;
+    }
+    
+    /* Disabled program cards when already enrolled - no opacity effect */
+    .program-card.disabled-card {
+        position: relative;
+        pointer-events: none;
+        box-shadow: none !important;
+        transform: none !important;
+    }
+    
+    /* Removing the white overlay */
+    /* .program-card.opacity-50::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.1);
+        z-index: 10;
+        border-radius: inherit;
+    } */
+    
+    .program-card.disabled-card:hover {
+        transform: none !important;
+        box-shadow: none !important;
     }
     
     /* Tab styling */
@@ -650,21 +710,50 @@
         border-color: #28a745;
         background-color: rgba(40, 167, 69, 0.05);
     }
+    
+    /* Already enrolled alert styling */
+    .already-enrolled-alert {
+        width: auto;
+        max-width: 350px;
+        padding: 0.5rem 1rem;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+    }
 </style>
 @endpush
 
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Check if student has an approved application
+    const hasApprovedApplication = {{ isset($applications) && $applications->where('status', 'approved')->count() > 0 ? 'true' : 'false' }};
+    
     // Handle apply button click to set program info in modal
     const applyButtons = document.querySelectorAll('.apply-btn');
     applyButtons.forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function(event) {
+            // If student already has an approved application, prevent opening the modal
+            if (hasApprovedApplication) {
+                event.preventDefault();
+                alert('You already have an approved enrollment. New applications are not permitted at this time.');
+                return;
+            }
+            
             const programId = this.dataset.programId;
             const programName = this.dataset.programName;
+            const schoolYearStart = this.dataset.schoolYearStart || new Date().getFullYear();
+            const schoolYearEnd = this.dataset.schoolYearEnd || (parseInt(schoolYearStart) + 1);
             
             document.getElementById('program_id').value = programId;
             document.getElementById('selected-program-name').textContent = programName;
+            
+            // Set the school year values in the hidden fields
+            document.getElementById('school_year_start').value = schoolYearStart;
+            document.getElementById('school_year_end').value = schoolYearEnd;
+            
+            // Display the school year in the info alert
+            document.getElementById('school-year-display').textContent = 
+                `School year ${schoolYearStart} - ${schoolYearEnd} is set for this enrollment`;
             
             // Reset status and year level selections
             document.getElementById('student_status').value = '';
@@ -681,6 +770,34 @@ document.addEventListener('DOMContentLoaded', function() {
             checkGoogleDriveStatus();
         });
     });
+    
+    // Add validation for school year fields
+    const schoolYearStart = document.getElementById('school_year_start');
+    const schoolYearEnd = document.getElementById('school_year_end');
+    
+    if (schoolYearStart && schoolYearEnd) {
+        // Validate that the values are present before submitting
+        const applicationForm = document.getElementById('applicationForm');
+        if (applicationForm) {
+            applicationForm.addEventListener('submit', function(e) {
+                // Ensure school year fields have values before submitting
+                if (!schoolYearStart.value || !schoolYearEnd.value) {
+                    e.preventDefault();
+                    alert('School year information is missing. Please try again or contact support.');
+                    return false;
+                }
+                
+                // Also check that end year is >= start year
+                if (parseInt(schoolYearEnd.value) < parseInt(schoolYearStart.value)) {
+                    e.preventDefault();
+                    alert('Invalid school year range. End year must be equal to or greater than start year.');
+                    return false;
+                }
+                
+                return true;
+            });
+        }
+    }
     
     // Debug applications button
     const debugBtn = document.getElementById('debugApplicationsBtn');
@@ -1374,6 +1491,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const yearLevel = this.dataset.yearLevel;
             const status = this.dataset.status;
             const submittedDate = this.dataset.submittedDate;
+            const schoolYearStart = this.dataset.schoolYearStart;
+            const schoolYearEnd = this.dataset.schoolYearEnd;
             const notes = this.dataset.notes || 'No notes provided.';
             
             // Update modal content
@@ -1382,6 +1501,13 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('view-year-level').textContent = 'Year ' + yearLevel;
             document.getElementById('view-submitted-date').textContent = submittedDate;
             document.getElementById('view-notes').textContent = notes;
+            
+            // Set school year information
+            if (schoolYearStart && schoolYearEnd) {
+                document.getElementById('view-school-year').textContent = `${schoolYearStart} - ${schoolYearEnd}`;
+            } else {
+                document.getElementById('view-school-year').textContent = 'Not specified';
+            }
             
             // Set status badge
             let statusBadge = '';
@@ -1433,12 +1559,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 } else {
                     document.getElementById('view-student-status').textContent = 'Regular';
+                    document.getElementById('view-school-year').textContent = 'Not specified';
                     document.getElementById('admin-feedback').classList.add('d-none');
                 }
             })
             .catch(error => {
                 console.error('Error loading application details:', error);
                 document.getElementById('view-student-status').textContent = 'Regular';
+                document.getElementById('view-school-year').textContent = 'Not specified';
             });
         });
     });

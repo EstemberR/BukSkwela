@@ -398,7 +398,7 @@ class EnrollmentController extends Controller
             Log::info('Enrollment application submission started', [
                 'tenant_id' => $tenantId,
                 'student_id' => Auth::guard('student')->id(),
-                'request_data' => $request->only(['program_id', 'year_level', 'student_status'])
+                'request_data' => $request->only(['program_id', 'year_level', 'student_status', 'school_year_start', 'school_year_end'])
             ]);
             
             // Get student status from request
@@ -457,6 +457,8 @@ class EnrollmentController extends Controller
                 'year_level' => 'required|in:1,2,3,4',
                 'student_status' => 'required|in:Regular,Probation,Irregular',
                 'notes' => 'nullable|string|max:1000',
+                'school_year_start' => 'required|numeric|min:2000|max:2100',
+                'school_year_end' => 'required|numeric|min:2000|max:2100|gte:school_year_start',
             ];
             
             // Add validation rules for each folder's file upload
@@ -480,6 +482,8 @@ class EnrollmentController extends Controller
                 $application->notes = $validated['notes'] ?? null;
                 $application->status = 'pending'; // Initial status
                 $application->tenant_id = $tenantId;
+                $application->school_year_start = $validated['school_year_start'];
+                $application->school_year_end = $validated['school_year_end'];
                 
                 // Log the application data before saving
                 Log::info('Creating enrollment application', [
@@ -490,6 +494,8 @@ class EnrollmentController extends Controller
                         'program_id' => $application->program_id,
                         'year_level' => $application->year_level,
                         'student_status' => $application->student_status,
+                        'school_year_start' => $application->school_year_start,
+                        'school_year_end' => $application->school_year_end,
                         'tenant_id' => $application->tenant_id
                     ]
                 ]);
@@ -878,6 +884,8 @@ class EnrollmentController extends Controller
                     'admin_notes' => $application->admin_notes,
                     'reviewed_at' => $application->reviewed_at ? $application->reviewed_at->format('Y-m-d H:i:s') : null,
                     'student_status' => $application->student_status,
+                    'school_year_start' => $application->school_year_start,
+                    'school_year_end' => $application->school_year_end,
                     'created_at' => $application->created_at->format('Y-m-d H:i:s'),
                     'updated_at' => $application->updated_at->format('Y-m-d H:i:s')
                 ]

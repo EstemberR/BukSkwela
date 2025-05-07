@@ -724,6 +724,46 @@ class GoogleDriveService
         }
     }
 
+    /**
+     * Get details of a specific folder or file
+     * 
+     * @param string $fileId The ID of the folder or file
+     * @return array|null File details or null if not found
+     */
+    public function getFolderDetails($fileId)
+    {
+        try {
+            Log::info('Getting file/folder details', ['file_id' => $fileId]);
+            
+            $file = $this->service->files->get($fileId, [
+                'fields' => 'id, name, mimeType, modifiedTime, webViewLink, parents, size',
+                'supportsAllDrives' => true
+            ]);
+            
+            if (!$file) {
+                return null;
+            }
+            
+            return [
+                'id' => $file->getId(),
+                'name' => $file->getName(),
+                'mimeType' => $file->getMimeType(),
+                'modifiedTime' => $file->getModifiedTime(),
+                'webViewLink' => $file->getWebViewLink(),
+                'parents' => $file->getParents(),
+                'size' => $file->getSize()
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error getting file/folder details', [
+                'error' => $e->getMessage(),
+                'file_id' => $fileId,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return null;
+        }
+    }
+
     public function getFolderPath($folderId)
     {
         try {

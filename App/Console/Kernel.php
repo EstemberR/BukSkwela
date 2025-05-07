@@ -121,7 +121,6 @@ class Kernel extends ConsoleKernel
     {
         parent::__construct($app, $events);
         
-        // Moving this back as we're now using dependency injection instead of facades
         $this->registerTenancyListeners();
     }
     

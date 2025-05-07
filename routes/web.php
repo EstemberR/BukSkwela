@@ -19,6 +19,7 @@ use App\Http\Controllers\Requirement\RequirementController;
 use Illuminate\Support\Facades\Route;
 use Google\Client;
 use App\Http\Controllers\SuperAdmin\PaymentController;
+use Illuminate\Support\Facades\Auth;
 
 // Central domain routes
 Route::middleware(['web'])
@@ -137,6 +138,66 @@ Route::middleware(['web'])
             Route::get('/dashboard', [App\Http\Controllers\Tenant\DashboardController::class, 'index'])
                 ->name('tenant.dashboard')
                 ->middleware('auth:admin');
+
+            // Instructor Routes - specific for instructors 
+            Route::prefix('instructor')->middleware(['auth:staff'])->group(function () {
+                Route::get('/', [App\Http\Controllers\Tenant\InstructorController::class, 'dashboard'])
+                    ->name('tenant.instructor.dashboard');
+                
+                // Add other instructor-specific routes here
+                Route::get('/profile', [App\Http\Controllers\Tenant\ProfileController::class, 'instructorProfile'])
+                    ->name('tenant.instructor.profile');
+                    
+                // Instructor profile update routes
+                Route::put('/profile/update', [App\Http\Controllers\Tenant\ProfileController::class, 'instructorProfileUpdate'])
+                    ->name('tenant.instructor.profile.update');
+                Route::put('/profile/password', [App\Http\Controllers\Tenant\ProfileController::class, 'instructorPasswordUpdate'])
+                    ->name('tenant.instructor.password.update');
+                    
+                // Instructor requirements routes
+                Route::prefix('requirements')->name('tenant.instructor.requirements.')->group(function () {
+                    Route::get('/', [App\Http\Controllers\Requirements\RequirementsController::class, 'index'])->name('index');
+                    Route::get('/folder/{folderId?}', [App\Http\Controllers\Requirements\RequirementsController::class, 'listFolderContents'])->name('folder.contents');
+                    Route::post('/folder/create', [App\Http\Controllers\Requirements\RequirementsController::class, 'createFolder'])->name('folder.create');
+                    Route::post('/folder/{folderId}/rename', [App\Http\Controllers\Requirements\RequirementsController::class, 'renameFolder'])->name('folder.rename');
+                    Route::post('/folder/{folderId}/delete', [App\Http\Controllers\Requirements\RequirementsController::class, 'deleteFolder'])->name('folder.delete');
+                    Route::post('/folder/{folderId}/upload', [App\Http\Controllers\Requirements\RequirementsController::class, 'uploadFile'])->name('folder.upload');
+                    Route::post('/file/{fileId}/delete', [App\Http\Controllers\Requirements\RequirementsController::class, 'deleteFile'])->name('file.delete');
+                });
+                
+                // Enrollment approval routes
+                Route::get('/enrollment-approval', function () {
+                    return view('tenant.Instructors.EnrollmentApproval');
+                })->name('tenant.instructor.enrollment.approval');
+                
+                // API routes for enrollment approval functionality
+                Route::get('/api/programs', [App\Http\Controllers\Tenant\InstructorController::class, 'getPrograms'])
+                    ->name('tenant.instructor.programs');
+                Route::get('/api/enrollment/applications', [App\Http\Controllers\Tenant\InstructorController::class, 'getApplications'])
+                    ->name('tenant.instructor.enrollment.applications');
+                Route::get('/api/enrollment/application/{id}', [App\Http\Controllers\Tenant\InstructorController::class, 'getApplication'])
+                    ->name('tenant.instructor.enrollment.application');
+                Route::post('/api/enrollment/application/{id}/update-status', [App\Http\Controllers\Tenant\InstructorController::class, 'updateApplicationStatus'])
+                    ->name('tenant.instructor.enrollment.update-status');
+                
+                // Staff logout route
+                Route::post('/logout', function() {
+                    Auth::guard('staff')->logout();
+                    return redirect(request('redirect', '/login'));
+                })->name('tenant.staff.logout');
+            });
+            
+            // Staff controller routes
+            Route::resource('staff', App\Http\Controllers\Staff\StaffController::class)
+                ->names([
+                    'index' => 'tenant.staff.index',
+                    'create' => 'tenant.staff.create',
+                    'store' => 'tenant.staff.store',
+                    'show' => 'tenant.staff.show',
+                    'edit' => 'tenant.staff.edit',
+                    'update' => 'tenant.staff.update',
+                    'destroy' => 'tenant.staff.destroy',
+                ])->middleware('auth:admin');
 
             // Profile Routes
             Route::prefix('profile')->middleware(['auth:admin'])->group(function () {
