@@ -101,8 +101,6 @@ class Student extends Authenticatable
     ];
 
     /**
-<<<<<<< HEAD
-=======
      * The attributes that should be cast to native types.
      *
      * @var array
@@ -112,7 +110,6 @@ class Student extends Authenticatable
     ];
 
     /**
->>>>>>> 6f0f92038e7d79b6d823a65641b76f162997f56f
      * Get the course that the student belongs to.
      */
     public function course()

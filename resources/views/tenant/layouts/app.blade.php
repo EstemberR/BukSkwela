@@ -3299,38 +3299,6 @@
         body.dark-mode .sidebar .nav-item.dropdown .nav-link.dropdown-toggle:hover i {
             color: var(--sidebar-icon-color);
         }
-
-        /* Sidebar Upgrade Button Styles */
-        .sidebar-upgrade-btn {
-            background-color: #FF8C00 !important; /* Dark Orange */
-            color: white !important;
-            border-color: #FF8C00 !important;
-            width: calc(100% - 20px) !important; /* Added margin space */
-            margin-left: 10px !important; /* Left margin */
-            margin-right: 10px !important; /* Right margin */
-            text-align: center;
-            border-radius: 5px !important; /* 5px radius on all corners */
-            padding: 10px !important;
-            font-weight: 600;
-            letter-spacing: 0.2px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 10px;
-        }
-        
-        .sidebar-upgrade-btn:hover,
-        .sidebar-upgrade-btn:active,
-        .sidebar-upgrade-btn:focus {
-            background-color: #FF8C00 !important; /* Keep the same dark orange */
-            color: white !important;
-            border-color: #FF8C00 !important;
-        }
-        
-        /* Dark mode support */
-        body.dark-mode .sidebar-upgrade-btn {
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-        }
     </style>
     @stack('styles')
 </head>
