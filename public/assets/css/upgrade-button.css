@@ -1,0 +1,40 @@
+/* Fixed Bottom Upgrade Button Styles */
+.upgrade-premium-btn {
+    background-color: #FF8C00 !important; /* Dark Orange */
+    color: white !important;
+    border-color: #FF8C00 !important;
+    border-radius: 5px !important; /* 5px radius on all corners */
+    padding: 12px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.5px !important;
+    margin: 5px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.upgrade-premium-btn:hover,
+.upgrade-premium-btn:active,
+.upgrade-premium-btn:focus {
+    background-color: #FF8C00 !important; /* Keep the same dark orange */
+    color: white !important;
+    border-color: #FF8C00 !important;
+    box-shadow: 0 3px 10px rgba(255, 140, 0, 0.3) !important;
+}
+
+/* Fixed bottom container */
+.fixed-bottom-container {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    z-index: 1030;
+}
+
+/* Dark mode support */
+body.dark-mode .fixed-bottom-container {
+    background-color: transparent;
+    border: none;
+} 

@@ -3299,6 +3299,38 @@
         body.dark-mode .sidebar .nav-item.dropdown .nav-link.dropdown-toggle:hover i {
             color: var(--sidebar-icon-color);
         }
+
+        /* Sidebar Upgrade Button Styles */
+        .sidebar-upgrade-btn {
+            background-color: #FF8C00 !important; /* Dark Orange */
+            color: white !important;
+            border-color: #FF8C00 !important;
+            width: calc(100% - 20px) !important; /* Added margin space */
+            margin-left: 10px !important; /* Left margin */
+            margin-right: 10px !important; /* Right margin */
+            text-align: center;
+            border-radius: 5px !important; /* 5px radius on all corners */
+            padding: 10px !important;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        
+        .sidebar-upgrade-btn:hover,
+        .sidebar-upgrade-btn:active,
+        .sidebar-upgrade-btn:focus {
+            background-color: #FF8C00 !important; /* Keep the same dark orange */
+            color: white !important;
+            border-color: #FF8C00 !important;
+        }
+        
+        /* Dark mode support */
+        body.dark-mode .sidebar-upgrade-btn {
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
     </style>
     @stack('styles')
 </head>
@@ -3314,6 +3346,36 @@
                 </div>
                 
                 <ul class="nav flex-column px-3 flex-grow-1">
+                    @if(auth()->guard('student')->check())
+                    <!-- Student Menu Items -->
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('tenant.student.dashboard') ? 'active' : '' }}" 
+                           href="{{ route('tenant.student.dashboard', ['tenant' => tenant('id')]) }}">
+                            <i class="fas fa-home"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-book"></i> <span>Courses</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-tasks"></i> <span>Assignments</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-chart-line"></i> <span>Grades</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-calendar-alt"></i> <span>Calendar</span>
+                        </a>
+                    </li>
+                    @else
+                    <!-- Admin/Staff Menu Items -->
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('tenant.dashboard') ? 'active' : '' }}" 
                            href="{{ route('tenant.dashboard', ['tenant' => tenant('id')]) }}">
@@ -3427,6 +3489,7 @@
                         </div>
                         @endif
                     </li>
+                    @endif
                 </ul>
 
                 <!-- Upgrade to Pro Button -->
@@ -3450,19 +3513,18 @@
                     @endphp
                     
                     @if(!$isPremium && !$isUltimate)
-                        <a href="#" class="btn btn-sm btn-outline-warning w-100 mb-2 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#sidebarPremiumModal">
-                            <i class="fas fa-crown me-1"></i>
-                            <small>Upgrade to Premium</small>
+                        <a href="#" class="btn btn-sm btn-block sidebar-upgrade-btn" data-bs-toggle="modal" data-bs-target="#sidebarPremiumModal">
+                            <i class="fas fa-crown me-2"></i>Upgrade to Premium
                         </a>
                     @elseif($isPremium)
-                        <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center">
-                            <i class="fas fa-crown text-warning me-1"></i>
-                            <small>Premium Account</small>
+                        <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center" style="background-color: #ffeccc !important; color: #FF8C00 !important; border-color: #FF8C00 !important;">
+                            <i class="fas fa-crown" style="color: #FF8C00 !important;"></i>
+                            <small style="color: #000000 !important;">Premium Account</small>
                         </div>
                     @elseif($isUltimate)
-                        <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center" style="background-color: #e6eaff; color: #4361ee;">
-                            <i class="fas fa-star text-primary me-1"></i>
-                            <small>Ultimate Account</small>
+                        <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center" style="background-color: #e6eaff !important; color: #4361ee !important; border-color: #4361ee !important;">
+                            <i class="fas fa-star" style="color: #4361ee !important;"></i>
+                            <small style="color: #4361ee !important;">Ultimate Account</small>
                         </div>
                     @endif
                 </div>
@@ -3501,13 +3563,13 @@
                         @endphp
 
                         @if($isPremium)
-                            <div class="premium-badge me-3">
-                                <i class="fas fa-crown"></i>
+                            <div class="premium-badge me-3" style="background-color: #ffeccc; color: #FF8C00;">
+                                <i class="fas fa-crown" style="color: #FF8C00;"></i>
                                 <span>Premium</span>
                             </div>
                         @elseif($isUltimate)
                             <div class="premium-badge me-3" style="background-color: #e6eaff; color: #4361ee;">
-                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star" style="color: #4361ee;"></i>
                                 <span>Ultimate</span>
                             </div>
                         @endif
@@ -3535,16 +3597,22 @@
                             </button>
                             <div class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                                 <div class="dropdown-header">
+                                    @if(auth()->guard('student')->check())
+                                    <strong>{{ auth()->guard('student')->user()->name ?? session('student_name', 'Student') }}</strong>
+                                    <p class="mb-0 text-muted small">{{ auth()->guard('student')->user()->email ?? session('student_email', 'No email') }}</p>
+                                    <span class="badge bg-info mt-1">Student</span>
+                                    @else
                                     <strong>{{ Auth::guard('admin')->user()->name ?? 'User' }}</strong>
                                     <p class="mb-0 text-muted small">{{ Auth::guard('admin')->user()->email ?? 'No email' }}</p>
                                     @if($isPremium)
-                                        <span class="badge bg-warning text-dark mt-1">
+                                        <span class="badge mt-1" style="background-color: #FF8C00; color: white;">
                                             <i class="fas fa-crown"></i> Premium
                                         </span>
                                     @elseif($isUltimate)
                                         <span class="badge mt-1" style="background-color: #4361ee;">
                                             <i class="fas fa-star"></i> Ultimate
                                         </span>
+                                    @endif
                                     @endif
                                 </div>
                                 <div class="dropdown-divider"></div>
@@ -3557,7 +3625,16 @@
                                     <span>Settings</span>
                                 </a>
                                 <div class="dropdown-divider"></div>
-                                <a href="#" onclick="logoutToCentralDomain()" class="dropdown-item">
+                                @if(auth()->guard('student')->check())
+                                <form id="logout-form" action="{{ route('tenant.student.logout') }}" method="POST" style="display: none;">
+                                    @csrf
+                                </form>
+                                @else
+                                <form id="logout-form" action="{{ route('tenant.logout') }}" method="POST" style="display: none;">
+                                    @csrf
+                                </form>
+                                @endif
+                                <a class="dropdown-item" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                                     <i class="fas fa-sign-out-alt"></i>
                                     <span>Logout</span>
                                 </a>
@@ -3705,11 +3782,10 @@
     <!-- Add this at the bottom of your layout file, before the closing </body> tag -->
     
     <script>
-        // Global function to redirect to tenant login page
+        // Empty function that does nothing (keeping for compatibility with any existing calls)
         function logoutToCentralDomain() {
-            // Use the proper tenant logout route instead of the HTML redirect file
-            window.location.href = '{{ route("tenant.logout") }}';
-            return false; // Prevent default link behavior
+            // This function is deprecated - we now use form submission for proper POST logout
+            return false;
         }
     </script>
     
@@ -4266,5 +4342,10 @@
             </div>
         </div>
     </div>
+
+    <!-- Include the Upgrade Button for non-premium accounts -->
+    @if(!$isPremium && !$isUltimate)
+        @include('Modals.UpgradeButton')
+    @endif
 </body>
 </html>

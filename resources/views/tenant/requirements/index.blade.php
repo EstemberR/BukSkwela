@@ -130,7 +130,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Requirements</h5>
-                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createFolderModal">
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createFolderModal" style="color: white;">
                         <i class="fas fa-folder-plus"></i> Add New Requirements
                     </button>
                 </div>
@@ -164,9 +164,9 @@
                                                id="searchInput" 
                                                name="search"
                                                value="{{ request('search') }}"
-                                               autocomplete="off">
-                                               <button type="submit" class="btn btn-primary">Search</button>
-
+                                               autocomplete="off"
+                                               style="color: white;">
+                                               <button type="submit" class="btn btn-primary" style="color: white;">Search</button>
                                     </div>
                                 </form>
                             </div>

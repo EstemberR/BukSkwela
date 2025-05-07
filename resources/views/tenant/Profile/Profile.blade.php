@@ -398,13 +398,13 @@
                         @endphp
 
                         @if($isPremium)
-                            <span class="premium-badge">
-                                <i class="fas fa-crown"></i>
+                            <span class="premium-badge" style="background-color: #ffeccc; color: #FF8C00;">
+                                <i class="fas fa-crown" style="color: #FF8C00;"></i>
                                 <span>Premium Account</span>
                             </span>
                         @elseif($isUltimate)
                             <span class="premium-badge" style="background-color: #e6eaff; color: #4361ee;">
-                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star" style="color: #4361ee;"></i>
                                 <span>Ultimate Account</span>
                             </span>
                         @endif
@@ -511,7 +511,7 @@
                                         </div>
                                         
                                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                            <button type="submit" class="btn btn-primary" id="updateProfileBtn" {{ !$isPremium && !$isUltimate ? 'disabled' : '' }}>
+                                            <button type="submit" class="btn btn-primary" id="updateProfileBtn" {{ !$isPremium && !$isUltimate ? 'disabled' : '' }} style="color: white;">
                                                 <i class="fas fa-save me-2"></i>Update Profile
                                             </button>
                                         </div>
@@ -556,7 +556,7 @@
                                         </div>
                                         
                                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                            <button type="submit" class="btn btn-primary" id="updatePasswordBtn" {{ !$isPremium && !$isUltimate ? 'disabled' : '' }}>
+                                            <button type="submit" class="btn btn-primary" id="updatePasswordBtn" {{ !$isPremium && !$isUltimate ? 'disabled' : '' }} style="color: white;">
                                                 <i class="fas fa-key me-2"></i>Update Password
                                             </button>
                                         </div>
