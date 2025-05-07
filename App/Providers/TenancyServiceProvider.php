@@ -10,6 +10,8 @@ use App\Models\TenantDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Artisan;
+use Stancl\Tenancy\Events\TenantCreated;
 
 class TenancyServiceProvider extends ServiceProvider
 {
@@ -51,6 +53,9 @@ class TenancyServiceProvider extends ServiceProvider
         Event::listen(TenancyInitialized::class, function(TenancyInitialized $event) {
             $this->configureTenantDatabaseConnection($event->tenancy->tenant);
         });
+
+        // Register tenant created event to create required tenant tables
+        $this->registerTenantCreatedListener();
     }
 
     protected function configureMiddleware()
@@ -113,5 +118,18 @@ class TenancyServiceProvider extends ServiceProvider
                 'error' => $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Register a listener for when a tenant is created to create required tenant tables
+     */
+    private function registerTenantCreatedListener(): void
+    {
+        Event::listen(TenantCreated::class, function (TenantCreated $event) {
+            // Create the students_informations table in the tenant database
+            Artisan::call('tenants:create-student-info-table', [
+                'tenant_id' => $event->tenant->id
+            ]);
+        });
     }
 }

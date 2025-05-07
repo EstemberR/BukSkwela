@@ -54,12 +54,28 @@ Route::middleware(['web', 'tenant', 'auth:student'])
     ->prefix('student')
     ->group(function () {
         Route::get('/dashboard', function () {
-            return view('tenant.students.dashboard');
+            return view('tenant.students.studentDashboard');
         })->name('tenant.student.dashboard');
         
-        Route::get('/enrollment', function () {
-            return view('tenant.students.enrollment');
-        })->name('tenant.student.enrollment');
+        // Student profile routes
+        Route::put('/update-profile', [App\Http\Controllers\Student\StudentProfileController::class, 'updatePersonalInfo'])
+            ->name('tenant.student.update-profile');
+        Route::put('/update-academic', [App\Http\Controllers\Student\StudentProfileController::class, 'updateAcademicInfo'])
+            ->name('tenant.student.update-academic');
+        Route::get('/profile-data', [App\Http\Controllers\Student\StudentProfileController::class, 'getStudentData'])
+            ->name('tenant.student.profile-data');
+        
+        // Enrollment routes
+        Route::get('/enrollment', [App\Http\Controllers\Student\EnrollmentController::class, 'index'])
+            ->name('tenant.student.enrollment');
+        Route::post('/enrollment/apply', [App\Http\Controllers\Student\EnrollmentController::class, 'apply'])
+            ->name('tenant.student.enrollment.apply');
+        Route::get('/enrollment/program-requirements/{programId}', [App\Http\Controllers\Student\EnrollmentController::class, 'getProgramRequirements'])
+            ->name('tenant.student.enrollment.program-requirements');
+        Route::get('/enrollment/application/{applicationId}', [App\Http\Controllers\Student\EnrollmentController::class, 'getApplicationDetails'])
+            ->name('tenant.student.enrollment.application.details');
+        Route::get('/enrollment/application/{applicationId}/documents', [App\Http\Controllers\Student\EnrollmentController::class, 'getApplicationDocuments'])
+            ->name('tenant.student.enrollment.application.documents');
     });
 
 // Protected tenant routes

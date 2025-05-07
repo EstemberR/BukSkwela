@@ -101,10 +101,30 @@ class Student extends Authenticatable
     ];
 
     /**
+<<<<<<< HEAD
+=======
+     * The attributes that should be cast to native types.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+    ];
+
+    /**
+>>>>>>> 6f0f92038e7d79b6d823a65641b76f162997f56f
      * Get the course that the student belongs to.
      */
     public function course()
     {
         return $this->belongsTo(Course::class);
+    }
+
+    /**
+     * Get the student's information record.
+     */
+    public function information()
+    {
+        return $this->hasOne(StudentInformation::class);
     }
 } 

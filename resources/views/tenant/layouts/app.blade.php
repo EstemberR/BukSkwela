@@ -3346,8 +3346,8 @@
                 </div>
                 
                 <ul class="nav flex-column px-3 flex-grow-1">
-                    @if(auth()->guard('student')->check())
-                    <!-- Student Menu Items -->
+                    @if(Auth::guard('student')->check())
+                    <!-- Student navigation -->
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('tenant.student.dashboard') ? 'active' : '' }}" 
                            href="{{ route('tenant.student.dashboard', ['tenant' => tenant('id')]) }}">
@@ -3355,27 +3355,13 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-book"></i> <span>Courses</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-tasks"></i> <span>Assignments</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-chart-line"></i> <span>Grades</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="fas fa-calendar-alt"></i> <span>Calendar</span>
+                        <a class="nav-link {{ request()->routeIs('tenant.student.enrollment') ? 'active' : '' }}" 
+                           href="{{ route('tenant.student.enrollment', ['tenant' => tenant('id')]) }}">
+                            <i class="fas fa-user-graduate"></i> <span>Enrollment</span>
                         </a>
                     </li>
                     @else
-                    <!-- Admin/Staff Menu Items -->
+                    <!-- Admin navigation -->
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('tenant.dashboard') ? 'active' : '' }}" 
                            href="{{ route('tenant.dashboard', ['tenant' => tenant('id')]) }}">
@@ -3512,20 +3498,23 @@
                         $isUltimate = $currentTenant && $currentTenant->subscription_plan === 'ultimate';
                     @endphp
                     
-                    @if(!$isPremium && !$isUltimate)
-                        <a href="#" class="btn btn-sm btn-block sidebar-upgrade-btn" data-bs-toggle="modal" data-bs-target="#sidebarPremiumModal">
-                            <i class="fas fa-crown me-2"></i>Upgrade to Premium
-                        </a>
-                    @elseif($isPremium)
-                        <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center" style="background-color: #ffeccc !important; color: #FF8C00 !important; border-color: #FF8C00 !important;">
-                            <i class="fas fa-crown" style="color: #FF8C00 !important;"></i>
-                            <small style="color: #000000 !important;">Premium Account</small>
-                        </div>
-                    @elseif($isUltimate)
-                        <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center" style="background-color: #e6eaff !important; color: #4361ee !important; border-color: #4361ee !important;">
-                            <i class="fas fa-star" style="color: #4361ee !important;"></i>
-                            <small style="color: #4361ee !important;">Ultimate Account</small>
-                        </div>
+                    @if(!Auth::guard('student')->check())
+                        @if(!$isPremium && !$isUltimate)
+                            <a href="#" class="btn btn-sm btn-outline-warning w-100 mb-2 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#sidebarPremiumModal">
+                                <i class="fas fa-crown me-1"></i>
+                                <small>Upgrade to Premium</small>
+                            </a>
+                        @elseif($isPremium)
+                            <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-crown text-warning me-1"></i>
+                                <small>Premium Account</small>
+                            </div>
+                        @elseif($isUltimate)
+                            <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center" style="background-color: #e6eaff; color: #4361ee;">
+                                <i class="fas fa-star text-primary me-1"></i>
+                                <small>Ultimate Account</small>
+                            </div>
+                        @endif
                     @endif
                 </div>
             </div>
@@ -3563,13 +3552,13 @@
                         @endphp
 
                         @if($isPremium)
-                            <div class="premium-badge me-3" style="background-color: #ffeccc; color: #FF8C00;">
-                                <i class="fas fa-crown" style="color: #FF8C00;"></i>
+                            <div class="premium-badge me-3">
+                                <i class="fas fa-crown"></i>
                                 <span>Premium</span>
                             </div>
                         @elseif($isUltimate)
                             <div class="premium-badge me-3" style="background-color: #e6eaff; color: #4361ee;">
-                                <i class="fas fa-star" style="color: #4361ee;"></i>
+                                <i class="fas fa-star"></i>
                                 <span>Ultimate</span>
                             </div>
                         @endif
@@ -3585,34 +3574,57 @@
                             </label>
                         </div>
 
-                        <!-- Admin Avatar with Dropdown -->
+                        <!-- Avatar with Dropdown -->
                         <div class="dropdown">
                             <button class="btn p-0" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 <div class="user-avatar-container">
+                                    @if(Auth::guard('student')->check())
+                                    <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::guard('student')->user()->name ?? 'Student') }}&background=4f46e5&color=fff" 
+                                         alt="Student" 
+                                         class="user-avatar"
+                                         style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                                    @else
                                     <img src="https://ui-avatars.com/api/?name=Admin&background=4f46e5&color=fff" 
                                          alt="User" 
                                          class="user-avatar"
                                          style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                                    @endif
                                 </div>
                             </button>
                             <div class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                @if(Auth::guard('student')->check())
+                                <!-- Student user menu -->
                                 <div class="dropdown-header">
-                                    @if(auth()->guard('student')->check())
-                                    <strong>{{ auth()->guard('student')->user()->name ?? session('student_name', 'Student') }}</strong>
-                                    <p class="mb-0 text-muted small">{{ auth()->guard('student')->user()->email ?? session('student_email', 'No email') }}</p>
-                                    <span class="badge bg-info mt-1">Student</span>
-                                    @else
+                                    <strong>{{ Auth::guard('student')->user()->name ?? 'Student' }}</strong>
+                                    <p class="mb-0 text-muted small">{{ Auth::guard('student')->user()->email ?? 'No email' }}</p>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="{{ route('tenant.student.dashboard', ['tenant' => tenant('id')]) }}">
+                                    <i class="fas fa-home"></i>
+                                    <span>Dashboard</span>
+                                </a>
+                                <a class="dropdown-item" href="{{ route('tenant.student.enrollment', ['tenant' => tenant('id')]) }}">
+                                    <i class="fas fa-user-graduate"></i>
+                                    <span>Enrollment</span>
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <a href="#" onclick="logoutToCentralDomain()" class="dropdown-item">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Logout</span>
+                                </a>
+                                @else
+                                <!-- Admin user menu -->
+                                <div class="dropdown-header">
                                     <strong>{{ Auth::guard('admin')->user()->name ?? 'User' }}</strong>
                                     <p class="mb-0 text-muted small">{{ Auth::guard('admin')->user()->email ?? 'No email' }}</p>
                                     @if($isPremium)
-                                        <span class="badge mt-1" style="background-color: #FF8C00; color: white;">
+                                        <span class="badge bg-warning text-dark mt-1">
                                             <i class="fas fa-crown"></i> Premium
                                         </span>
                                     @elseif($isUltimate)
                                         <span class="badge mt-1" style="background-color: #4361ee;">
                                             <i class="fas fa-star"></i> Ultimate
                                         </span>
-                                    @endif
                                     @endif
                                 </div>
                                 <div class="dropdown-divider"></div>
@@ -3625,19 +3637,11 @@
                                     <span>Settings</span>
                                 </a>
                                 <div class="dropdown-divider"></div>
-                                @if(auth()->guard('student')->check())
-                                <form id="logout-form" action="{{ route('tenant.student.logout') }}" method="POST" style="display: none;">
-                                    @csrf
-                                </form>
-                                @else
-                                <form id="logout-form" action="{{ route('tenant.logout') }}" method="POST" style="display: none;">
-                                    @csrf
-                                </form>
-                                @endif
-                                <a class="dropdown-item" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                <a href="#" onclick="logoutToCentralDomain()" class="dropdown-item">
                                     <i class="fas fa-sign-out-alt"></i>
                                     <span>Logout</span>
                                 </a>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -3782,10 +3786,36 @@
     <!-- Add this at the bottom of your layout file, before the closing </body> tag -->
     
     <script>
-        // Empty function that does nothing (keeping for compatibility with any existing calls)
+        // Global function to redirect to tenant login page
         function logoutToCentralDomain() {
-            // This function is deprecated - we now use form submission for proper POST logout
-            return false;
+            // Use the proper tenant logout route based on user role
+            @if(Auth::guard('student')->check())
+            // For students, create a form to POST to the logout route
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route("tenant.student.logout") }}';
+            form.style.display = 'none';
+            
+            // Add CSRF token
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '_token';
+            csrfToken.value = '{{ csrf_token() }}';
+            form.appendChild(csrfToken);
+            
+            // Set redirect after logout
+            const redirectInput = document.createElement('input');
+            redirectInput.type = 'hidden';
+            redirectInput.name = 'redirect';
+            redirectInput.value = 'http://{{ tenant("id") }}.localhost:8000/login';
+            form.appendChild(redirectInput);
+            
+            document.body.appendChild(form);
+            form.submit();
+            @else
+            window.location.href = '{{ route("tenant.logout") }}';
+            @endif
+            return false; // Prevent default link behavior
         }
     </script>
     
@@ -4342,10 +4372,5 @@
             </div>
         </div>
     </div>
-
-    <!-- Include the Upgrade Button for non-premium accounts -->
-    @if(!$isPremium && !$isUltimate)
-        @include('Modals.UpgradeButton')
-    @endif
 </body>
 </html>

@@ -109,7 +109,13 @@
                                     <td>{{ $student->course->name ?? 'N/A' }}</td>
                                     <td>{{ $student->email }}</td>
                                     <td>
-                                        <span class="badge bg-{{ $student->status === 'active' ? 'success' : 'warning' }}">
+                                        <span class="badge bg-{{ 
+                                            $student->status === 'active' ? 'success' : 
+                                            ($student->status === 'inactive' ? 'warning' : 
+                                            ($student->status === 'regular' ? 'primary' : 
+                                            ($student->status === 'probation' ? 'danger' : 
+                                            ($student->status === 'irregular' ? 'info' : 'secondary')))) 
+                                        }}">
                                             {{ ucfirst($student->status) }}
                                         </span>
                                     </td>
@@ -205,6 +211,14 @@
                                     @foreach($courses ?? [] as $course)
                                         <option value="{{ $course->id }}">{{ $course->name }}</option>
                                     @endforeach
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" name="status" required>
+                                    <option value="regular">Regular</option>
+                                    <option value="probation">Probation</option>
+                                    <option value="irregular">Irregular</option>
                                 </select>
                             </div>
                             <div class="alert alert-info">
@@ -310,6 +324,9 @@
                     <div class="mb-3">
                         <label class="form-label">Status</label>
                         <select class="form-select" name="status" required>
+                            <option value="regular" {{ $student->status === 'regular' ? 'selected' : '' }}>Regular</option>
+                            <option value="probation" {{ $student->status === 'probation' ? 'selected' : '' }}>Probation</option>
+                            <option value="irregular" {{ $student->status === 'irregular' ? 'selected' : '' }}>Irregular</option>
                             <option value="active" {{ $student->status === 'active' ? 'selected' : '' }}>Active</option>
                             <option value="inactive" {{ $student->status === 'inactive' ? 'selected' : '' }}>Inactive</option>
                         </select>

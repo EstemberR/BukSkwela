@@ -53,6 +53,7 @@ class StudentController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:tenant.students,email',
             'course_id' => 'required|exists:tenant.courses,id',
+            'status' => 'required|in:regular,probation,irregular,active,inactive',
         ]);
         
         if ($validator->fails()) {
@@ -75,7 +76,7 @@ class StudentController extends Controller
                 'email' => $request->email,
                 'password' => Hash::make($password),
                 'course_id' => $request->course_id,
-                'status' => 'active',
+                'status' => $request->status ?? 'regular',
             ]);
 
             // Send welcome email with credentials
@@ -417,7 +418,7 @@ class StudentController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:tenant.students,email,'.$student->id,
             'course_id' => 'required|exists:tenant.courses,id',
-            'status' => 'required|in:active,inactive',
+            'status' => 'required|in:regular,probation,irregular,active,inactive',
         ]);
 
         // Track if any fields were updated
@@ -493,6 +494,7 @@ class StudentController extends Controller
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:tenant.students,email',
                 'course_id' => 'required|exists:tenant.courses,id',
+                'status' => 'required|in:regular,probation,irregular,active,inactive',
             ]);
 
             Log::info('Creating new student directly', [
@@ -509,7 +511,7 @@ class StudentController extends Controller
                 'email' => $request->email,
                 'course_id' => $request->course_id,
                 'password' => Hash::make($password),
-                'status' => 'Regular',
+                'status' => $request->status ?? 'regular',
             ]);
 
             // Send welcome email to the student with their password

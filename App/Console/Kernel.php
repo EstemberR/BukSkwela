@@ -4,6 +4,9 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Artisan;
+use Stancl\Tenancy\Events\TenantCreated;
 
 class Kernel extends ConsoleKernel
 {
@@ -79,10 +82,35 @@ class Kernel extends ConsoleKernel
      *
      * @return void
      */
-    protected function commands()
+    protected function commands(): void
     {
         $this->load(__DIR__.'/Commands');
 
         require base_path('routes/console.php');
+    }
+    
+    /**
+     * Register the Tenancy listeners
+     */
+    private function registerTenancyListeners()
+    {
+        // When a tenant is created, create the required tables in the tenant database
+        Event::listen(TenantCreated::class, function (TenantCreated $event) {
+            Artisan::call('tenants:create-student-info-table', [
+                'tenant_id' => $event->tenant->id
+            ]);
+        });
+        
+        // Additional listeners can be registered here
+    }
+
+    /**
+     * Constructor to register tenancy listeners
+     */
+    public function __construct(\Illuminate\Contracts\Foundation\Application $app, \Illuminate\Contracts\Events\Dispatcher $events)
+    {
+        parent::__construct($app, $events);
+        
+        $this->registerTenancyListeners();
     }
 }
