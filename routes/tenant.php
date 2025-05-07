@@ -76,6 +76,10 @@ Route::middleware(['web', 'tenant', 'auth:student'])
             ->name('tenant.student.enrollment.application.details');
         Route::get('/enrollment/application/{applicationId}/documents', [App\Http\Controllers\Student\EnrollmentController::class, 'getApplicationDocuments'])
             ->name('tenant.student.enrollment.application.documents');
+        Route::get('/enrollment/drive-status', [App\Http\Controllers\Student\EnrollmentController::class, 'checkDriveStatus'])
+            ->name('tenant.student.enrollment.drive-status');
+        Route::get('/enrollment/debug-applications', [App\Http\Controllers\Student\EnrollmentController::class, 'debugApplications'])
+            ->name('tenant.student.enrollment.debug-applications');
     });
 
 // Protected tenant routes
@@ -84,6 +88,10 @@ Route::middleware(['web', 'tenant', 'auth:admin'])
         // Main dashboard route
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->name('tenant.dashboard');
+            
+        // Debug route for student applications
+        Route::get('/debug-applications', [DashboardController::class, 'debugApplicationsTable'])
+            ->name('tenant.admin.debug-applications');
             
         // Layout-specific dashboard routes
         Route::get('/dashboard-standard', function () {
@@ -229,6 +237,11 @@ Route::middleware(['web', 'tenant'])->group(function () {
             }
         });
     });
+    
+    // Add a public route for file uploads that's accessible by students for enrollment applications
+    Route::post('/enrollment-uploads/{folderId}', [\App\Http\Controllers\Requirements\RequirementsController::class, 'uploadFile'])
+        ->name('tenant.enrollment.uploads')
+        ->middleware(['auth:student']);
 });
 
 // Profile Routes

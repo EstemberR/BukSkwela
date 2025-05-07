@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use App\Models\Requirement\RequirementCategory;
+use App\Models\Requirement\StudentRequirement;
 
 class DashboardController extends Controller
 {
@@ -231,5 +233,78 @@ class DashboardController extends Controller
         $data['settings'] = $settings; // Pass settings to the view
         
         return view('tenant.dashboard-modern', $data);
+    }
+
+    /**
+     * Debug method to check student applications table in the tenant database
+     */
+    public function debugApplicationsTable()
+    {
+        try {
+            $tenantId = tenant('id');
+            $dbName = 'tenant_' . strtolower($tenantId);
+            
+            // Set the database connection config for tenant
+            config([
+                'database.connections.tenant.database' => $dbName
+            ]);
+            
+            // Reconnect with the new config
+            DB::reconnect('tenant');
+            
+            // Check if the table exists
+            $tableExists = DB::connection('tenant')->getSchemaBuilder()->hasTable('student_applications');
+            
+            // Debug info
+            $debug = [
+                'tenant_id' => $tenantId,
+                'database' => $dbName,
+                'table_exists' => $tableExists
+            ];
+            
+            // If table exists, get all applications
+            if ($tableExists) {
+                // Get all applications (limit to 50 for performance)
+                $applications = DB::connection('tenant')
+                    ->table('student_applications')
+                    ->orderBy('created_at', 'desc')
+                    ->limit(50)
+                    ->get();
+                
+                $debug['applications_count'] = count($applications);
+                $debug['applications'] = $applications;
+                
+                // Get students for joining
+                $studentIds = $applications->pluck('student_id')->unique()->toArray();
+                if (!empty($studentIds)) {
+                    $students = DB::connection('tenant')
+                        ->table('students')
+                        ->whereIn('id', $studentIds)
+                        ->get()
+                        ->keyBy('id');
+                    
+                    $debug['students'] = $students;
+                }
+                
+                // Get programs/courses for joining
+                $programIds = $applications->pluck('program_id')->unique()->toArray();
+                if (!empty($programIds)) {
+                    $programs = DB::connection('tenant')
+                        ->table('courses')
+                        ->whereIn('id', $programIds)
+                        ->get()
+                        ->keyBy('id');
+                    
+                    $debug['programs'] = $programs;
+                }
+            }
+            
+            return response()->json($debug);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
     }
 }

@@ -19,7 +19,38 @@ class EnrollmentController extends Controller
     public function index()
     {
         try {
-            Log::info('EnrollmentController@index: Started loading enrollment page');
+            $tenantId = tenant('id');
+            Log::info('EnrollmentController@index: Started loading enrollment page', [
+                'tenant_id' => $tenantId,
+                'student_id' => Auth::guard('student')->id()
+            ]);
+            
+            // Ensure tenant connection is properly set up
+            $dbName = 'tenant_' . strtolower($tenantId);
+            
+            // Set the database name for the tenant connection
+            config(['database.connections.tenant.database' => $dbName]);
+            DB::connection('tenant')->reconnect();
+            
+            // Verify database connection works and is using the correct database
+            try {
+                $currentDb = DB::connection('tenant')->getDatabaseName();
+                if ($currentDb !== $dbName) {
+                    throw new \Exception("Database mismatch: Connected to {$currentDb} instead of {$dbName}");
+                }
+                
+                Log::info('Tenant database connection established', [
+                    'tenant_id' => $tenantId,
+                    'db_name' => $dbName
+                ]);
+            } catch (\Exception $dbCheckException) {
+                Log::error('Database verification failed', [
+                    'error' => $dbCheckException->getMessage(),
+                    'trace' => $dbCheckException->getTraceAsString()
+                ]);
+                
+                throw new \Exception('Error connecting to tenant database: ' . $dbCheckException->getMessage());
+            }
             
             // Get programs/courses for cards display
             try {
@@ -136,18 +167,66 @@ class EnrollmentController extends Controller
             
             // Get student's applications if any
             $student_id = Auth::guard('student')->id();
-            Log::info('EnrollmentController@index: Looking for applications for student', ['student_id' => $student_id]);
+            Log::info('EnrollmentController@index: Looking for applications for student', [
+                'student_id' => $student_id,
+                'tenant_id' => $tenantId,
+                'database' => $dbName
+            ]);
             
             try {
-                $applications = StudentApplication::on('tenant')
+                // Verify student_applications table exists
+                $tableExists = DB::connection('tenant')->getSchemaBuilder()->hasTable('student_applications');
+                if (!$tableExists) {
+                    Log::warning('student_applications table does not exist in tenant database', [
+                        'tenant_id' => $tenantId,
+                        'database' => $dbName
+                    ]);
+                    throw new \Exception("student_applications table does not exist");
+                }
+                
+                // Get applications with explicit tenant connection
+                $applications = DB::connection('tenant')
+                    ->table('student_applications')
                     ->where('student_id', $student_id)
                     ->orderBy('created_at', 'desc')
                     ->get();
                 
-                Log::info('EnrollmentController@index: Loaded applications', ['count' => $applications->count()]);
+                // Convert to model instances for better handling
+                $applications = collect($applications)->map(function($application) {
+                    $model = new \App\Models\StudentApplication();
+                    $model->setConnection('tenant');
+                    
+                    foreach($application as $key => $value) {
+                        $model->{$key} = $value;
+                    }
+                    
+                    // Handle JSON fields
+                    if (isset($application->document_files) && is_string($application->document_files)) {
+                        $model->document_files = json_decode($application->document_files, true);
+                    }
+                    
+                    // Handle date fields
+                    if (isset($application->created_at)) {
+                        $model->created_at = new \DateTime($application->created_at);
+                    }
+                    
+                    if (isset($application->updated_at)) {
+                        $model->updated_at = new \DateTime($application->updated_at);
+                    }
+                    
+                    return $model;
+                });
+                
+                Log::info('EnrollmentController@index: Loaded applications', [
+                    'count' => $applications->count(),
+                    'tenant_id' => $tenantId,
+                    'sample_ids' => $applications->take(3)->pluck('id')
+                ]);
             } catch (\Exception $e) {
                 Log::error('Error loading applications: ' . $e->getMessage(), [
-                    'trace' => $e->getTraceAsString()
+                    'trace' => $e->getTraceAsString(),
+                    'tenant_id' => $tenantId,
+                    'student_id' => $student_id
                 ]);
                 $applications = collect([]);
             }
@@ -171,7 +250,8 @@ class EnrollmentController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Error loading enrollment page: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'tenant_id' => tenant('id')
             ]);
             
             return view('tenant.students.enrollment', [
@@ -185,50 +265,204 @@ class EnrollmentController extends Controller
     }
     
     /**
-     * Submit a new enrollment application
+     * Get available requirement folders from the requirements system
+     * based on the student status (Regular, Irregular, Probation)
+     */
+    private function getRequirementFolders($status = null)
+    {
+        Log::info('Fetching requirement folders for enrollment', [
+            'requested_status' => $status
+        ]);
+        
+        // Get the student's status (Regular, Irregular, Probation)
+        $student = Auth::guard('student')->user();
+        $studentStatus = $status ?? $student->status ?? 'Regular';
+        
+        Log::info('Student status for folder filtering', [
+            'student_id' => $student ? $student->id : null,
+            'status' => $studentStatus
+        ]);
+        
+        try {
+            // Create a request object for the folder listing endpoint
+            $request = new \Illuminate\Http\Request();
+            $request->merge([
+                'page' => 1,
+                'category' => $studentStatus
+            ]);
+            
+            // Use the App\Http\Controllers\Requirements\RequirementsController to fetch folders
+            $requirementsController = app(\App\Http\Controllers\Requirements\RequirementsController::class);
+            $response = $requirementsController->listFolderContents($request);
+            
+            if ($response->getStatusCode() === 200) {
+                $data = json_decode($response->getContent(), true);
+                
+                if (isset($data['success']) && $data['success'] && isset($data['files'])) {
+                    // Filter to only include folders, not files
+                    $folders = array_filter($data['files'], function($item) {
+                        return isset($item['mimeType']) && $item['mimeType'] === 'application/vnd.google-apps.folder';
+                    });
+                    
+                    // Get all folders first, then we'll filter by status
+                    $tenantId = tenant('id');
+                    $tenantFolders = array_filter($folders, function($folder) use ($tenantId) {
+                        $folderName = $folder['name'] ?? '';
+                        
+                        // First, check if folder belongs to this tenant
+                        $isTenantFolder = false;
+                        
+                        // Check for tenant prefix [tenantId]
+                        if (stripos($folderName, "[$tenantId]") !== false) {
+                            $isTenantFolder = true;
+                        }
+                        // For backward compatibility, also check if the name contains the tenant ID
+                        else if (stripos($folderName, $tenantId) !== false) {
+                            $isTenantFolder = true;
+                        }
+                        // If no tenant-specific folders exist, allow generic folders
+                        else if (!preg_match('/\[[a-zA-Z0-9_-]+\]/', $folderName)) {
+                            $isTenantFolder = true;
+                        }
+                        
+                        return $isTenantFolder;
+                    });
+                    
+                    Log::info('Found tenant folders before status filtering', [
+                        'total_folders' => count($folders),
+                        'tenant_folders' => count($tenantFolders)
+                    ]);
+                    
+                    // If we have no folders at all, there's a setup issue
+                    if (count($tenantFolders) === 0) {
+                        Log::warning('No tenant folders found at all');
+                        return [];
+                    }
+                    
+                    // Now filter by student status only if requested
+                    if ($studentStatus) {
+                        $statusFolders = array_filter($tenantFolders, function($folder) use ($studentStatus) {
+                            $folderName = $folder['name'] ?? '';
+                            
+                            // Check for status tag [Regular], [Irregular], [Probation]
+                            $categoryMatch = preg_match('/\[(Regular|Irregular|Probation)\]/i', $folderName, $matches);
+                            
+                            if ($categoryMatch) {
+                                $folderCategory = $matches[1];
+                                return strcasecmp($folderCategory, $studentStatus) === 0;
+                            } else {
+                                // If no category tag, include for Regular status by default
+                                return strcasecmp($studentStatus, 'Regular') === 0;
+                            }
+                        });
+                        
+                        Log::info('Filtered folders by status', [
+                            'status' => $studentStatus,
+                            'before_count' => count($tenantFolders),
+                            'after_count' => count($statusFolders)
+                        ]);
+                        
+                        // If no folders for this status, just return all tenant folders
+                        if (count($statusFolders) === 0) {
+                            Log::warning('No folders found for status: ' . $studentStatus . '. Using all tenant folders.');
+                            return array_values($tenantFolders);
+                        }
+                        
+                        return array_values($statusFolders);
+                    }
+                    
+                    // If no status filter requested, return all tenant folders
+                    return array_values($tenantFolders);
+                }
+            }
+            
+            Log::warning('No requirement folders found or invalid response');
+            return [];
+        } catch (\Exception $e) {
+            Log::error('Error fetching requirement folders: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return [];
+        }
+    }
+    
+    /**
+     * Apply method to handle student enrollment applications
      */
     public function apply(Request $request)
     {
         try {
-            Log::info('Enrollment application submission started');
+            // Get tenant information for proper database targeting
+            $tenantId = tenant('id');
+            
+            Log::info('Enrollment application submission started', [
+                'tenant_id' => $tenantId,
+                'student_id' => Auth::guard('student')->id(),
+                'request_data' => $request->only(['program_id', 'year_level', 'student_status'])
+            ]);
+            
+            // Get student status from request
+            $studentStatus = $request->student_status ?? 'Regular';
             
             // Ensure tenant connection is properly set up
-            $tenantId = tenant('id');
             $dbName = 'tenant_' . strtolower($tenantId);
             
             // Set the database name for the tenant connection
             config(['database.connections.tenant.database' => $dbName]);
             DB::connection('tenant')->reconnect();
             
-            Log::info('Tenant database connection established', [
+            // Verify connection is working and using correct database
+            try {
+                $currentDb = DB::connection('tenant')->getDatabaseName();
+                if ($currentDb !== $dbName) {
+                    throw new \Exception("Database mismatch: Connected to {$currentDb} instead of {$dbName}");
+                }
+                
+                // Check if StudentApplication table exists in tenant database
+                $tableExists = DB::connection('tenant')->getSchemaBuilder()->hasTable('student_applications');
+                if (!$tableExists) {
+                    throw new \Exception("student_applications table does not exist in tenant database");
+                }
+                
+                Log::info('Tenant database connection established and verified', [
                 'tenant_id' => $tenantId,
-                'db_name' => $dbName
-            ]);
+                    'db_name' => $dbName,
+                    'student_applications_table_exists' => $tableExists
+                ]);
+            } catch (\Exception $dbCheckException) {
+                Log::error('Database verification failed', [
+                    'error' => $dbCheckException->getMessage(),
+                    'trace' => $dbCheckException->getTraceAsString()
+                ]);
+                throw $dbCheckException;
+            }
             
-            // Get available requirement folders first
-            $requirementFolders = $this->getRequirementFolders();
+            // Get available requirement folders for the selected student status
+            $requirementFolders = $this->getRequirementFolders($studentStatus);
             $folderIds = array_column($requirementFolders, 'id');
             
-            // If no requirement folders, check example fields
-            $exampleFields = ['transcript', 'id_photo', 'birth_certificate'];
+            // If no requirement folders found, return an error
+            if (count($folderIds) === 0) {
+                Log::error('No requirement folders found for enrollment', [
+                    'student_status' => $studentStatus
+                ]);
+                
+                return redirect()->route('tenant.student.enrollment', ['tenant' => tenant('id')])
+                    ->with('error', 'No document requirement folders found. Please contact your administrator to set up the document requirements first.');
+            }
             
-            // Build validation rules based on requirement folders or example fields
+            // Build validation rules based on requirement folders
             $rules = [
                 'program_id' => 'required|exists:tenant.courses,id',
                 'year_level' => 'required|in:1,2,3,4',
+                'student_status' => 'required|in:Regular,Probation,Irregular',
+                'school_year' => 'required|string|regex:/^\d{4}-\d{4}$/',
                 'notes' => 'nullable|string|max:1000',
             ];
             
             // Add validation rules for each folder's file upload
-            if (count($folderIds) > 0) {
-                foreach ($folderIds as $folderId) {
-                    $rules["folder_file_" . $folderId] = 'required|file|mimes:pdf,jpg,jpeg,png|max:5120';
-                }
-            } else {
-                // Example fields for demo mode
-                foreach ($exampleFields as $field) {
-                    $rules[$field] = 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120';
-                }
+            foreach ($folderIds as $folderId) {
+                $rules["folder_file_" . $folderId] = 'required|file|mimes:pdf,jpg,jpeg,png|max:5120';
             }
             
             // Validate the request
@@ -243,23 +477,59 @@ class EnrollmentController extends Controller
                 $application->student_id = Auth::guard('student')->id();
                 $application->program_id = $validated['program_id'];
                 $application->year_level = $validated['year_level'];
+                $application->school_year = $validated['school_year'];
+                $application->student_status = $validated['student_status'];
                 $application->notes = $validated['notes'] ?? null;
                 $application->status = 'pending'; // Initial status
                 $application->tenant_id = $tenantId;
                 
-                // Initialize document files array
-                $documentFiles = [];
+                // Log the application data before saving
+                Log::info('Creating enrollment application', [
+                    'connection' => $application->getConnectionName(),
+                    'database' => config('database.connections.tenant.database'),
+                    'application_data' => [
+                        'student_id' => $application->student_id,
+                        'program_id' => $application->program_id,
+                        'year_level' => $application->year_level,
+                        'student_status' => $application->student_status,
+                        'tenant_id' => $application->tenant_id
+                    ]
+                ]);
+                
+                // Save to get an ID before uploading files
+                $application->save();
+                
+                // Verify application was saved with the correct ID
+                if (!$application->id) {
+                    throw new \Exception('Application was not saved correctly - no ID generated');
+                }
+                
+                Log::info('Application record created successfully', [
+                    'application_id' => $application->id
+                ]);
+                
+                // Store student status in document_files json
+                $documentFiles = [
+                    'student_status' => $validated['student_status'],
+                    'files' => []
+                ];
+                
+                // Get student info for filename prefixing
+                $student = Auth::guard('student')->user();
+                $studentName = $student ? preg_replace('/[^a-zA-Z0-9]/', '', $student->name) : 'UnknownStudent';
                 
                 // Handle document uploads for each requirement folder
                 $uploadedFiles = [];
                 $requirementsController = app(\App\Http\Controllers\Requirements\RequirementsController::class);
                 
-                if (count($folderIds) > 0) {
                     // Handle uploads using requirement folders
                     foreach ($requirementFolders as $folder) {
                         $folderId = $folder['id'];
                         $folderName = $folder['name'] ?? 'Unknown Folder';
                         $fileInputName = "folder_file_" . $folderId;
+                    
+                    // Remove tenant prefix and status tag from folder name
+                    $displayFolderName = preg_replace(['/^\[[^\]]+\]\s*/', '/\[(Regular|Irregular|Probation)\]\s*/'], '', $folderName);
                         
                         if ($request->hasFile($fileInputName)) {
                             try {
@@ -267,9 +537,9 @@ class EnrollmentController extends Controller
                                 $fileRequest = new \Illuminate\Http\Request();
                                 $fileRequest->files->set('file', $request->file($fileInputName));
                                 
-                                // Add application ID to filename for better tracking
+                            // Add application ID and tenant ID to filename for better tracking
                                 $originalFilename = $request->file($fileInputName)->getClientOriginalName();
-                                $customFilename = "App{$application->id}_{$originalFilename}";
+                            $customFilename = "[{$tenantId}]_App{$application->id}_{$studentName}_{$originalFilename}";
                                 $fileRequest->merge(['custom_filename' => $customFilename]);
                                 
                                 // Use the requirements controller to upload the file to the folder
@@ -281,15 +551,19 @@ class EnrollmentController extends Controller
                                     $fileData = $responseData['file'] ?? [];
                                     $uploadedFiles[$folderName] = $fileData;
                                     
-                                    // Add to document files array
-                                    $documentFiles[] = [
+                                // Add to document files array with more metadata
+                                $documentFiles['files'][] = [
                                         'folder_id' => $folderId,
-                                        'folder_name' => $folderName,
+                                    'folder_name' => $displayFolderName,
                                         'file_id' => $fileData['id'] ?? null,
                                         'file_name' => $fileData['name'] ?? $customFilename,
+                                    'display_name' => $originalFilename,
                                         'file_path' => $fileData['webViewLink'] ?? null,
                                         'mime_type' => $fileData['mimeType'] ?? $request->file($fileInputName)->getMimeType(),
-                                        'uploaded_at' => now()->toDateTimeString()
+                                    'size' => $fileData['size'] ?? $request->file($fileInputName)->getSize(),
+                                    'uploaded_at' => now()->toDateTimeString(),
+                                    'student_status' => $validated['student_status'],
+                                    'tenant_id' => $tenantId
                                     ];
                                     
                                     Log::info("Uploaded file to folder {$folderName}", [
@@ -309,34 +583,6 @@ class EnrollmentController extends Controller
                                     'trace' => $e->getTraceAsString()
                                 ]);
                                 throw $e;
-                            }
-                        }
-                    }
-                } else {
-                    // Handle example fields for demo mode
-                    foreach ($exampleFields as $field) {
-                        if ($request->hasFile($field)) {
-                            $file = $request->file($field);
-                            $filename = $file->getClientOriginalName();
-                            
-                            // Store locally for demo
-                            $path = $file->store('student_applications/' . $application->id, 'public');
-                            
-                            // Add to document files array
-                            $documentFiles[] = [
-                                'type' => $field,
-                                'field_name' => ucfirst(str_replace('_', ' ', $field)),
-                                'file_name' => $filename,
-                                'file_path' => $path,
-                                'mime_type' => $file->getMimeType(),
-                                'uploaded_at' => now()->toDateTimeString()
-                            ];
-                            
-                            Log::info("Uploaded {$field} file", [
-                                'application_id' => $application->id,
-                                'file_name' => $filename,
-                                'path' => $path
-                            ]);
                         }
                     }
                 }
@@ -348,7 +594,9 @@ class EnrollmentController extends Controller
                 Log::info('Application created successfully', [
                     'id' => $application->id,
                     'student_id' => $application->student_id,
-                    'document_count' => count($documentFiles)
+                    'document_count' => count($documentFiles['files']),
+                    'tenant_id' => $tenantId, 
+                    'database' => config('database.connections.tenant.database')
                 ]);
                 
                 DB::connection('tenant')->commit();
@@ -372,51 +620,168 @@ class EnrollmentController extends Controller
     }
     
     /**
-     * Get program-specific requirements.
+     * Get requirement folders regardless of status
+     * This is used as a fallback for finding matching folders
+     */
+    private function getAllRequirementFolders()
+    {
+        Log::info('Fetching all requirement folders regardless of status');
+        
+        try {
+            // Create a mock request with no category filter
+            $mockRequest = new \Illuminate\Http\Request();
+            $mockRequest->merge([
+                'page' => 1
+            ]);
+            
+            // Use the App\Http\Controllers\Requirements\RequirementsController to fetch folders
+            $requirementsController = app(\App\Http\Controllers\Requirements\RequirementsController::class);
+            $response = $requirementsController->listFolderContents($mockRequest);
+            
+            if ($response->getStatusCode() === 200) {
+                $data = json_decode($response->getContent(), true);
+                
+                if (isset($data['success']) && $data['success'] && isset($data['files'])) {
+                    // Filter to only include folders, not files
+                    $folders = array_filter($data['files'], function($item) {
+                        return isset($item['mimeType']) && $item['mimeType'] === 'application/vnd.google-apps.folder';
+                    });
+                    
+                    // Filter by the tenant ID to ensure only tenant-specific folders are shown
+                    $tenantId = tenant('id');
+                    $tenantFolders = array_filter($folders, function($folder) use ($tenantId) {
+                        $folderName = $folder['name'] ?? '';
+                        
+                        // Check if folder belongs to this tenant by looking for [tenantId] pattern
+                        if (stripos($folderName, "[$tenantId]") !== false) {
+                            return true;
+                        }
+                        
+                        // For backward compatibility, also check if the name contains the tenant ID
+                        if (stripos($folderName, $tenantId) !== false) {
+                            return true;
+                        }
+                        
+                        // If no tenant-specific folders exist, allow generic folders to be shown
+                        if (!preg_match('/\[[a-zA-Z0-9_-]+\]/', $folderName)) {
+                            return true;
+                        }
+                        
+                        return false;
+                    });
+                    
+                    Log::info('Found all requirement folders after tenant filtering', [
+                        'total_found' => count($folders),
+                        'tenant_folders' => count($tenantFolders)
+                    ]);
+                    
+                    return array_values($tenantFolders);
+                }
+            }
+            
+            Log::warning('No requirement folders found or invalid response');
+            return [];
+        } catch (\Exception $e) {
+            Log::error('Error fetching all requirement folders: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return [];
+        }
+    }
+    
+    /**
+     * Get program requirements for a specific program
      */
     public function getProgramRequirements($programId)
     {
         try {
-            Log::info('Fetching program requirements', ['program_id' => $programId]);
+            // Get student's status from request (Regular, Probation, Irregular)
+            $studentStatus = request()->get('status', 'Regular');
             
-            $program = Course::on('tenant')->findOrFail($programId);
-            
-            // This could be enhanced to fetch actual program-specific requirements
-            // For now, we'll return a basic set of requirements
-            $requirements = [
-                'transcript' => true,
-                'id_photo' => true,
-                'medical_certificate' => $program->requires_medical_certificate ?? false,
-                'recommendation_letter' => $program->requires_recommendation ?? false,
-            ];
-            
-            // Get requirement folders for file uploads
-            $requirementFolders = $this->getRequirementFolders();
-            
-            Log::info('Program requirements loaded', [
-                'program' => $program->name, 
-                'folder_count' => count($requirementFolders)
+            Log::info('Getting program requirements', [
+                'program_id' => $programId,
+                'student_status' => $studentStatus
             ]);
             
-            return response()->json([
+            // Try to load program from database for validation
+            $program = Course::on('tenant')->find($programId);
+            
+            if (!$program) {
+                Log::warning('Program not found for requirements', ['program_id' => $programId]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid program ID'
+                ]);
+            }
+            
+            // Get requirement folders filtered by student status
+            $requirementFolders = $this->getRequirementFolders($studentStatus);
+            
+            // Check if we have ANY folders in the system
+            $allFolders = $this->getAllRequirementFolders();
+            $hasSetupFolders = count($allFolders) > 0;
+            
+            // For better user experience, add metadata about the program and status
+            $responseData = [
                 'success' => true,
-                'requirements' => $requirements,
-                'requirementFolders' => $requirementFolders,
                 'program' => [
                     'id' => $program->id,
-                    'name' => $program->name
-                ]
-            ]);
+                    'name' => $program->name,
+                    'code' => $program->code
+                ],
+                'status' => $studentStatus,
+                'requirementFolders' => $requirementFolders,
+                'hasSetupFolders' => $hasSetupFolders
+            ];
+            
+            // If we have folders, include them in the response
+            if (count($requirementFolders) > 0) {
+                Log::info('Found requirement folders for program', [
+                    'program_id' => $programId,
+                    'count' => count($requirementFolders)
+                ]);
+                
+                // Format folder names for display
+                $formattedFolders = [];
+                foreach ($requirementFolders as $folder) {
+                    // Remove tenant prefix and status tag from folder name for display
+                    $displayName = preg_replace(['/^\[[^\]]+\]\s*/', '/\[(Regular|Irregular|Probation)\]\s*/'], '', $folder['name']);
+                    
+                    $formattedFolders[] = [
+                        'id' => $folder['id'],
+                        'name' => $displayName,
+                        'original_name' => $folder['name'],
+                        'url' => $folder['webViewLink'] ?? null
+                    ];
+                }
+                
+                $responseData['requirementFolders'] = $formattedFolders;
+            } else {
+                // If no folders found, inform client to use client-side fallback
+                Log::warning('No requirement folders found for program and status', [
+                    'program_id' => $programId,
+                    'student_status' => $studentStatus,
+                    'has_any_folders' => $hasSetupFolders
+                ]);
+                
+                if ($hasSetupFolders) {
+                    $responseData['message'] = "No folders found for '{$studentStatus}' status. Please ask your administrator to create folders with [{$studentStatus}] in the name.";
+                } else {
+                    $responseData['message'] = 'No requirement folders set up in the system. Please contact your administrator to set up document requirements.';
+                }
+            }
+            
+            return response()->json($responseData);
         } catch (\Exception $e) {
-            Log::error('Failed to fetch program requirements: ' . $e->getMessage(), [
-                'program_id' => $programId,
-                'trace' => $e->getTraceAsString()
+            Log::error('Error getting program requirements: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'program_id' => $programId
             ]);
             
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch program requirements'
-            ], 500);
+                'message' => 'Failed to load program requirements: ' . $e->getMessage()
+            ]);
         }
     }
 
@@ -467,153 +832,249 @@ class EnrollmentController extends Controller
     }
 
     /**
-     * Get available requirement folders from the requirements system
-     */
-    private function getRequirementFolders()
-    {
-        Log::info('Fetching requirement folders for enrollment');
-        
-        // Get the student's status (Regular, Irregular, Probation)
-        $student = Auth::guard('student')->user();
-        $studentStatus = $student->status ?? 'Regular';
-        
-        Log::info('Student status for requirement folders', ['status' => $studentStatus]);
-        
-        try {
-            // Create a mock request with the category parameter
-            $mockRequest = new \Illuminate\Http\Request();
-            $mockRequest->merge([
-                'category' => $studentStatus,
-                'page' => 1
-            ]);
-            
-            // Use the App\Http\Controllers\Requirements\RequirementsController to fetch folders
-            $requirementsController = app(\App\Http\Controllers\Requirements\RequirementsController::class);
-            $response = $requirementsController->listFolderContents($mockRequest);
-            
-            if ($response->getStatusCode() === 200) {
-                $data = json_decode($response->getContent(), true);
-                
-                if (isset($data['success']) && $data['success'] && isset($data['files'])) {
-                    // Filter to only include folders, not files
-                    $folders = array_filter($data['files'], function($item) {
-                        return isset($item['mimeType']) && $item['mimeType'] === 'application/vnd.google-apps.folder';
-                    });
-                    
-                    Log::info('Found requirement folders', ['count' => count($folders)]);
-                    return $folders;
-                }
-            }
-            
-            Log::warning('No requirement folders found or invalid response');
-            return [];
-        } catch (\Exception $e) {
-            Log::error('Error fetching requirement folders: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-            return [];
-        }
-    }
-
-    /**
      * Get application details
      */
     public function getApplicationDetails($applicationId)
     {
         try {
-            Log::info('Getting application details', ['application_id' => $applicationId]);
+            $studentId = Auth::guard('student')->id();
             
-            // Get the currently authenticated student
-            $student = Auth::guard('student')->user();
-            
-            if (!$student) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Not authenticated'
-                ], 401);
-            }
-            
-            // Fetch the application, ensuring it belongs to the current student
-            $application = \App\Models\StudentApplication::on('tenant')
+            // Get the application with proper tenant connection
+            $application = StudentApplication::on('tenant')
                 ->where('id', $applicationId)
-                ->where('student_id', $student->id)
+                ->where('student_id', $studentId)
                 ->first();
             
             if (!$application) {
+                Log::warning('Student tried to access invalid application', [
+                    'student_id' => $studentId,
+                    'application_id' => $applicationId
+                ]);
+                
                 return response()->json([
                     'success' => false,
                     'message' => 'Application not found'
-                ], 404);
+                ]);
             }
             
-            // Load program relationship
-            $application->load('program');
+            // Get program details if available
+            $program = null;
+            if ($application->program_id) {
+                try {
+                    $program = Course::on('tenant')->find($application->program_id);
+                } catch (\Exception $e) {
+                    Log::error('Error loading program for application: ' . $e->getMessage());
+                }
+            }
             
-            return response()->json([
+            // Format the response
+            $response = [
                 'success' => true,
-                'application' => $application
-            ]);
+                'application' => [
+                    'id' => $application->id,
+                    'program_id' => $application->program_id,
+                    'program_name' => $program ? $program->name : 'Unknown Program',
+                    'year_level' => $application->year_level,
+                    'status' => $application->status,
+                    'notes' => $application->notes,
+                    'admin_notes' => $application->admin_notes,
+                    'reviewed_at' => $application->reviewed_at ? $application->reviewed_at->format('Y-m-d H:i:s') : null,
+                    'student_status' => $application->student_status,
+                    'created_at' => $application->created_at->format('Y-m-d H:i:s'),
+                    'updated_at' => $application->updated_at->format('Y-m-d H:i:s')
+                ]
+            ];
+            
+            return response()->json($response);
         } catch (\Exception $e) {
             Log::error('Error getting application details: ' . $e->getMessage(), [
-                'application_id' => $applicationId,
                 'trace' => $e->getTraceAsString()
             ]);
             
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to get application details'
+                'message' => 'Failed to load application details'
+            ]);
+        }
+    }
+    
+    /**
+     * Get documents for a specific application
+     */
+    public function getApplicationDocuments($applicationId)
+    {
+        try {
+            $studentId = Auth::guard('student')->id();
+            $tenantId = tenant('id');
+            
+            // Get the application with proper tenant connection
+            $application = StudentApplication::on('tenant')
+                ->where('id', $applicationId)
+                ->where('student_id', $studentId)
+                ->first();
+            
+            if (!$application) {
+                Log::warning('Student tried to access invalid application', [
+                    'student_id' => $studentId,
+                    'application_id' => $applicationId
+                ]);
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Application not found'
+                ]);
+            }
+            
+            // Get documents from the application
+            $documents = [];
+            
+            if (!empty($application->document_files_list)) {
+                $documents = $application->document_files_list;
+                
+                // Filter out documents that don't belong to this tenant
+                $documents = array_filter($documents, function($doc) use ($tenantId) {
+                    // If the file_name exists and contains the tenant ID, include it
+                    if (isset($doc['file_name']) && stripos($doc['file_name'], "[$tenantId]") !== false) {
+                        return true;
+                    }
+                    
+                    // Check folder_name too for tenant match
+                    if (isset($doc['folder_name']) && stripos($doc['folder_name'], "[$tenantId]") !== false) {
+                        return true;
+                    }
+                    
+                    // If the document doesn't have tenant-specific info but is part of this application, include it
+                    return !isset($doc['tenant_id']) || $doc['tenant_id'] === $tenantId;
+                });
+                
+                // Process document metadata for display
+                $documents = array_map(function($doc) use ($application) {
+                    // Add uploaded_at if not exists
+                    if (!isset($doc['uploaded_at'])) {
+                        $doc['uploaded_at'] = $application->created_at->toIso8601String();
+                    }
+                    
+                    // Clean up file name for display (remove tenant prefix)
+                    if (isset($doc['file_name']) && isset($doc['display_name'])) {
+                        // Keep as is if display name already exists
+                    } else if (isset($doc['file_name'])) {
+                        // Remove tenant prefix pattern for display
+                        $displayName = preg_replace('/\[[^\]]+\]_App\d+_\w+_/', '', $doc['file_name']);
+                        $doc['display_name'] = $displayName;
+                    }
+                    
+                    return $doc;
+                }, $documents);
+                
+                // Reset array keys after filtering
+                $documents = array_values($documents);
+            }
+            
+            Log::info('Retrieved application documents', [
+                'application_id' => $application->id,
+                'document_count' => count($documents)
+            ]);
+            
+            // Add student status to the response
+            return response()->json([
+                'success' => true,
+                'application_id' => $application->id,
+                'documents' => $documents,
+                'student_status' => $application->student_status,
+                'tenant_id' => $tenantId
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting application documents: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load application documents'
+            ]);
+        }
+    }
+
+    /**
+     * Debug method to check applications in the current tenant database
+     */
+    public function debugApplications()
+    {
+        try {
+            $tenantId = tenant('id');
+            $dbName = 'tenant_' . strtolower($tenantId);
+            
+            // Set the database connection config for tenant
+            config([
+                'database.connections.tenant.database' => $dbName
+            ]);
+            
+            // Reconnect with the new config
+            DB::reconnect('tenant');
+            
+            // Get the current student ID
+            $student_id = Auth::guard('student')->id();
+            
+            // Check if the table exists
+            $tableExists = DB::connection('tenant')->getSchemaBuilder()->hasTable('student_applications');
+            
+            // Debug info
+            $debug = [
+                'tenant_id' => $tenantId,
+                'database' => $dbName,
+                'table_exists' => $tableExists,
+                'student_id' => $student_id
+            ];
+            
+            // If table exists, get applications for this student
+            if ($tableExists) {
+                // Get raw query results
+                $applications = DB::connection('tenant')
+                    ->table('student_applications')
+                    ->where('student_id', $student_id)
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+                
+                $debug['applications_count'] = count($applications);
+                $debug['applications'] = $applications;
+            }
+            
+            return response()->json($debug);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ], 500);
         }
     }
     
     /**
-     * Get application documents
+     * Check Google Drive connection status
      */
-    public function getApplicationDocuments($applicationId)
+    public function checkDriveStatus()
     {
         try {
-            Log::info('Getting application documents', ['application_id' => $applicationId]);
+            // Get the Google Drive service 
+            $driveService = app(\App\Services\GoogleDriveService::class);
             
-            // Get the currently authenticated student
-            $student = Auth::guard('student')->user();
-            
-            if (!$student) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Not authenticated'
-                ], 401);
-            }
-            
-            // Fetch the application, ensuring it belongs to the current student
-            $application = \App\Models\StudentApplication::on('tenant')
-                ->where('id', $applicationId)
-                ->where('student_id', $student->id)
-                ->first();
-            
-            if (!$application) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Application not found'
-                ], 404);
-            }
-            
-            // Get documents from JSON field
-            $documents = $application->document_files ?? [];
+            // Check connectivity by attempting to list files
+            $testResult = $driveService->testConnection();
             
             return response()->json([
-                'success' => true,
-                'documents' => $documents
+                'success' => $testResult['success'],
+                'message' => $testResult['message'],
+                'connected' => $testResult['success']
             ]);
         } catch (\Exception $e) {
-            Log::error('Error getting application documents: ' . $e->getMessage(), [
-                'application_id' => $applicationId,
+            Log::error('Error checking Google Drive status: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
             
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to get application documents'
-            ], 500);
+                'message' => 'Failed to connect to Google Drive: ' . $e->getMessage(),
+                'connected' => false
+            ]);
         }
     }
 }

@@ -753,4 +753,51 @@ class GoogleDriveService
             throw $e;
         }
     }
+
+    /**
+     * Test connection to Google Drive
+     * 
+     * @return array Result with success status and message
+     */
+    public function testConnection()
+    {
+        try {
+            Log::info('Testing Google Drive connection');
+            
+            // Check if the client and service are initialized
+            if (!$this->client || !$this->service) {
+                Log::error('Google Drive client or service not initialized');
+                return [
+                    'success' => false,
+                    'message' => 'Google Drive service not properly initialized'
+                ];
+            }
+            
+            // Try to list a few files to verify connection
+            $response = $this->service->files->listFiles([
+                'pageSize' => 1,
+                'fields' => 'files(id, name)'
+            ]);
+            
+            // If we get here without an exception, the connection is working
+            $fileCount = count($response->getFiles());
+            Log::info('Google Drive connection test successful', ['files_found' => $fileCount]);
+            
+            return [
+                'success' => true,
+                'message' => 'Successfully connected to Google Drive',
+                'file_count' => $fileCount
+            ];
+        } catch (\Exception $e) {
+            Log::error('Google Drive connection test failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return [
+                'success' => false,
+                'message' => 'Failed to connect to Google Drive: ' . $e->getMessage()
+            ];
+        }
+    }
 }

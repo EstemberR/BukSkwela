@@ -103,4 +103,39 @@ class StudentApplication extends Model
     {
         return $this->belongsTo(TenantAdmin::class, 'reviewed_by');
     }
+
+    /**
+     * Get the student status from the document_files JSON
+     *
+     * @return string
+     */
+    public function getStudentStatusAttribute()
+    {
+        if (is_array($this->document_files) && isset($this->document_files['student_status'])) {
+            return $this->document_files['student_status'];
+        }
+        
+        return 'Regular'; // Default status if not specified
+    }
+    
+    /**
+     * Get the document files array from the document_files JSON
+     *
+     * @return array
+     */
+    public function getDocumentFilesListAttribute()
+    {
+        if (is_array($this->document_files)) {
+            if (isset($this->document_files['files'])) {
+                return $this->document_files['files'];
+            }
+            
+            // For backwards compatibility with old format
+            if (!isset($this->document_files['student_status'])) {
+                return $this->document_files;
+            }
+        }
+        
+        return [];
+    }
 }

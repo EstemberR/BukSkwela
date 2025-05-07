@@ -175,6 +175,38 @@
             </div>
         </div>
     </div>
+
+    <!-- Debug Tools Section (Hidden in Production) -->
+    <div class="card mt-4 mb-4 border-0 shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-tools me-2"></i> Developer Tools
+            </h5>
+            <span class="badge bg-warning">Debug Mode</span>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="d-grid">
+                        <button id="debugApplicationsBtn" class="btn btn-outline-secondary">
+                            <i class="fas fa-bug me-2"></i> Debug Student Applications
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Debug Results Container -->
+            <div id="debugResults" class="mt-3 p-3 border rounded bg-light d-none">
+                <div class="d-flex justify-content-between mb-2">
+                    <h6 class="mb-0">Debug Results</h6>
+                    <button class="btn btn-sm btn-outline-secondary" id="closeDebugBtn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <pre class="mb-0 text-start" style="max-height:400px;overflow:auto;"></pre>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Include modals and other components -->
@@ -190,6 +222,37 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Apply user's card style preference
     applyCardStyle();
+    
+    // Debug applications button
+    const debugBtn = document.getElementById('debugApplicationsBtn');
+    if (debugBtn) {
+        debugBtn.addEventListener('click', function() {
+            const resultsContainer = document.getElementById('debugResults');
+            const preElement = resultsContainer.querySelector('pre');
+            
+            resultsContainer.classList.remove('d-none');
+            preElement.textContent = 'Loading application data...';
+            
+            // Call the debug endpoint
+            fetch('{{ route("tenant.admin.debug-applications", ["tenant" => tenant("id")]) }}')
+                .then(response => response.json())
+                .then(data => {
+                    // Format the JSON response
+                    preElement.textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    preElement.textContent = 'Error fetching application data: ' + error.message;
+                });
+        });
+    }
+    
+    // Close debug results
+    const closeDebugBtn = document.getElementById('closeDebugBtn');
+    if (closeDebugBtn) {
+        closeDebugBtn.addEventListener('click', function() {
+            document.getElementById('debugResults').classList.add('d-none');
+        });
+    }
 });
 
 // Requirements Chart

@@ -12,7 +12,9 @@ class RequirementsController extends Controller
 
     public function __construct(GoogleDriveService $driveService)
     {
-        $this->middleware('auth:admin');
+        // Only apply admin middleware to routes that should be protected
+        // This allows the uploadFile method to be used by both admins and students
+        $this->middleware('auth:admin', ['except' => ['uploadFile']]);
         $this->driveService = $driveService;
     }
 
@@ -294,6 +296,14 @@ class RequirementsController extends Controller
     public function uploadFile(Request $request, $folderId)
     {
         try {
+            // Ensure this is being accessed by either an admin or a student
+            if (!auth('admin')->check() && !auth('student')->check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access'
+                ], 401);
+            }
+            
             $file = $request->file('file');
             
             if (!$file) {
@@ -309,11 +319,25 @@ class RequirementsController extends Controller
             // Get original filename
             $originalName = $file->getClientOriginalName();
             
-            // Create a tenant-prefixed filename
-            $tenantPrefixedName = "[{$tenantId}] {$originalName}";
+            // Use custom filename if provided, otherwise create a tenant-prefixed name
+            $customFilename = $request->input('custom_filename');
+            $uploadFilename = $customFilename ?: "[{$tenantId}] {$originalName}";
+            
+            // Log upload attempt for auditing
+            $userType = auth('admin')->check() ? 'admin' : 'student';
+            $userId = auth('admin')->check() ? auth('admin')->id() : auth('student')->id();
+            
+            \Log::info('File upload attempt', [
+                'user_type' => $userType,
+                'user_id' => $userId,
+                'folder_id' => $folderId,
+                'original_filename' => $originalName,
+                'upload_filename' => $uploadFilename,
+                'tenant_id' => $tenantId
+            ]);
             
             // Upload file to Google Drive folder
-            $result = $this->driveService->uploadFile($file, $folderId, $tenantPrefixedName);
+            $result = $this->driveService->uploadFile($file, $folderId, $uploadFilename);
             
             return response()->json([
                 'success' => true,
