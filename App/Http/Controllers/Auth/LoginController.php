@@ -161,8 +161,59 @@ class LoginController extends Controller
                             'email' => $request->email
                         ]);
                                 
+                        // First try to check if this is a staff member directly from staff table
+                        $staff = \App\Models\Staff\Staff::on('tenant')
+                            ->where('email', $request->email)
+                            ->first();
+                            
+                        if ($staff && Hash::check($request->password, $staff->password)) {
+                            $request->session()->regenerate();
+                            Auth::guard('staff')->login($staff);
+                            
+                            Log::info('Staff login successful via direct staff table lookup', [
+                                'staff_id' => $staff->id,
+                                'staff_email' => $staff->email,
+                                'staff_role' => $staff->role,
+                                'tenant_id' => $tenantId
+                            ]);
+                            
+                            // Redirect based on role
+                            if ($staff->role === 'instructor') {
+                                return redirect()->route('tenant.instructor.dashboard', ['tenant' => $tenantId]);
+                            }
+                            
+                            return redirect()->intended(route('tenant.dashboard', ['tenant' => $tenantId]));
+                        }
+                                
+                        // If no staff found or password mismatch, check the credentials table
                         if ($credential && Hash::check($request->password, $credential->password)) {
-                            // Find the corresponding admin
+                            // Check if this is a staff member (potentially an instructor)
+                            if (!$staff) {
+                                $staff = \App\Models\Staff\Staff::on('tenant')
+                                    ->where('email', $request->email)
+                                    ->first();
+                            }
+                                
+                            if ($staff) {
+                                $request->session()->regenerate();
+                                Auth::guard('staff')->login($staff);
+                                
+                                Log::info('Staff login successful via credentials table', [
+                                    'staff_id' => $staff->id,
+                                    'staff_email' => $staff->email,
+                                    'staff_role' => $staff->role,
+                                    'tenant_id' => $tenantId
+                                ]);
+                                
+                                // Redirect based on role
+                                if ($staff->role === 'instructor') {
+                                    return redirect()->route('tenant.instructor.dashboard', ['tenant' => $tenantId]);
+                                }
+                                
+                                return redirect()->intended(route('tenant.dashboard', ['tenant' => $tenantId]));
+                            }
+                            
+                            // Find the corresponding admin if no staff found
                             $admin = TenantAdmin::where('email', $request->email)
                                         ->where('tenant_id', $tenantId)
                                         ->first();
@@ -177,17 +228,26 @@ class LoginController extends Controller
                                     'tenant_id' => $tenantId
                                 ]);
                                 
-                                return redirect()->intended(route('tenant.dashboard'));
+                                return redirect()->intended(route('tenant.dashboard', ['tenant' => $tenantId]));
                             } else {
-                                Log::warning('Credentials found but no matching admin in central database', [
+                                Log::warning('Credentials found but no matching admin or staff in database', [
                                     'email' => $request->email,
                                     'tenant_id' => $tenantId
                                 ]);
                             }
                         } else {
-                            Log::warning('Invalid credentials for tenant login', [
+                            // Add more detailed debug information
+                            $hashedPassword = $staff ? $staff->password : null;
+                            Log::warning('Invalid login attempt - password mismatch or no credentials', [
                                 'email' => $request->email,
-                                'tenant_id' => $tenantId
+                                'tenant_id' => $tenantId,
+                                'credential_found' => $credential ? 'yes' : 'no',
+                                'staff_found' => $staff ? 'yes' : 'no',
+                                'staff_id' => $staff ? $staff->id : null,
+                                'staff_role' => $staff ? $staff->role : null,
+                                'password_provided' => !empty($request->password) ? 'yes' : 'no',
+                                'password_hash_exists' => !empty($hashedPassword) ? 'yes' : 'no',
+                                'password_correct' => $staff && Hash::check($request->password, $hashedPassword) ? 'yes' : 'no'
                             ]);
                         }
                     } catch (\Exception $e) {
@@ -319,6 +379,52 @@ class LoginController extends Controller
                 ]);
                 return back()->with('show_approval_modal', true)
                     ->withInput($request->except('password'));
+            }
+            
+            // Check for staff login first - this handles instructors
+            try {
+                $staff = \App\Models\Staff\Staff::where('email', $request->email)->first();
+                
+                if ($staff) {
+                    Log::info('Staff found in tenant context', [
+                        'staff_id' => $staff->id,
+                        'staff_email' => $staff->email,
+                        'staff_role' => $staff->role
+                    ]);
+                    
+                    // Verify password
+                    if (Hash::check($request->password, $staff->password)) {
+                        // Login the staff member
+                        Auth::guard('staff')->login($staff);
+                        $request->session()->regenerate();
+                        
+                        Log::info('Staff login successful in tenant context', [
+                            'staff_id' => $staff->id,
+                            'staff_email' => $staff->email,
+                            'staff_role' => $staff->role,
+                            'tenant_id' => tenant('id')
+                        ]);
+                        
+                        // Redirect based on role
+                        if ($staff->role === 'instructor') {
+                            return redirect()->route('tenant.instructor.dashboard', ['tenant' => tenant('id')]);
+                        }
+                        
+                        return redirect()->intended(route('tenant.dashboard', ['tenant' => tenant('id')]));
+                    } else {
+                        Log::warning('Invalid password for staff', [
+                            'email' => $request->email,
+                            'tenant_id' => tenant('id')
+                        ]);
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Staff authentication error', [
+                    'email' => $request->email,
+                    'tenant_id' => tenant('id'),
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
             }
             
             // For tenant domains - only for non-student emails

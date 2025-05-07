@@ -12,14 +12,20 @@ class RequirementsController extends Controller
 
     public function __construct(GoogleDriveService $driveService)
     {
-        // Only apply admin middleware to routes that should be protected
-        // This allows the uploadFile method to be used by both admins and students
-        $this->middleware('auth:admin', ['except' => ['uploadFile']]);
+        // Allow both admin and staff (instructors) to access these routes
+        // This allows the controller to be used by both admins and instructors
+        $this->middleware('auth:admin,staff', ['except' => ['uploadFile']]);
         $this->driveService = $driveService;
     }
 
     public function index()
     {
+        // Check if the request is coming from an instructor
+        if (auth()->guard('staff')->check() && auth()->guard('staff')->user()->role === 'instructor') {
+            return view('tenant.Instructors.requirements.index');
+        }
+        
+        // Default to admin view
         return view('tenant.requirements.index');
     }
 
@@ -432,6 +438,116 @@ class RequirementsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create folder: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Rename a folder
+     */
+    public function renameFolder(Request $request, $folderId)
+    {
+        try {
+            $newName = $request->input('name');
+            
+            if (empty($newName)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'New folder name is required'
+                ], 422);
+            }
+            
+            // Get folder details to preserve category and tenant information
+            $folderDetails = $this->driveService->getFolderDetails($folderId);
+            
+            if (!$folderDetails) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Folder not found'
+                ], 404);
+            }
+            
+            $originalName = $folderDetails['name'] ?? '';
+            $tenantId = tenant('id');
+            
+            // Extract category from original name
+            $categoryMatch = preg_match('/\[(Regular|Irregular|Probation)\]/', $originalName, $matches);
+            $category = $categoryMatch ? $matches[1] : 'Regular';
+            
+            // Clean the new folder name
+            $cleanFolderName = trim(str_replace(['[', ']'], '', $newName));
+            
+            // Format: [TenantID] [Category] NewFolderName
+            $formattedName = "[{$tenantId}] [{$category}] {$cleanFolderName}";
+            
+            // Rename the folder
+            $result = $this->driveService->renameFile($folderId, $formattedName);
+            
+            if (!$result) {
+                throw new \Exception('Failed to rename folder');
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Folder renamed successfully',
+                'folder' => [
+                    'id' => $folderId,
+                    'name' => $formattedName,
+                    'display_name' => $cleanFolderName
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Rename folder error', [
+                'error' => $e->getMessage(),
+                'folder_id' => $folderId,
+                'new_name' => $newName ?? null,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to rename folder: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    /**
+     * Delete a folder
+     */
+    public function deleteFolder($folderId)
+    {
+        try {
+            // Check if the folder exists
+            $folderDetails = $this->driveService->getFolderDetails($folderId);
+            
+            if (!$folderDetails) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Folder not found'
+                ], 404);
+            }
+            
+            // Delete the folder
+            $result = $this->driveService->deleteFile($folderId);
+            
+            if (!$result) {
+                throw new \Exception('Failed to delete folder');
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Folder deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Delete folder error', [
+                'error' => $e->getMessage(),
+                'folder_id' => $folderId,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete folder: ' . $e->getMessage()
             ], 500);
         }
     }

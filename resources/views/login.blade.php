@@ -121,15 +121,26 @@
             const emailInput = document.getElementById('emailInput');
             
             loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
                 const email = emailInput.value;
                 
+                // Determine login type based on email domain
                 if (email.endsWith('@student.buksu.edu.ph')) {
-                    e.preventDefault();
-                    // Update form action for student login
+                    // Student login
                     loginForm.action = "{{ url('/student/login') }}";
-                    loginForm.submit();
+                } else {
+                    // For instructors and other staff, use the standard login endpoint
+                    // The backend will determine the appropriate role and redirect accordingly
+                    loginForm.action = "{{ url('/login') }}";
                 }
-                // Otherwise, let it submit to the default admin login
+                
+                // Show loading state
+                const submitBtn = loginForm.querySelector('button[type="submit"]');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+                
+                // Submit the form
+                loginForm.submit();
             });
         });
     </script>

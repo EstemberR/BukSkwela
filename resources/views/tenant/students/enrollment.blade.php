@@ -6,7 +6,7 @@
 <div class="container">
     <!-- Header Section -->
     <div class="row mb-4">
-        <div class="col-md-6">
+        <div class="col-md-12">
             <div class="d-flex align-items-center">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb mb-0">
@@ -16,12 +16,6 @@
                 </nav>
             </div>
             <h2 class="mt-2">Enrollment Overview</h2>
-        </div>
-        <div class="col-md-6 text-md-end">
-            <div class="d-flex justify-content-md-end gap-2">
-                <a href="#" class="btn btn-outline-secondary">Application History</a>
-                <a href="#" class="btn btn-success">Apply Enrollment</a>
-            </div>
         </div>
     </div>
 
@@ -84,7 +78,7 @@
                                                     </div>
                                                 @elseif($applicationStatus == 'approved')
                                                     <div class="status-indicator approved">
-                                                        <i class="fas fa-check-circle"></i> Applied - Approved
+                                                        <i class="fas fa-check-circle"></i> Approved
                                                     </div>
                                                 @elseif($applicationStatus == 'rejected')
                                                     <div class="status-indicator rejected">

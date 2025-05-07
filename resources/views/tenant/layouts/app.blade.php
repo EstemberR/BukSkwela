@@ -3328,6 +3328,29 @@
                             <i class="fas fa-user-graduate"></i> <span>Enrollment</span>
                         </a>
                     </li>
+                    @elseif(Auth::guard('staff')->check() && Auth::guard('staff')->user()->role === 'instructor')
+                    <!-- Instructor navigation -->
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('tenant.instructor.dashboard') ? 'active' : '' }}" 
+                           href="{{ route('tenant.instructor.dashboard', ['tenant' => tenant('id')]) }}">
+                            <i class="fas fa-home"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('tenant.instructor.enrollment.approval') ? 'active' : '' }}" 
+                           href="{{ route('tenant.instructor.enrollment.approval', ['tenant' => tenant('id')]) }}">
+                            <i class="fas fa-clipboard-check"></i> <span>Enrollment Approvals</span>
+                            @if(isset($pendingApplicationsCount) && $pendingApplicationsCount > 0)
+                            <span class="badge bg-danger ms-1">{{ $pendingApplicationsCount }}</span>
+                            @endif
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('tenant.instructor.requirements.*') ? 'active' : '' }}" 
+                           href="{{ route('tenant.instructor.requirements.index', ['tenant' => tenant('id')]) }}">
+                            <i class="fas fa-clipboard-list"></i> <span>Requirements</span>
+                        </a>
+                    </li>
                     @else
                     <!-- Admin navigation -->
                     <li class="nav-item">
@@ -3466,7 +3489,7 @@
                         $isUltimate = $currentTenant && $currentTenant->subscription_plan === 'ultimate';
                     @endphp
                     
-                    @if(!Auth::guard('student')->check())
+                    @if(!Auth::guard('student')->check() && !(Auth::guard('staff')->check() && Auth::guard('staff')->user()->role === 'instructor'))
                         @if(!$isPremium && !$isUltimate)
                             <a href="#" class="btn btn-sm btn-outline-warning w-100 mb-2 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#sidebarPremiumModal">
                                 <i class="fas fa-crown me-1"></i>
@@ -3551,6 +3574,11 @@
                                          alt="Student" 
                                          class="user-avatar"
                                          style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                                    @elseif(Auth::guard('staff')->check() && Auth::guard('staff')->user()->role === 'instructor')
+                                    <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::guard('staff')->user()->name ?? 'Instructor') }}&background=3b82f6&color=fff" 
+                                         alt="Instructor" 
+                                         class="user-avatar"
+                                         style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
                                     @else
                                     <img src="https://ui-avatars.com/api/?name=Admin&background=4f46e5&color=fff" 
                                          alt="User" 
@@ -3574,6 +3602,34 @@
                                 <a class="dropdown-item" href="{{ route('tenant.student.enrollment', ['tenant' => tenant('id')]) }}">
                                     <i class="fas fa-user-graduate"></i>
                                     <span>Enrollment</span>
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <a href="#" onclick="logoutToCentralDomain()" class="dropdown-item">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Logout</span>
+                                </a>
+                                @elseif(Auth::guard('staff')->check() && Auth::guard('staff')->user()->role === 'instructor')
+                                <!-- Instructor user menu -->
+                                <div class="dropdown-header">
+                                    <strong>{{ Auth::guard('staff')->user()->name ?? 'Instructor' }}</strong>
+                                    <p class="mb-0 text-muted small">{{ Auth::guard('staff')->user()->email ?? 'No email' }}</p>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="{{ route('tenant.instructor.dashboard', ['tenant' => tenant('id')]) }}">
+                                    <i class="fas fa-home"></i>
+                                    <span>Dashboard</span>
+                                </a>
+                                <a class="dropdown-item" href="{{ route('tenant.instructor.dashboard', ['tenant' => tenant('id')]) }}#courses">
+                                    <i class="fas fa-book"></i>
+                                    <span>My Courses</span>
+                                </a>
+                                <a class="dropdown-item" href="{{ route('tenant.instructor.dashboard', ['tenant' => tenant('id')]) }}#students">
+                                    <i class="fas fa-users"></i>
+                                    <span>My Students</span>
+                                </a>
+                                <a class="dropdown-item" href="{{ route('tenant.instructor.profile', ['tenant' => tenant('id')]) }}">
+                                    <i class="fas fa-user-circle"></i>
+                                    <span>Profile</span>
                                 </a>
                                 <div class="dropdown-divider"></div>
                                 <a href="#" onclick="logoutToCentralDomain()" class="dropdown-item">
@@ -3780,8 +3836,52 @@
             
             document.body.appendChild(form);
             form.submit();
+            @elseif(Auth::guard('staff')->check())
+            // For staff/instructors, create a form to POST to the logout route
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route("tenant.staff.logout") }}';
+            form.style.display = 'none';
+            
+            // Add CSRF token
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '_token';
+            csrfToken.value = '{{ csrf_token() }}';
+            form.appendChild(csrfToken);
+            
+            // Set redirect after logout
+            const redirectInput = document.createElement('input');
+            redirectInput.type = 'hidden';
+            redirectInput.name = 'redirect';
+            redirectInput.value = 'http://{{ tenant("id") }}.localhost:8000/login';
+            form.appendChild(redirectInput);
+            
+            document.body.appendChild(form);
+            form.submit();
             @else
-            window.location.href = '{{ route("tenant.logout") }}';
+            // For admin users, create a form to POST to the logout route
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route("tenant.logout") }}';
+            form.style.display = 'none';
+            
+            // Add CSRF token
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '_token';
+            csrfToken.value = '{{ csrf_token() }}';
+            form.appendChild(csrfToken);
+            
+            // Set redirect after logout
+            const redirectInput = document.createElement('input');
+            redirectInput.type = 'hidden';
+            redirectInput.name = 'redirect';
+            redirectInput.value = 'http://{{ tenant("id") }}.localhost:8000/login';
+            form.appendChild(redirectInput);
+            
+            document.body.appendChild(form);
+            form.submit();
             @endif
             return false; // Prevent default link behavior
         }
