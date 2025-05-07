@@ -160,7 +160,6 @@
                                             <p class="card-text text-muted small">
                                                 <strong>Application ID:</strong> #{{ $application->id }}<br>
                                                 <strong>Year Level:</strong> {{ $application->year_level }}<br>
-                                                <strong>School Year:</strong> {{ $application->school_year ?? 'Not specified' }}<br>
                                                 <strong>Submitted:</strong> {{ $application->created_at->format('M d, Y') }}
                                             </p>
                                         </div>
@@ -244,22 +243,6 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="school_year" class="form-label">School Year</label>
-                        <div class="input-group">
-                            @php
-                                $currentYear = date('Y');
-                                $nextYear = $currentYear + 1;
-                                $defaultSchoolYear = $currentYear . '-' . $nextYear;
-                            @endphp
-                            <input type="text" class="form-control" id="school_year" name="school_year" 
-                                   value="{{ $defaultSchoolYear }}" required 
-                                   placeholder="e.g., 2023-2024" pattern="\d{4}-\d{4}">
-                            <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
-                        </div>
-                        <small class="text-muted mt-1 d-block">Format: Start Year-End Year (e.g., 2023-2024)</small>
-                    </div>
-                    
-                    <div class="mb-3">
                         <label for="notes" class="form-label">Additional Notes (Optional)</label>
                         <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Add any additional information about your application here..."></textarea>
                     </div>
@@ -333,16 +316,10 @@
                 </div>
                 
                 <div class="row mb-4">
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <div class="mb-3">
                             <label class="fw-bold">Student Status:</label>
                             <div id="view-student-status" class="form-text-static"></div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="fw-bold">School Year:</label>
-                            <div id="view-school-year" class="form-text-static"></div>
                         </div>
                     </div>
                 </div>
@@ -1422,9 +1399,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Initialize student status with loading indicator
             document.getElementById('view-student-status').innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Loading...';
             
-            // Initialize school year with loading indicator
-            document.getElementById('view-school-year').innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Loading...';
-            
             // Load documents
             loadApplicationDocuments(applicationId);
             
@@ -1450,10 +1424,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('view-student-status').innerHTML = 
                         `<span class="badge ${statusClass}">${studentStatus}</span>`;
                     
-                    // Display school year
-                    const schoolYear = data.application.school_year || 'Not specified';
-                    document.getElementById('view-school-year').textContent = schoolYear;
-                    
                     // Display admin feedback if available
                     if (data.application.admin_notes) {
                         document.getElementById('view-admin-notes').textContent = data.application.admin_notes;
@@ -1463,14 +1433,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 } else {
                     document.getElementById('view-student-status').textContent = 'Regular';
-                    document.getElementById('view-school-year').textContent = 'Not specified';
                     document.getElementById('admin-feedback').classList.add('d-none');
                 }
             })
             .catch(error => {
                 console.error('Error loading application details:', error);
                 document.getElementById('view-student-status').textContent = 'Regular';
-                document.getElementById('view-school-year').textContent = 'Not specified';
             });
         });
     });

@@ -76,7 +76,6 @@ class CreateStudentApplicationsTable extends Command
                 $table->foreignId('student_id')->constrained('students');
                 $table->foreignId('program_id')->constrained('courses');
                 $table->integer('year_level')->comment('Year level the student is applying for (1-4)');
-                $table->string('school_year')->nullable()->comment('School year format: YYYY-YYYY');
                 $table->string('student_status')->default('Regular')->comment('Student status: Regular, Probation, Irregular');
                 $table->text('notes')->nullable()->comment('Additional notes from the student');
                 $table->string('status')->default('pending')->comment('Application status: pending, reviewing, approved, rejected');

@@ -456,13 +456,12 @@ class EnrollmentController extends Controller
                 'program_id' => 'required|exists:tenant.courses,id',
                 'year_level' => 'required|in:1,2,3,4',
                 'student_status' => 'required|in:Regular,Probation,Irregular',
-                'school_year' => 'required|string|regex:/^\d{4}-\d{4}$/',
                 'notes' => 'nullable|string|max:1000',
             ];
             
             // Add validation rules for each folder's file upload
-            foreach ($folderIds as $folderId) {
-                $rules["folder_file_" . $folderId] = 'required|file|mimes:pdf,jpg,jpeg,png|max:5120';
+                foreach ($folderIds as $folderId) {
+                    $rules["folder_file_" . $folderId] = 'required|file|mimes:pdf,jpg,jpeg,png|max:5120';
             }
             
             // Validate the request
@@ -477,7 +476,6 @@ class EnrollmentController extends Controller
                 $application->student_id = Auth::guard('student')->id();
                 $application->program_id = $validated['program_id'];
                 $application->year_level = $validated['year_level'];
-                $application->school_year = $validated['school_year'];
                 $application->student_status = $validated['student_status'];
                 $application->notes = $validated['notes'] ?? null;
                 $application->status = 'pending'; // Initial status
