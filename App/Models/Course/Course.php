@@ -23,12 +23,16 @@ class Course extends Model
         'description',
         'status',
         'staff_id',
-        'tenant_id'
+        'tenant_id',
+        'school_year_start',
+        'school_year_end'
     ];
 
     protected $casts = [
         'status' => 'string',
-        'staff_id' => 'integer'
+        'staff_id' => 'integer',
+        'school_year_start' => 'integer',
+        'school_year_end' => 'integer'
     ];
 
     // Force tenant connection
@@ -51,5 +55,13 @@ class Course extends Model
     public function students()
     {
         return $this->hasMany(Student::class);
+    }
+    
+    public function getSchoolYearAttribute()
+    {
+        if ($this->school_year_start && $this->school_year_end) {
+            return $this->school_year_start . ' - ' . $this->school_year_end;
+        }
+        return 'Not set';
     }
 }

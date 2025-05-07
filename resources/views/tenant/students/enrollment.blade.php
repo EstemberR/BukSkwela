@@ -111,7 +111,9 @@
                                                    data-bs-toggle="modal" 
                                                    data-bs-target="#applyModal" 
                                                    data-program-id="{{ $program->id }}" 
-                                                   data-program-name="{{ $program->name }}">
+                                                   data-program-name="{{ $program->name }}"
+                                                   data-school-year-start="{{ $program->school_year_start ?? date('Y') }}"
+                                                   data-school-year-end="{{ $program->school_year_end ?? (date('Y') + 1) }}">
                                                     Apply for This Program
                                                 </a>
                                             @endif
@@ -172,6 +174,8 @@
                                                 data-year-level="{{ $application->year_level }}"
                                                 data-status="{{ $application->status }}"
                                                 data-submitted-date="{{ $application->created_at->format('M d, Y') }}"
+                                                data-school-year-start="{{ $application->school_year_start ?? '' }}"
+                                                data-school-year-end="{{ $application->school_year_end ?? '' }}"
                                                 data-notes="{{ $application->notes }}">
                                                 <i class="fas fa-eye me-1"></i> View Details
                                             </button>
@@ -240,6 +244,16 @@
                             <option value="3">Third Year</option>
                             <option value="4">Fourth Year</option>
                         </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="school_year" class="form-label">School Year (SY)</label>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <span id="school-year-display">School year is automatically set by the system</span>
+                        </div>
+                        <input type="hidden" id="school_year_start" name="school_year_start">
+                        <input type="hidden" id="school_year_end" name="school_year_end">
                     </div>
                     
                     <div class="mb-3">
@@ -316,10 +330,16 @@
                 </div>
                 
                 <div class="row mb-4">
-                    <div class="col-md-12">
+                    <div class="col-md-6">
                         <div class="mb-3">
                             <label class="fw-bold">Student Status:</label>
                             <div id="view-student-status" class="form-text-static"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="fw-bold">School Year:</label>
+                            <div id="view-school-year" class="form-text-static"></div>
                         </div>
                     </div>
                 </div>
@@ -662,9 +682,19 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('click', function() {
             const programId = this.dataset.programId;
             const programName = this.dataset.programName;
+            const schoolYearStart = this.dataset.schoolYearStart || new Date().getFullYear();
+            const schoolYearEnd = this.dataset.schoolYearEnd || (parseInt(schoolYearStart) + 1);
             
             document.getElementById('program_id').value = programId;
             document.getElementById('selected-program-name').textContent = programName;
+            
+            // Set the school year values in the hidden fields
+            document.getElementById('school_year_start').value = schoolYearStart;
+            document.getElementById('school_year_end').value = schoolYearEnd;
+            
+            // Display the school year in the info alert
+            document.getElementById('school-year-display').textContent = 
+                `School year ${schoolYearStart} - ${schoolYearEnd} is set for this enrollment`;
             
             // Reset status and year level selections
             document.getElementById('student_status').value = '';
@@ -681,6 +711,34 @@ document.addEventListener('DOMContentLoaded', function() {
             checkGoogleDriveStatus();
         });
     });
+    
+    // Add validation for school year fields
+    const schoolYearStart = document.getElementById('school_year_start');
+    const schoolYearEnd = document.getElementById('school_year_end');
+    
+    if (schoolYearStart && schoolYearEnd) {
+        // Validate that the values are present before submitting
+        const applicationForm = document.getElementById('applicationForm');
+        if (applicationForm) {
+            applicationForm.addEventListener('submit', function(e) {
+                // Ensure school year fields have values before submitting
+                if (!schoolYearStart.value || !schoolYearEnd.value) {
+                    e.preventDefault();
+                    alert('School year information is missing. Please try again or contact support.');
+                    return false;
+                }
+                
+                // Also check that end year is >= start year
+                if (parseInt(schoolYearEnd.value) < parseInt(schoolYearStart.value)) {
+                    e.preventDefault();
+                    alert('Invalid school year range. End year must be equal to or greater than start year.');
+                    return false;
+                }
+                
+                return true;
+            });
+        }
+    }
     
     // Debug applications button
     const debugBtn = document.getElementById('debugApplicationsBtn');
@@ -1374,6 +1432,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const yearLevel = this.dataset.yearLevel;
             const status = this.dataset.status;
             const submittedDate = this.dataset.submittedDate;
+            const schoolYearStart = this.dataset.schoolYearStart;
+            const schoolYearEnd = this.dataset.schoolYearEnd;
             const notes = this.dataset.notes || 'No notes provided.';
             
             // Update modal content
@@ -1382,6 +1442,13 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('view-year-level').textContent = 'Year ' + yearLevel;
             document.getElementById('view-submitted-date').textContent = submittedDate;
             document.getElementById('view-notes').textContent = notes;
+            
+            // Set school year information
+            if (schoolYearStart && schoolYearEnd) {
+                document.getElementById('view-school-year').textContent = `${schoolYearStart} - ${schoolYearEnd}`;
+            } else {
+                document.getElementById('view-school-year').textContent = 'Not specified';
+            }
             
             // Set status badge
             let statusBadge = '';
@@ -1433,12 +1500,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 } else {
                     document.getElementById('view-student-status').textContent = 'Regular';
+                    document.getElementById('view-school-year').textContent = 'Not specified';
                     document.getElementById('admin-feedback').classList.add('d-none');
                 }
             })
             .catch(error => {
                 console.error('Error loading application details:', error);
                 document.getElementById('view-student-status').textContent = 'Regular';
+                document.getElementById('view-school-year').textContent = 'Not specified';
             });
         });
     });
