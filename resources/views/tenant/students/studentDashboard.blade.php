@@ -430,7 +430,7 @@
             </div>
             
             <!-- User Information Section -->
-            <div class="row mb-4">
+    <div class="row mb-4">
                 <div class="col-12">
                     <p class="text-muted user-info-heading mb-2">USER INFORMATION</p>
                     <div class="card">
@@ -592,7 +592,7 @@
                                     </tr>
                                 </tbody>
                             </table>
-                        </div>
+        </div>
                     </div>
                 </div>
             </div>
@@ -637,7 +637,7 @@
                                     </tr>
                                 </tbody>
                             </table>
-                        </div>
+        </div>
                     </div>
                 </div>
             </div>

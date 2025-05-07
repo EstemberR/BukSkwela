@@ -209,7 +209,10 @@ class EnrollmentController extends Controller
             $requirementFolders = $this->getRequirementFolders();
             $folderIds = array_column($requirementFolders, 'id');
             
-            // Build validation rules based on requirement folders
+            // If no requirement folders, check example fields
+            $exampleFields = ['transcript', 'id_photo', 'birth_certificate'];
+            
+            // Build validation rules based on requirement folders or example fields
             $rules = [
                 'program_id' => 'required|exists:tenant.courses,id',
                 'year_level' => 'required|in:1,2,3,4',
@@ -217,8 +220,15 @@ class EnrollmentController extends Controller
             ];
             
             // Add validation rules for each folder's file upload
-            foreach ($folderIds as $folderId) {
-                $rules["folder_file_" . $folderId] = 'required|file|mimes:pdf,jpg,jpeg,png|max:5120';
+            if (count($folderIds) > 0) {
+                foreach ($folderIds as $folderId) {
+                    $rules["folder_file_" . $folderId] = 'required|file|mimes:pdf,jpg,jpeg,png|max:5120';
+                }
+            } else {
+                // Example fields for demo mode
+                foreach ($exampleFields as $field) {
+                    $rules[$field] = 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120';
+                }
             }
             
             // Validate the request
@@ -228,72 +238,122 @@ class EnrollmentController extends Controller
             DB::connection('tenant')->beginTransaction();
             
             try {
-            $application = new StudentApplication();
-            $application->setConnection('tenant');
-            $application->student_id = Auth::guard('student')->id();
-            $application->program_id = $validated['program_id'];
-            $application->year_level = $validated['year_level'];
-            $application->notes = $validated['notes'] ?? null;
-            $application->status = 'pending'; // Initial status
+                $application = new \App\Models\StudentApplication();
+                $application->setConnection('tenant');
+                $application->student_id = Auth::guard('student')->id();
+                $application->program_id = $validated['program_id'];
+                $application->year_level = $validated['year_level'];
+                $application->notes = $validated['notes'] ?? null;
+                $application->status = 'pending'; // Initial status
                 $application->tenant_id = $tenantId;
-            $application->save();
+                
+                // Initialize document files array
+                $documentFiles = [];
+                
+                // Handle document uploads for each requirement folder
+                $uploadedFiles = [];
+                $requirementsController = app(\App\Http\Controllers\Requirements\RequirementsController::class);
+                
+                if (count($folderIds) > 0) {
+                    // Handle uploads using requirement folders
+                    foreach ($requirementFolders as $folder) {
+                        $folderId = $folder['id'];
+                        $folderName = $folder['name'] ?? 'Unknown Folder';
+                        $fileInputName = "folder_file_" . $folderId;
+                        
+                        if ($request->hasFile($fileInputName)) {
+                            try {
+                                // Create a new request object for this file
+                                $fileRequest = new \Illuminate\Http\Request();
+                                $fileRequest->files->set('file', $request->file($fileInputName));
+                                
+                                // Add application ID to filename for better tracking
+                                $originalFilename = $request->file($fileInputName)->getClientOriginalName();
+                                $customFilename = "App{$application->id}_{$originalFilename}";
+                                $fileRequest->merge(['custom_filename' => $customFilename]);
+                                
+                                // Use the requirements controller to upload the file to the folder
+                                $uploadResponse = $requirementsController->uploadFile($fileRequest, $folderId);
+                                
+                                $responseData = json_decode($uploadResponse->getContent(), true);
+                                
+                                if (isset($responseData['success']) && $responseData['success']) {
+                                    $fileData = $responseData['file'] ?? [];
+                                    $uploadedFiles[$folderName] = $fileData;
+                                    
+                                    // Add to document files array
+                                    $documentFiles[] = [
+                                        'folder_id' => $folderId,
+                                        'folder_name' => $folderName,
+                                        'file_id' => $fileData['id'] ?? null,
+                                        'file_name' => $fileData['name'] ?? $customFilename,
+                                        'file_path' => $fileData['webViewLink'] ?? null,
+                                        'mime_type' => $fileData['mimeType'] ?? $request->file($fileInputName)->getMimeType(),
+                                        'uploaded_at' => now()->toDateTimeString()
+                                    ];
+                                    
+                                    Log::info("Uploaded file to folder {$folderName}", [
+                                        'folder_id' => $folderId,
+                                        'application_id' => $application->id,
+                                        'file_data' => $fileData
+                                    ]);
+                                } else {
+                                    throw new \Exception("Failed to upload file to folder {$folderName}: " . 
+                                        (isset($responseData['message']) ? $responseData['message'] : 'Unknown error'));
+                                }
+                            } catch (\Exception $e) {
+                                Log::error("Error uploading file to folder {$folderName}", [
+                                    'folder_id' => $folderId,
+                                    'application_id' => $application->id,
+                                    'error' => $e->getMessage(),
+                                    'trace' => $e->getTraceAsString()
+                                ]);
+                                throw $e;
+                            }
+                        }
+                    }
+                } else {
+                    // Handle example fields for demo mode
+                    foreach ($exampleFields as $field) {
+                        if ($request->hasFile($field)) {
+                            $file = $request->file($field);
+                            $filename = $file->getClientOriginalName();
+                            
+                            // Store locally for demo
+                            $path = $file->store('student_applications/' . $application->id, 'public');
+                            
+                            // Add to document files array
+                            $documentFiles[] = [
+                                'type' => $field,
+                                'field_name' => ucfirst(str_replace('_', ' ', $field)),
+                                'file_name' => $filename,
+                                'file_path' => $path,
+                                'mime_type' => $file->getMimeType(),
+                                'uploaded_at' => now()->toDateTimeString()
+                            ];
+                            
+                            Log::info("Uploaded {$field} file", [
+                                'application_id' => $application->id,
+                                'file_name' => $filename,
+                                'path' => $path
+                            ]);
+                        }
+                    }
+                }
+                
+                // Store document files information in JSON field
+                $application->document_files = $documentFiles;
+                $application->save();
                 
                 Log::info('Application created successfully', [
                     'id' => $application->id,
-                    'student_id' => $application->student_id
+                    'student_id' => $application->student_id,
+                    'document_count' => count($documentFiles)
                 ]);
-            
-            // Handle document uploads for each requirement folder
-            $uploadedFiles = [];
-            $requirementsController = app(\App\Http\Controllers\Requirements\RequirementsController::class);
-            
-            foreach ($requirementFolders as $folder) {
-                $folderId = $folder['id'];
-                $folderName = $folder['name'] ?? 'Unknown Folder';
-                $fileInputName = "folder_file_" . $folderId;
                 
-                if ($request->hasFile($fileInputName)) {
-                    try {
-                        // Create a new request object for this file
-                        $fileRequest = new \Illuminate\Http\Request();
-                        $fileRequest->files->set('file', $request->file($fileInputName));
-                            
-                            // Add application ID to filename for better tracking
-                            $originalFilename = $request->file($fileInputName)->getClientOriginalName();
-                            $customFilename = "App{$application->id}_{$originalFilename}";
-                            $fileRequest->merge(['custom_filename' => $customFilename]);
-                        
-                        // Use the requirements controller to upload the file to the folder
-                        $uploadResponse = $requirementsController->uploadFile($fileRequest, $folderId);
-                        
-                        $responseData = json_decode($uploadResponse->getContent(), true);
-                        
-                        if (isset($responseData['success']) && $responseData['success']) {
-                            $uploadedFiles[$folderName] = $responseData['file'] ?? 'Uploaded successfully';
-                            Log::info("Uploaded file to folder {$folderName}", [
-                                'folder_id' => $folderId,
-                                'application_id' => $application->id,
-                                'response' => $responseData
-                            ]);
-                        } else {
-                                throw new \Exception("Failed to upload file to folder {$folderName}: " . 
-                                    (isset($responseData['message']) ? $responseData['message'] : 'Unknown error'));
-                        }
-                    } catch (\Exception $e) {
-                            Log::error("Error uploading file to folder {$folderName}", [
-                            'folder_id' => $folderId,
-                                'application_id' => $application->id,
-                                'error' => $e->getMessage(),
-                            'trace' => $e->getTraceAsString()
-                        ]);
-                            throw $e;
-                    }
-                }
-            }
-            
                 DB::connection('tenant')->commit();
                 
-            return redirect()->route('tenant.student.enrollment', ['tenant' => tenant('id')])
+                return redirect()->route('tenant.student.enrollment', ['tenant' => tenant('id')])
                     ->with('success', 'Your enrollment application has been submitted successfully.');
             } catch (\Exception $e) {
                 DB::connection('tenant')->rollBack();
@@ -330,11 +390,18 @@ class EnrollmentController extends Controller
                 'recommendation_letter' => $program->requires_recommendation ?? false,
             ];
             
-            Log::info('Program requirements loaded', ['program' => $program->name]);
+            // Get requirement folders for file uploads
+            $requirementFolders = $this->getRequirementFolders();
+            
+            Log::info('Program requirements loaded', [
+                'program' => $program->name, 
+                'folder_count' => count($requirementFolders)
+            ]);
             
             return response()->json([
                 'success' => true,
                 'requirements' => $requirements,
+                'requirementFolders' => $requirementFolders,
                 'program' => [
                     'id' => $program->id,
                     'name' => $program->name
@@ -445,6 +512,108 @@ class EnrollmentController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             return [];
+        }
+    }
+
+    /**
+     * Get application details
+     */
+    public function getApplicationDetails($applicationId)
+    {
+        try {
+            Log::info('Getting application details', ['application_id' => $applicationId]);
+            
+            // Get the currently authenticated student
+            $student = Auth::guard('student')->user();
+            
+            if (!$student) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Not authenticated'
+                ], 401);
+            }
+            
+            // Fetch the application, ensuring it belongs to the current student
+            $application = \App\Models\StudentApplication::on('tenant')
+                ->where('id', $applicationId)
+                ->where('student_id', $student->id)
+                ->first();
+            
+            if (!$application) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Application not found'
+                ], 404);
+            }
+            
+            // Load program relationship
+            $application->load('program');
+            
+            return response()->json([
+                'success' => true,
+                'application' => $application
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting application details: ' . $e->getMessage(), [
+                'application_id' => $applicationId,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get application details'
+            ], 500);
+        }
+    }
+    
+    /**
+     * Get application documents
+     */
+    public function getApplicationDocuments($applicationId)
+    {
+        try {
+            Log::info('Getting application documents', ['application_id' => $applicationId]);
+            
+            // Get the currently authenticated student
+            $student = Auth::guard('student')->user();
+            
+            if (!$student) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Not authenticated'
+                ], 401);
+            }
+            
+            // Fetch the application, ensuring it belongs to the current student
+            $application = \App\Models\StudentApplication::on('tenant')
+                ->where('id', $applicationId)
+                ->where('student_id', $student->id)
+                ->first();
+            
+            if (!$application) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Application not found'
+                ], 404);
+            }
+            
+            // Get documents from JSON field
+            $documents = $application->document_files ?? [];
+            
+            return response()->json([
+                'success' => true,
+                'documents' => $documents
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting application documents: ' . $e->getMessage(), [
+                'application_id' => $applicationId,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get application documents'
+            ], 500);
         }
     }
 }

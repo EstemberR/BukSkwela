@@ -70,6 +70,12 @@ Route::middleware(['web', 'tenant', 'auth:student'])
             ->name('tenant.student.enrollment');
         Route::post('/enrollment/apply', [App\Http\Controllers\Student\EnrollmentController::class, 'apply'])
             ->name('tenant.student.enrollment.apply');
+        Route::get('/enrollment/program-requirements/{programId}', [App\Http\Controllers\Student\EnrollmentController::class, 'getProgramRequirements'])
+            ->name('tenant.student.enrollment.program-requirements');
+        Route::get('/enrollment/application/{applicationId}', [App\Http\Controllers\Student\EnrollmentController::class, 'getApplicationDetails'])
+            ->name('tenant.student.enrollment.application.details');
+        Route::get('/enrollment/application/{applicationId}/documents', [App\Http\Controllers\Student\EnrollmentController::class, 'getApplicationDocuments'])
+            ->name('tenant.student.enrollment.application.documents');
     });
 
 // Protected tenant routes

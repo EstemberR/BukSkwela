@@ -9,10 +9,11 @@ use App\Models\Student\Student;
 use App\Models\Course\Course;
 use App\Models\TenantAdmin;
 use Illuminate\Support\Facades\Log;
+use App\Traits\HasTenantConnection;
 
 class StudentApplication extends Model
 {
-    use HasFactory, BelongsToTenant;
+    use HasFactory, BelongsToTenant, HasTenantConnection;
 
     /**
      * The connection name for the model.
@@ -20,6 +21,13 @@ class StudentApplication extends Model
      * @var string|null
      */
     protected $connection = 'tenant';
+
+    /**
+     * The table name.
+     *
+     * @var string
+     */
+    protected $table = 'student_applications';
 
     /**
      * The attributes that are mass assignable.
@@ -35,6 +43,8 @@ class StudentApplication extends Model
         'admin_notes',
         'reviewed_by',
         'reviewed_at',
+        'document_files',
+        'tenant_id'
     ];
 
     /**
@@ -44,7 +54,16 @@ class StudentApplication extends Model
      */
     protected $casts = [
         'reviewed_at' => 'datetime',
+        'document_files' => 'array'
     ];
+
+    /**
+     * Force tenant connection for this model
+     */
+    public function getConnectionName()
+    {
+        return 'tenant';
+    }
 
     /**
      * Get the student that owns the application.
