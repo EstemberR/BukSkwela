@@ -12,6 +12,15 @@
     @endphp
 @endif
 
+<!-- Debug to verify the error message is being set -->
+@if(session('error'))
+    <!-- Hidden debug info -->
+    <div style="display: none;" id="debug-info">
+        Error: "{{ session('error') }}"
+        Is target error: {{ session('error') == 'Invalid credentials for this tenant.' ? 'Yes' : 'No' }}
+    </div>
+@endif
+
 <div class="login-box">
     <div class="login-logo">
         <a href="#"><b>{{ tenant('id') }}</b></a>
@@ -29,7 +38,7 @@
             </div>
         @endif
 
-        @if(session('error'))
+        @if(session('error') && session('error') != 'Invalid credentials for this tenant.')
             <div class="alert alert-danger">
                 {{ session('error') }}
             </div>
@@ -72,7 +81,6 @@
                 </div>
             </div>
         </form>
-      
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -113,4 +121,51 @@
         }
     });
 </script>
+
+<!-- Ensure jQuery is loaded before showing modal -->
+@if(!isset($jQueryLoaded))
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+@endif
+
+<!-- Simple Error Modal -->
+@if(session('error') == 'Invalid credentials for this tenant.')
+<!-- Modal HTML structure -->
+<div class="modal fade" id="invalidCredentialsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Authentication Error</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="my-3">
+                    <i class="fas fa-exclamation-circle text-danger" style="font-size: 60px;"></i>
+                </div>
+                <p class="lead">Invalid credentials for this tenant.</p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Try Again</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script to explicitly show the modal -->
+<script>
+    // Wait for document ready and ensure jQuery is loaded
+    window.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            try {
+                $('#invalidCredentialsModal').modal('show');
+                console.log('Modal should be showing now');
+            } catch(err) {
+                console.error('Error showing modal:', err);
+            }
+        }, 500); // Small delay to ensure everything is loaded
+    });
+</script>
+@endif
+
 @endsection

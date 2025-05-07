@@ -45,6 +45,9 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\CreateTenant::class,
         \App\Console\Commands\MigrateTenantToSeparateDb::class,
         \App\Console\Commands\CheckTenantDatabase::class,
+        \App\Console\Commands\FixUserPassword::class,
+        \App\Console\Commands\InitializeUserSettings::class,
+        \App\Console\Commands\FixAllUserSettings::class,
     ];
 
     /**
@@ -75,6 +78,12 @@ class Kernel extends ConsoleKernel
             ->dailyAt('02:00')
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/tenant-verify.log'));
+            
+        // Make sure all users have settings
+        $schedule->command('user:fix-all-settings')
+            ->dailyAt('03:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/user-settings.log'));
     }
 
     /**
@@ -94,9 +103,10 @@ class Kernel extends ConsoleKernel
      */
     private function registerTenancyListeners()
     {
-        // When a tenant is created, create the required tables in the tenant database
-        Event::listen(TenantCreated::class, function (TenantCreated $event) {
-            Artisan::call('tenants:create-student-info-table', [
+        // Use the application's event dispatcher instead of the facade
+        $this->app->make('events')->listen(TenantCreated::class, function (TenantCreated $event) {
+            // Use the application's artisan instance instead of the facade
+            $this->app->make('Illuminate\Contracts\Console\Kernel')->call('tenants:create-student-info-table', [
                 'tenant_id' => $event->tenant->id
             ]);
         });
@@ -111,6 +121,17 @@ class Kernel extends ConsoleKernel
     {
         parent::__construct($app, $events);
         
+        // Moving this back as we're now using dependency injection instead of facades
         $this->registerTenancyListeners();
+    }
+    
+    /**
+     * Bootstrap the application for artisan commands.
+     *
+     * @return void
+     */
+    public function bootstrap()
+    {
+        parent::bootstrap();
     }
 }

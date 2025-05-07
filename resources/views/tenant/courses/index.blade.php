@@ -27,7 +27,7 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">Courses</h5>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCourseModal">
-                Add Course
+                Enrollment Form
             </button>
         </div>
         <div class="card-body">
@@ -67,6 +67,7 @@
                         <tr>
                             <th class="fw-bold">Title</th>
                             <th class="fw-bold">Description</th>
+                            <th class="fw-bold">School Year</th>
                             <th class="fw-bold">Status</th>
                             <th class="fw-bold">Actions</th>
                         </tr>
@@ -76,6 +77,13 @@
                         <tr>
                             <td>{{ $course->name }}</td>
                             <td>{{ Str::limit($course->description, 50) }}</td>
+                            <td>
+                                @if($course->school_year_start && $course->school_year_end)
+                                    {{ $course->school_year_start }} - {{ $course->school_year_end }}
+                                @else
+                                    <span class="text-muted">Not set</span>
+                                @endif
+                            </td>
                             <td>
                                 <span class="badge bg-{{ $course->status === 'active' ? 'success' : 'warning' }}">
                                     {{ ucfirst($course->status) }}
@@ -131,6 +139,23 @@
                         <label class="form-label">Description</label>
                         <textarea class="form-control" name="description" rows="3"></textarea>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">School Year (SY)</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <span class="input-group-text">Start</span>
+                                    <input type="number" class="form-control" name="school_year_start" min="2000" max="2100" placeholder="e.g., 2023">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <span class="input-group-text">End</span>
+                                    <input type="number" class="form-control" name="school_year_end" min="2000" max="2100" placeholder="e.g., 2024">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -160,6 +185,23 @@
                     <div class="mb-3">
                         <label class="form-label">Description</label>
                         <textarea class="form-control" name="description" rows="3">{{ $course->description }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">School Year (SY)</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <span class="input-group-text">Start</span>
+                                    <input type="number" class="form-control" name="school_year_start" min="2000" max="2100" value="{{ $course->school_year_start }}" placeholder="e.g., 2023">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <span class="input-group-text">End</span>
+                                    <input type="number" class="form-control" name="school_year_end" min="2000" max="2100" value="{{ $course->school_year_end }}" placeholder="e.g., 2024">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Status</label>

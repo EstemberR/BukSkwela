@@ -63,6 +63,8 @@ class CourseController extends Controller
             $request->validate([
                 'name' => 'required|string|max:255',
                 'description' => 'nullable|string',
+                'school_year_start' => 'nullable|numeric|min:2000|max:2100',
+                'school_year_end' => 'nullable|numeric|min:2000|max:2100|gte:school_year_start',
             ]);
 
             // Generate a course code from the name
@@ -72,7 +74,8 @@ class CourseController extends Controller
             \Log::info('Creating new course', [
                 'name' => $request->name,
                 'code' => $code,
-                'tenant_id' => tenant('id')
+                'tenant_id' => tenant('id'),
+                'school_year' => $request->school_year_start . '-' . $request->school_year_end
             ]);
 
             // Create with explicit connection
@@ -82,6 +85,8 @@ class CourseController extends Controller
             $course->code = $code;
             $course->description = $request->description;
             $course->status = 'active';
+            $course->school_year_start = $request->school_year_start;
+            $course->school_year_end = $request->school_year_end;
             $course->save();
             
             // Log successful creation
@@ -136,13 +141,17 @@ class CourseController extends Controller
             $request->validate([
                 'name' => 'required|string|max:255',
                 'description' => 'nullable|string',
-                'status' => 'required|in:active,inactive'
+                'status' => 'required|in:active,inactive',
+                'school_year_start' => 'nullable|numeric|min:2000|max:2100',
+                'school_year_end' => 'nullable|numeric|min:2000|max:2100|gte:school_year_start',
             ]);
 
             $updateData = [
                 'name' => $request->name,
                 'description' => $request->description,
-                'status' => $request->status
+                'status' => $request->status,
+                'school_year_start' => $request->school_year_start,
+                'school_year_end' => $request->school_year_end
             ];
 
             // Log update attempt

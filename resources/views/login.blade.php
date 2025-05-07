@@ -13,6 +13,22 @@
     <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom Login CSS -->
     <link href="{{ asset('assets/css/pages/login.css') }}" rel="stylesheet">
+    
+    <style>
+        /* Custom style to adjust icon position */
+        .input-icon-wrapper {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 4;
+        }
+        
+        /* Adjust padding for input fields to account for icon */
+        .form-control {
+            padding-left: 40px;
+        }
+    </style>
 </head>
 
 <body>
@@ -25,8 +41,9 @@
                 </div>
 
                 <h4 class="mb-2">Welcome back!</h4>
-                <p class="text-muted mb-4">Log in to continue to your workspace</p>
+                <p class="text-muted mb-4"><span class="text-white">Log in</span> to continue to your workspace</p>
 
+                <!-- Remove the inline alert and only use modal -->
                 @if(session('error'))
                     <div class="alert alert-danger">
                         {{ session('error') }}
@@ -44,7 +61,7 @@
                     <div class="form-group">
                         <label>Email</label>
                         <div class="position-relative">
-                            <div class="input-icon-wrapper">
+                            <div class="input-icon-wrapper" style="margin-top: -8px; left: 12px;">
                                 <i class="fas fa-envelope input-icon"></i>
                             </div>
                             <input type="email" class="form-control" name="email" 
@@ -56,7 +73,7 @@
                     <div class="form-group">
                         <label>Password</label>
                         <div class="position-relative">
-                            <div class="input-icon-wrapper">
+                            <div class="input-icon-wrapper" style="margin-top: 2px; left: 12px;">
                                 <i class="fas fa-lock input-icon"></i>
                             </div>
                             <input type="password" class="form-control" name="password" 
@@ -75,7 +92,7 @@
 
                     <div class="mt-4">
                         <button type="submit" class="btn btn-block btn-primary btn-lg auth-form-btn">
-                            Login
+                            <span class="text-white">Login</span>
                         </button>
 
                         <div class="text-center mt-3">
@@ -95,6 +112,31 @@
                 <h2>Welcome to BukSkwela!</h2>
                 <p class="lead">Less paper, less hassle—manage documents with ease, whether you're a student or instructor.</p>
                 <p class="subtext">Sign in and take control of your documents today!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change the modal to not show by default -->
+    <div class="modal fade" id="errorModal" tabindex="-1" role="dialog" aria-labelledby="errorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header border-0">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center">
+                    <div style="font-size: 50px; color: #dc3545; margin-bottom: 20px;">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div style="font-size: 24px; font-weight: 600; color: #001c38; margin-bottom: 15px;">Authorization Error</div>
+                    <div style="font-size: 18px; color: #6c757d; margin-bottom: 20px;">
+                        You are not authorized to login through the central system. Please use your tenant subdomain.
+                    </div>
+                </div>
+                <div class="modal-footer border-0 justify-content-center">
+                    <a href="{{ url('/') }}" class="btn btn-primary" style="color: white;">Return to Home</a>
+                </div>
             </div>
         </div>
     </div>
@@ -131,6 +173,28 @@
                 }
                 // Otherwise, let it submit to the default admin login
             });
+            
+            // Configure the error modal to be static but only show when validation fails
+            $('#errorModal').modal({
+                backdrop: 'static',
+                keyboard: false,
+                show: false // Don't show by default
+            });
+            
+            // Show the modal only if there's an unauthorized error flag in the session
+            @if(session('unauthorized_tenant_error'))
+                $('#errorModal').modal('show');
+            @endif
+
+            @if(session('invalid_credentials'))
+                $(document).ready(function() {
+                    $('#invalidCredentialsModal').modal({
+                        backdrop: 'static',
+                        keyboard: false
+                    });
+                    $('#invalidCredentialsModal').modal('show');
+                });
+            @endif
         });
     </script>
 </body>

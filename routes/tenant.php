@@ -33,6 +33,9 @@ Route::middleware(['web'])
             ->name('tenant.login.post');
         Route::post('/logout', [LoginController::class, 'logout'])
             ->name('tenant.logout');
+        Route::get('/logout', function() {
+            return view('tenant.auth.logout');
+        })->name('tenant.logout.confirm');
         Route::get('/status', [App\Http\Controllers\Auth\TenantStatusController::class, 'checkStatus'])
             ->name('tenant.status');
     });

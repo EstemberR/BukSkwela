@@ -92,19 +92,79 @@ class ProfileController extends Controller
                 ->with('error', 'User not found');
         }
 
+        // Only validate new password and confirmation
         $request->validate([
-            'current_password' => 'required',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
-        if (!Hash::check($request->current_password, $user->password)) {
-            throw ValidationException::withMessages([
-                'current_password' => ['The provided password does not match your current password.'],
+        // No need to check current password
+
+        // Hash the new password
+        $hashedPassword = Hash::make($request->password);
+
+        // Set the new password and save in TenantAdmin
+        $user->password = $hashedPassword;
+        $user->save();
+        
+        // Ensure the tenant_user_credentials table exists
+        try {
+            // Create the table if it doesn't exist
+            DB::connection('tenant')->statement('
+                CREATE TABLE IF NOT EXISTS tenant_user_credentials (
+                    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, 
+                    email VARCHAR(255), 
+                    password VARCHAR(255), 
+                    tenant_id VARCHAR(255), 
+                    tenant_admin_id BIGINT UNSIGNED, 
+                    remember_token VARCHAR(100) NULL, 
+                    created_at TIMESTAMP NULL, 
+                    updated_at TIMESTAMP NULL
+                )
+            ');
+            
+            // Check if credential exists
+            $credentialExists = DB::connection('tenant')
+                ->table('tenant_user_credentials')
+                ->where('tenant_admin_id', $user->id)
+                ->exists();
+            
+            if ($credentialExists) {
+                // Update existing credential
+                DB::connection('tenant')
+                    ->table('tenant_user_credentials')
+                    ->where('tenant_admin_id', $user->id)
+                    ->update([
+                        'password' => $hashedPassword,
+                        'updated_at' => now()
+                    ]);
+            } else {
+                // Insert new credential
+                DB::connection('tenant')
+                    ->table('tenant_user_credentials')
+                    ->insert([
+                        'email' => $user->email,
+                        'password' => $hashedPassword,
+                        'tenant_id' => tenant('id'),
+                        'tenant_admin_id' => $user->id,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+            }
+            
+            // Log success
+            \Illuminate\Support\Facades\Log::info('Password updated successfully for user', [
+                'user_id' => $user->id,
+                'tenant_id' => tenant('id')
+            ]);
+            
+        } catch (\Exception $e) {
+            // Log error but continue
+            \Illuminate\Support\Facades\Log::error('Error updating password in tenant_user_credentials: ' . $e->getMessage(), [
+                'exception' => $e,
+                'user_id' => $user->id,
+                'tenant_id' => tenant('id')
             ]);
         }
-
-        $user->password = Hash::make($request->password);
-        $user->save();
 
         return redirect()->route('profile.index', ['tenant' => tenant('id')])
             ->with('success', 'Password updated successfully');

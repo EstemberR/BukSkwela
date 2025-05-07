@@ -3781,7 +3781,21 @@
             document.body.appendChild(form);
             form.submit();
             @else
-            window.location.href = '{{ route("tenant.logout") }}';
+            // For admins and other users, create a form to POST to the logout route
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route("tenant.logout") }}';
+            form.style.display = 'none';
+            
+            // Add CSRF token
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = '_token';
+            csrfToken.value = '{{ csrf_token() }}';
+            form.appendChild(csrfToken);
+            
+            document.body.appendChild(form);
+            form.submit();
             @endif
             return false; // Prevent default link behavior
         }
