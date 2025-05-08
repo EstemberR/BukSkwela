@@ -1,0 +1,454 @@
+.container-scroller {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 2rem 0;
+}
+
+.auth-form-light {
+    padding: 3rem 2.5rem !important;
+    max-width: 500px;
+    background: none;
+    box-shadow: none;
+    width: 100%;
+    margin: 0 auto;
+    padding-left: 2.5rem !important;
+    padding-right: 2.5rem !important;
+}
+
+.brand-logo {
+    text-align: left;
+    margin-bottom: 0.75rem;
+}
+
+.brand-logo a {
+    font-size: 1.75rem;
+    text-decoration: none;
+    color: #001c38;
+    font-weight: 700;
+}
+
+.welcome-section {
+    padding: 3rem;
+    color: #fff;
+    background: linear-gradient(45deg, #001c38, #002b57);
+    border-radius: 16px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 28, 56, 0.15);
+}
+
+.welcome-section h2 {
+    font-size: 2.8rem;
+    margin-bottom: 1.8rem;
+    font-weight: 600;
+}
+
+.feature-list {
+    max-width: 80%;
+    margin: 0 auto;
+    list-style: none;
+    padding: 0;
+    max-width: 500px;
+    margin: 2rem auto 0;
+}
+
+.feature-list li {
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.15rem;
+    justify-content: flex-start;
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 400;
+}
+
+.feature-list li i {
+    margin-right: 10px;
+    color: #ffbd59 !important;
+    margin-right: 12px;
+    color: #4CAF50;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #2D2D2D;
+    font-family: 'Work Sans', sans-serif;
+}
+
+.form-control {
+    height: 50px;
+    font-size: 1rem;
+    border-radius: 8px;
+    padding: 0.94rem 1.375rem;
+    padding-left: 3rem;
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+    border: 1px solid #d0d7de;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.08);
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 400;
+}
+
+.form-control:focus {
+    border-color: #001c38;
+    box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
+    background-color: #ffffff;
+}
+
+.input-group {
+    display: flex;
+    flex-wrap: nowrap;
+}
+
+.input-group .form-control {
+    height: 50px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+}
+
+.input-group-append {
+    display: flex;
+    margin-left: -1px;
+}
+
+.input-group-text {
+    height: 50px;
+    padding: 0.94rem 1.375rem;
+    font-size: 1rem;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    background: #e6eef7;
+    border: 1px solid #c0d0e8;
+    border-left: none;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 400;
+}
+
+.input-icon-wrapper {
+    position: absolute;
+    left: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 4;
+}
+
+.input-icon {
+    color: #495057;
+    font-size: 1.25rem;
+}
+
+.auth-form-btn {
+    padding: 1rem 3rem;
+    font-size: 1rem;
+    font-weight: 500;
+    height: 50px;
+    border-radius: 6px;
+    background: #001c38;
+    border: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 28, 56, 0.2);
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+}
+
+.auth-form-btn:hover {
+    background: #002b57;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 28, 56, 0.3);
+}
+
+.subdomain-info {
+    cursor: help;
+    color: #001c38;
+}
+
+.position-relative {
+    position: relative;
+}
+
+.flex-grow-1 {
+    flex: 1;
+}
+
+.form-header-logo {
+    text-align: center;
+    margin-bottom: 0.75rem;
+}
+
+.form-header-logo img {
+    height: 60px;
+    width: auto;
+    object-fit: contain;
+}
+
+h4.mb-2 {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem !important;
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+    color: #001c38;
+}
+
+p.text-muted.mb-4 {
+    margin-bottom: 2rem !important;
+}
+
+.mt-4 {
+    margin-top: 1.5rem !important;
+}
+
+small.text-muted {
+    font-size: 0.875rem;
+}
+
+.split-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.form-side {
+    flex: 45;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: #f0f7ff;
+}
+
+.image-side {
+    flex: 55;
+    background-image: url('/assets/images/buksu.jpg');
+    background-size: cover;
+    background-position: center right;
+    position: relative;
+}
+
+.image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(0, 28, 56, 0.95),
+        rgba(0, 44, 82, 0.92)
+    );
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 8rem 4rem 4rem;
+    color: white;
+    text-align: center;
+}
+
+.image-overlay h2 {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 700;
+    font-size: 3.2rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.image-overlay p.lead {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 400;
+    font-size: 1.25rem;
+    max-width: 600px;
+    margin: 0 auto 2.5rem;
+    text-align: center;
+    line-height: 1.6;
+}
+
+.login-link {
+    color: #007bff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.login-link:hover {
+    color: #002b57;
+    text-decoration: underline;
+}
+
+/* Base font for everything */
+* {
+    font-family: 'Work Sans', sans-serif;
+}
+
+/* Specific font weights for different elements */
+body {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+small {
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 400;
+}
+
+/* Subscription Options */
+.subscription-options {
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.subscription-option {
+    padding: 0;
+    margin: 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.subscription-option:last-child {
+    border-bottom: none;
+}
+
+.subscription-option .form-check-input {
+    margin-top: 0;
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.subscription-option .form-check-label {
+    display: flex;
+    flex-direction: column;
+    padding: 15px 15px 15px 50px;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.subscription-option .form-check-input:checked + .form-check-label {
+    background-color: #e6f3fe;
+}
+
+.subscription-option .plan-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #001c38;
+}
+
+.subscription-option .plan-price {
+    font-weight: 600;
+    color: #001c38;
+}
+
+.subscription-option .plan-features {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+/* Pricing Card Styles */
+.pricing-card {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+.pricing-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+}
+
+.pricing-card.border-primary {
+    border-color: #001c38 !important;
+    transform: translateY(-5px);
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+}
+
+.pricing-card .card-header {
+    border-bottom: 0;
+    position: relative;
+    overflow: hidden;
+    padding-top: 1.25rem;
+    padding-bottom: 1.25rem;
+}
+
+.pricing-card .card-header .badge {
+    position: absolute;
+    top: 10px;
+    right: -28px;
+    transform: rotate(45deg);
+    padding: 5px 40px;
+    font-size: 0.8rem;
+}
+
+.pricing-card .card-title {
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+.pricing-card ul li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.pricing-card ul li:last-child {
+    border-bottom: 0;
+}
+
+.pricing-card .btn {
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+@media (max-width: 991.98px) {
+    .welcome-section {
+        margin-bottom: 2rem;
+        padding: 2rem;
+    }
+    
+    .auth-form-light {
+        padding: 2rem !important;
+    }
+    
+    .split-layout {
+        flex-direction: column;
+    }
+    
+    .form-side, .image-side {
+        flex: 100;
+    }
+    
+    .image-side {
+        min-height: 400px;
+    }
+    
+    .image-overlay {
+        padding: 3rem 2rem;
+    }
+    
+    .image-overlay h2 {
+        font-size: 2.5rem;
+    }
+    
+    .image-overlay p.lead {
+        font-size: 1.15rem;
+    }
+}

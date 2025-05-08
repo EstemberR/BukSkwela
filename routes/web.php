@@ -1,0 +1,275 @@
+<?php
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider within a group which
+| contains the "web" middleware group. Now create something great!
+|
+*/
+
+use App\Http\Controllers\Controller;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\TenantRegistrationController;
+use App\Http\Controllers\Requirements\RequirementsController;
+use App\Http\Controllers\Requirement\RequirementController;
+use Illuminate\Support\Facades\Route;
+use Google\Client;
+use App\Http\Controllers\SuperAdmin\PaymentController;
+use Illuminate\Support\Facades\Auth;
+
+// Central domain routes
+Route::middleware(['web'])
+    ->withoutMiddleware(['tenant'])
+    ->group(function () {
+        Route::get('/', function () {
+            return view('welcome');
+        });
+
+        // Admin login on central domain
+        Route::get('/login', [LoginController::class, 'showLoginForm'])
+            ->name('login');
+        Route::post('/login', [LoginController::class, 'login'])
+            ->name('login.post')
+            ->middleware(['tenant.disabled']);
+        Route::post('/logout', [LoginController::class, 'logout'])
+            ->name('logout');
+
+        // Tenant registration routes
+        Route::get('/register', [Controller::class, 'register'])->name('register');
+        Route::post('/register', [Controller::class, 'registerSave'])->name('register.save');
+        Route::get('/register/success', [Controller::class, 'registerSuccess'])->name('register.success');
+        
+        // Test email route (remove in production)
+        Route::get('/test-email', [Controller::class, 'testEmail'])->name('test.email');
+
+        // Student Requirements Route
+        Route::get('/requirements', [RequirementController::class, 'showStudentRequirements'])
+            ->name('student.requirements')
+            ->middleware(['auth', 'role:student']);
+
+        // Google OAuth routes
+        Route::get('/auth/google', function () {
+            $client = new Client();
+            $client->setClientId(config('services.google.client_id'));
+            $client->setClientSecret(config('services.google.client_secret'));
+            $client->setRedirectUri(config('services.google.redirect_uri'));
+            $client->setAccessType('offline');
+            $client->setPrompt('consent');
+            $client->setScopes([
+                'https://www.googleapis.com/auth/drive',
+                'https://www.googleapis.com/auth/drive.file',
+                'https://www.googleapis.com/auth/drive.metadata'
+            ]);
+            
+            return redirect($client->createAuthUrl());
+        })->name('google.auth');
+
+        Route::get('/auth/google/callback', function () {
+            $client = new Client();
+            $client->setClientId(config('services.google.client_id'));
+            $client->setClientSecret(config('services.google.client_secret'));
+            $client->setRedirectUri(config('services.google.redirect_uri'));
+            
+            $token = $client->fetchAccessTokenWithAuthCode(request('code'));
+            
+            if (isset($token['refresh_token'])) {
+                return 'Your refresh token is: ' . $token['refresh_token'] . 
+                       '<br>Add this to your .env file as GOOGLE_DRIVE_REFRESH_TOKEN';
+            }
+            
+            return 'No refresh token was received. Please try again and make sure you revoke the application access in your Google Account settings first.';
+        })->name('google.callback');
+    });
+
+    Route::prefix('superadmin')->middleware(['auth', 'superadmin'])->group(function () {
+        Route::get('/dashboard', [App\Http\Controllers\SuperAdmin\DashboardController::class, 'index'])->name('superadmin.dashboard');
+        Route::post('/logout', [LoginController::class, 'logout'])->name('superadmin.logout');
+    });
+
+    // Super Admin Routes
+    Route::prefix('superadmin')->name('superadmin.')->middleware(['auth', 'superadmin'])->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [App\Http\Controllers\SuperAdmin\DashboardController::class, 'index'])->name('dashboard');
+
+        // Tenants Management
+        Route::prefix('tenants')->name('tenants.')->group(function () {
+            Route::get('/', [App\Http\Controllers\SuperAdmin\TenantsController::class, 'index'])->name('index');
+            Route::get('/{id}', [App\Http\Controllers\SuperAdmin\TenantsController::class, 'show'])->name('show');
+            Route::post('/{id}/approve', [App\Http\Controllers\SuperAdmin\TenantsController::class, 'approve'])->name('approve');
+            Route::post('/{id}/reject', [App\Http\Controllers\SuperAdmin\TenantsController::class, 'reject'])->name('reject');
+            Route::post('/{id}/disable', [App\Http\Controllers\SuperAdmin\TenantsController::class, 'disable'])->name('disable');
+            Route::post('/{id}/deny', [App\Http\Controllers\SuperAdmin\TenantsController::class, 'deny'])->name('deny');
+            Route::post('/{id}/enable', [App\Http\Controllers\SuperAdmin\TenantsController::class, 'enable'])->name('enable');
+            Route::post('/{id}/downgrade', [App\Http\Controllers\SuperAdmin\TenantsController::class, 'downgradePlan'])->name('downgrade');
+            Route::post('/{id}/update-subscription', [App\Http\Controllers\SuperAdmin\TenantsController::class, 'updateSubscription'])->name('update-subscription');
+        });
+
+        // Payments Management
+        Route::prefix('payments')->name('payments.')->group(function () {
+            Route::get('/', [App\Http\Controllers\SuperAdmin\PaymentController::class, 'index'])->name('index');
+            Route::get('/export', [App\Http\Controllers\SuperAdmin\PaymentController::class, 'export'])->name('export');
+            Route::get('/{payment}', [App\Http\Controllers\SuperAdmin\PaymentController::class, 'show'])->name('show');
+            Route::post('/{payment}/mark-paid', [App\Http\Controllers\SuperAdmin\PaymentController::class, 'markAsPaid'])->name('mark-paid');
+            Route::put('/upgrades/{id}/approve', [App\Http\Controllers\SuperAdmin\PaymentController::class, 'approveUpgrade'])->name('approve-upgrade');
+        });
+
+        // Account Settings
+        Route::prefix('account')->name('account.')->group(function () {
+            Route::get('/settings', [App\Http\Controllers\SuperAdmin\AccountController::class, 'settings'])->name('settings');
+            Route::put('/update-profile', [App\Http\Controllers\SuperAdmin\AccountController::class, 'updateProfile'])->name('update-profile');
+            Route::put('/change-password', [App\Http\Controllers\SuperAdmin\AccountController::class, 'changePassword'])->name('change-password');
+            Route::post('/logout', [App\Http\Controllers\SuperAdmin\AccountController::class, 'logout'])->name('logout');
+        });
+
+        // Payment Management Routes
+        Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
+        Route::get('/payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
+        Route::put('/payments/{payment}/mark-as-paid', [PaymentController::class, 'markAsPaid'])->name('payments.mark-as-paid');
+    });
+
+    // Tenant Routes
+    Route::middleware(['web', 'tenant'])
+        ->group(function () {
+            // Main dashboard route
+            Route::get('/dashboard', [App\Http\Controllers\Tenant\DashboardController::class, 'index'])
+                ->name('tenant.dashboard')
+                ->middleware('auth:admin');
+
+            // Instructor Routes - specific for instructors 
+            Route::prefix('instructor')->middleware(['auth:staff'])->group(function () {
+                Route::get('/', [App\Http\Controllers\Tenant\InstructorController::class, 'dashboard'])
+                    ->name('tenant.instructor.dashboard');
+                
+                // Add other instructor-specific routes here
+                Route::get('/profile', [App\Http\Controllers\Tenant\ProfileController::class, 'instructorProfile'])
+                    ->name('tenant.instructor.profile');
+                    
+                // Instructor profile update routes
+                Route::put('/profile/update', [App\Http\Controllers\Tenant\ProfileController::class, 'instructorProfileUpdate'])
+                    ->name('tenant.instructor.profile.update');
+                Route::put('/profile/password', [App\Http\Controllers\Tenant\ProfileController::class, 'instructorPasswordUpdate'])
+                    ->name('tenant.instructor.password.update');
+                    
+                // Instructor requirements routes
+                Route::prefix('requirements')->name('tenant.instructor.requirements.')->group(function () {
+                    Route::get('/', [App\Http\Controllers\Requirements\RequirementsController::class, 'index'])->name('index');
+                    Route::get('/folder/{folderId?}', [App\Http\Controllers\Requirements\RequirementsController::class, 'listFolderContents'])->name('folder.contents');
+                    Route::post('/folder/create', [App\Http\Controllers\Requirements\RequirementsController::class, 'createFolder'])->name('folder.create');
+                    Route::post('/folder/{folderId}/rename', [App\Http\Controllers\Requirements\RequirementsController::class, 'renameFolder'])->name('folder.rename');
+                    Route::post('/folder/{folderId}/delete', [App\Http\Controllers\Requirements\RequirementsController::class, 'deleteFolder'])->name('folder.delete');
+                    Route::post('/folder/{folderId}/upload', [App\Http\Controllers\Requirements\RequirementsController::class, 'uploadFile'])->name('folder.upload');
+                    Route::post('/file/{fileId}/delete', [App\Http\Controllers\Requirements\RequirementsController::class, 'deleteFile'])->name('file.delete');
+                });
+                
+                // Enrollment approval routes
+                Route::get('/enrollment-approval', function () {
+                    return view('tenant.Instructors.EnrollmentApproval');
+                })->name('tenant.instructor.enrollment.approval');
+                
+                // API routes for enrollment approval functionality
+                Route::get('/api/programs', [App\Http\Controllers\Tenant\InstructorController::class, 'getPrograms'])
+                    ->name('tenant.instructor.programs');
+                Route::get('/api/enrollment/applications', [App\Http\Controllers\Tenant\InstructorController::class, 'getApplications'])
+                    ->name('tenant.instructor.enrollment.applications');
+                Route::get('/api/enrollment/application/{id}', [App\Http\Controllers\Tenant\InstructorController::class, 'getApplication'])
+                    ->name('tenant.instructor.enrollment.application');
+                Route::post('/api/enrollment/application/{id}/update-status', [App\Http\Controllers\Tenant\InstructorController::class, 'updateApplicationStatus'])
+                    ->name('tenant.instructor.enrollment.update-status');
+                
+                // Staff logout route
+                Route::post('/logout', function() {
+                    Auth::guard('staff')->logout();
+                    return redirect(request('redirect', '/login'));
+                })->name('tenant.staff.logout');
+            });
+            
+            // Staff controller routes
+            Route::resource('staff', App\Http\Controllers\Staff\StaffController::class)
+                ->names([
+                    'index' => 'tenant.staff.index',
+                    'create' => 'tenant.staff.create',
+                    'store' => 'tenant.staff.store',
+                    'show' => 'tenant.staff.show',
+                    'edit' => 'tenant.staff.edit',
+                    'update' => 'tenant.staff.update',
+                    'destroy' => 'tenant.staff.destroy',
+                ])->middleware('auth:admin');
+
+            // Profile Routes
+            Route::prefix('profile')->middleware(['auth:admin'])->group(function () {
+                Route::get('/', [App\Http\Controllers\Tenant\ProfileController::class, 'index'])->name('profile.index');
+                Route::put('/update', [App\Http\Controllers\Tenant\ProfileController::class, 'update'])->name('profile.update');
+                Route::put('/password', [App\Http\Controllers\Tenant\ProfileController::class, 'updatePassword'])->name('profile.password');
+            });
+
+            // Subscription Routes
+            Route::prefix('subscription')->middleware(['auth:admin'])->group(function () {
+                Route::post('/upgrade', [App\Http\Controllers\Tenant\SubscriptionController::class, 'upgrade'])->name('tenant.subscription.upgrade');
+            });
+
+            // Requirements Routes
+            Route::prefix('admin/requirements')->name('tenant.admin.requirements.')->group(function () {
+                Route::get('/', [App\Http\Controllers\Requirements\RequirementsController::class, 'index'])->name('index');
+                Route::get('/folder/{folderId?}', [App\Http\Controllers\Requirements\RequirementsController::class, 'listFolderContents'])->name('folder.contents');
+                Route::post('/folder/create', [App\Http\Controllers\Requirements\RequirementsController::class, 'createFolder'])->name('folder.create');
+                Route::post('/file/upload', [App\Http\Controllers\Requirements\RequirementsController::class, 'uploadFile'])->name('file.upload');
+                Route::delete('/file/{fileId}', [App\Http\Controllers\Requirements\RequirementsController::class, 'deleteFile'])->name('files.delete');
+            });
+
+            // Reports Routes
+            Route::prefix('reports')->name('tenant.reports.')->group(function () {
+                Route::get('/students', [App\Http\Controllers\Reports\ReportsController::class, 'students'])->name('students');
+                Route::get('/staff', [App\Http\Controllers\Reports\ReportsController::class, 'staff'])->name('staff');
+                Route::get('/courses', [App\Http\Controllers\Reports\ReportsController::class, 'courses'])->name('courses');
+                Route::get('/requirements', [App\Http\Controllers\Reports\ReportsController::class, 'requirements'])->name('requirements');
+                
+                // PDF Download Routes
+                Route::get('/students/pdf', [App\Http\Controllers\Reports\ReportsPdfController::class, 'downloadStudentsPdf'])->name('students.pdf');
+                Route::get('/staff/pdf', [App\Http\Controllers\Reports\ReportsPdfController::class, 'downloadStaffPdf'])->name('staff.pdf');
+                Route::get('/courses/pdf', [App\Http\Controllers\Reports\ReportsPdfController::class, 'downloadCoursesPdf'])->name('courses.pdf');
+            });
+        });
+
+    // Super Admin - Tenant Data Management
+    Route::middleware(['auth', 'superadmin'])->prefix('super-admin')->name('super-admin.')->group(function () {
+        Route::get('/tenant-data', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'index'])->name('tenant-data.index');
+        Route::get('/tenant-data/run-migration', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'runMigration'])->name('tenant-data.run-migration');
+        Route::get('/tenant-data/run-batched-migration', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'runBatchedMigration'])->name('tenant-data.run-batched-migration');
+        Route::get('/tenant-data/auto-setup', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'autoSetupDatabases'])->name('tenant-data.auto-setup');
+        Route::get('/tenant-data/auto-migrate', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'autoMigrateAllDatabases'])->name('tenant-data.auto-migrate');
+        Route::get('/tenant-data/{tenant}/check-database', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'checkDatabase'])->name('tenant-data.check-database');
+        Route::get('/tenant-data/{tenant}/manage-database', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'manageTenantDatabase'])->name('tenant-data.manage-database');
+        Route::post('/tenant-data/{tenant}/database-action', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'runDatabaseAction'])->name('tenant-data.database-action');
+        Route::get('/tenant-data/{tenant}', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'viewTenantData'])->name('tenant-data.view');
+        Route::get('/tenant-data/{tenant}/{table}', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'viewTableData'])->name('tenant-data.table');
+        Route::get('/tenant-data/{tenant}/{table}/{id}/edit', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'editRecord'])->name('tenant-data.edit');
+        Route::put('/tenant-data/{tenant}/{table}/{id}', [App\Http\Controllers\SuperAdmin\TenantDataController::class, 'updateRecord'])->name('tenant-data.update');
+        
+        // System Check Routes
+        Route::get('/system-check/mysql', [App\Http\Controllers\SuperAdmin\SystemCheckController::class, 'checkMySQLConnections'])->name('system-check.mysql');
+        Route::get('/system-check/mysql-ajax', [App\Http\Controllers\SuperAdmin\SystemCheckController::class, 'ajaxCheckMySQLStatus'])->name('system-check.mysql-ajax');
+    });
+
+    // Student routes
+    Route::middleware(['web', 'tenant.student'])
+        ->prefix('student')
+        ->group(function () {
+            // Student auth routes
+            Route::get('/login', [App\Http\Controllers\Student\StudentAuthController::class, 'showLoginForm'])
+                ->name('student.login');
+            Route::post('/login', [App\Http\Controllers\Student\StudentAuthController::class, 'login'])
+                ->name('student.login.post');
+            Route::post('/logout', [App\Http\Controllers\Student\StudentAuthController::class, 'logout'])
+                ->name('student.logout');
+            
+            // Protected student routes - note tenant.student middleware runs first
+            Route::middleware(['auth:student'])->group(function () {
+                Route::get('/dashboard', function () {
+                    return view('tenant.students.dashboard');
+                })->name('student.dashboard');
+            });
+        });
