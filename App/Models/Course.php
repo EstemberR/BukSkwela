@@ -18,7 +18,11 @@ class Course extends Model
         'description',
         'instructor_id',
         'credits',
-        'status'
+        'status',
+        'title',
+        'tenant_id',
+        'school_year_start',
+        'school_year_end'
     ];
 
     /**

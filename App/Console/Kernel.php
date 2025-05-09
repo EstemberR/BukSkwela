@@ -47,6 +47,7 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\CheckTenantDatabase::class,
         \App\Console\Commands\AddSchoolYearColumnsToCourses::class,
         \App\Console\Commands\FixInstructorLogin::class,
+        \App\Console\Commands\MigrateTenantStudentApplications::class,
     ];
 
     /**

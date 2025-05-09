@@ -20,6 +20,11 @@ use Illuminate\Support\Facades\Route;
 use Google\Client;
 use App\Http\Controllers\SuperAdmin\PaymentController;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\SampleController;
+
+
+
+Route::get('/test', [App\Http\Controllers\Auth\SampleController::class, 'index']);
 
 // Central domain routes
 Route::middleware(['web'])

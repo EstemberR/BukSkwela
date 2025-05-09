@@ -1232,7 +1232,7 @@
                         document.getElementById('no-data-alert').classList.add('d-none');
                         showNotification('success', 'Profile data loaded successfully');
                     }
-                    
+                     
                     populateStudentData(data.student, data.information);
                     updateDebugInfo(data);
                 } else {

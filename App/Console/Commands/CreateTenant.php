@@ -93,6 +93,12 @@ class CreateTenant extends Command
             // Fix the courses table
             $this->call('tenant:fix-courses-table', ['tenant' => $tenantId]);
             
+            // Create student applications table
+            $this->call('tenant:migrate-student-applications', ['tenant' => $tenantId]);
+            
+            // Add school year columns to courses table
+            $this->call('tenant:add-school-year-columns', ['tenant' => $tenantId]);
+            
             $this->info("Tenant {$tenantId} created successfully with all database tables and relationships!");
             $this->info("You can access it at: http://{$tenantId}.localhost:8000");
             return 0;

@@ -147,6 +147,38 @@ class AutoMigrateTenantDatabases extends Command
                             $this->line(Artisan::output());
                             $this->info("Successfully migrated database: {$databaseName}");
                             $success++;
+                            
+                            // Run additional required setup commands
+                            $this->info("Running additional required setup for tenant: {$tenant->id}");
+                            
+                            try {
+                                // Create student_applications table
+                                $this->info("Creating student_applications table...");
+                                Artisan::call('tenant:migrate-student-applications', [
+                                    'tenant' => $tenant->id
+                                ]);
+                                $this->line(Artisan::output());
+                                
+                                // Fix courses table
+                                $this->info("Fixing courses table...");
+                                Artisan::call('tenant:fix-courses-table', [
+                                    'tenant' => $tenant->id
+                                ]);
+                                $this->line(Artisan::output());
+                                
+                                // Add school year columns
+                                $this->info("Adding school year columns...");
+                                Artisan::call('tenant:add-school-year-columns', [
+                                    'tenant' => $tenant->id
+                                ]);
+                                $this->line(Artisan::output());
+                                
+                                $this->info("Additional setup completed successfully for tenant: {$tenant->id}");
+                            } catch (\Exception $e) {
+                                $this->warn("Some additional setup failed for tenant {$tenant->id}: " . $e->getMessage());
+                                Log::warning("Additional setup failed for tenant {$tenant->id}: " . $e->getMessage());
+                                // We don't count this as a full failure since the main migration succeeded
+                            }
                         } catch (\Exception $e) {
                             $this->error("Error running migration for tenant {$tenant->id}: " . $e->getMessage());
                             Log::error("Error running migration for tenant {$tenant->id}: " . $e->getMessage());

@@ -3,7 +3,95 @@
 @section('title', 'Course Management')
 
 @section('content')
+<!-- Add SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+  // Define the showDeleteConfirmation function globally
+  function showDeleteConfirmation(courseId) {
+    Swal.fire({
+        title: 'Delete Course',
+        text: "Are you sure you want to delete this course? This action cannot be undone.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show the full screen loader
+            const fullScreenLoader = document.getElementById('fullScreenLoader');
+            if (fullScreenLoader) {
+                fullScreenLoader.classList.remove('d-none');
+            }
+            
+            // Create a fetch request to check for enrolled students first
+            const url = "{{ route('tenant.courses.delete.direct', ['tenant' => tenant('id'), 'id' => ':id']) }}".replace(':id', courseId);
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide the loader
+                if (fullScreenLoader) {
+                    fullScreenLoader.classList.add('d-none');
+                }
+                
+                if (data.success) {
+                    // Course was deleted successfully
+                    Swal.fire({
+                        title: 'Deleted!',
+                        text: 'The course has been deleted successfully.',
+                        icon: 'success'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    // Show the modal with the error message
+                    const errorMsgElement = document.getElementById('cannotDeleteMessage');
+                    if (errorMsgElement) {
+                        errorMsgElement.textContent = data.message;
+                    }
+                    
+                    try {
+                        const modalElement = document.getElementById('cannotDeleteCourseModal');
+                        if (modalElement) {
+                            const modal = new bootstrap.Modal(modalElement);
+                            modal.show();
+                        }
+                    } catch (error) {
+                        console.error('Error showing modal:', error);
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.message || 'An error occurred',
+                            icon: 'error'
+                        });
+                    }
+                }
+            })
+            .catch(error => {
+                // Hide the loader
+                if (fullScreenLoader) {
+                    fullScreenLoader.classList.add('d-none');
+                }
+                
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'An error occurred while deleting the course. Please try again.',
+                    icon: 'error'
+                });
+            });
+        }
+    });
+  }
+  
   // Global error handler to catch and log any JavaScript errors
   window.onerror = function(message, source, lineno, colno, error) {
     console.error('JavaScript Error:', message);
@@ -288,8 +376,6 @@
 </style>
 
 @push('scripts')
-<!-- Add SweetAlert2 -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <!-- Make sure Bootstrap JS is loaded properly -->
 <script>
 // Check if Bootstrap is available
@@ -327,78 +413,6 @@ function initializeModals() {
     });
 }
 
-function showDeleteConfirmation(courseId) {
-    Swal.fire({
-        title: 'Delete Course',
-        text: "Are you sure you want to delete this course? This action cannot be undone.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc3545',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Yes, delete',
-        cancelButtonText: 'Cancel'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Show the full screen loader
-            const fullScreenLoader = document.getElementById('fullScreenLoader');
-            fullScreenLoader.classList.remove('d-none');
-            
-            // Create a fetch request to check for enrolled students first
-            const url = "{{ route('tenant.courses.delete.direct', ['tenant' => tenant('id'), 'id' => ':id']) }}".replace(':id', courseId);
-            
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Hide the loader
-                fullScreenLoader.classList.add('d-none');
-                
-                if (data.success) {
-                    // Course was deleted successfully
-                    Swal.fire({
-                        title: 'Deleted!',
-                        text: 'The course has been deleted successfully.',
-                        icon: 'success'
-                    }).then(() => {
-                        window.location.reload();
-                    });
-                } else {
-                    // Show the modal with the error message
-                    document.getElementById('cannotDeleteMessage').textContent = data.message;
-                    try {
-                        const modal = new bootstrap.Modal(document.getElementById('cannotDeleteCourseModal'));
-                        modal.show();
-                    } catch (error) {
-                        console.error('Error showing modal:', error);
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data.message,
-                            icon: 'error'
-                        });
-                    }
-                }
-            })
-            .catch(error => {
-                // Hide the loader
-                fullScreenLoader.classList.add('d-none');
-                
-                console.error('Error:', error);
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'An error occurred while deleting the course. Please try again.',
-                    icon: 'error'
-                });
-            });
-        }
-    });
-}
-
 document.addEventListener('DOMContentLoaded', function() {
     // Search functionality
     const searchForm = document.getElementById('searchForm');
@@ -414,6 +428,64 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 300);
     });
     }
+    
+    // School year auto-fill functionality
+    const addCourseForm = document.querySelector('#addCourseForm');
+    if (addCourseForm) {
+        const startYearInput = addCourseForm.querySelector('[name="school_year_start"]');
+        const endYearInput = addCourseForm.querySelector('[name="school_year_end"]');
+        
+        if (startYearInput && endYearInput) {
+            startYearInput.addEventListener('change', function() {
+                if (this.value && !endYearInput.value) {
+                    // Auto-set end year to start year + 1
+                    endYearInput.value = parseInt(this.value) + 1;
+                }
+            });
+            
+            // Validate the years relationship before submission
+            addCourseForm.addEventListener('submit', function(e) {
+                const startYear = parseInt(startYearInput.value);
+                const endYear = parseInt(endYearInput.value);
+                
+                if (startYear && endYear && endYear < startYear) {
+                    e.preventDefault();
+                    alert('The end year must be equal to or greater than the start year.');
+                    endYearInput.value = startYear + 1;
+                    return false;
+                }
+            });
+        }
+    }
+    
+    // Apply the same for edit forms
+    const editForms = document.querySelectorAll('form[action*="courses.update"]');
+    editForms.forEach(function(form) {
+        const startYearInput = form.querySelector('[name="school_year_start"]');
+        const endYearInput = form.querySelector('[name="school_year_end"]');
+        
+        if (startYearInput && endYearInput) {
+            startYearInput.addEventListener('change', function() {
+                if (this.value && (!endYearInput.value || parseInt(endYearInput.value) < parseInt(this.value))) {
+                    // Auto-set end year to start year + 1
+                    endYearInput.value = parseInt(this.value) + 1;
+                }
+            });
+            
+            // Validate the years relationship before submission
+            form.addEventListener('submit', function(e) {
+                const startYear = parseInt(startYearInput.value);
+                const endYear = parseInt(endYearInput.value);
+                
+                if (startYear && endYear && endYear < startYear) {
+                    e.preventDefault();
+                    alert('The end year must be equal to or greater than the start year.');
+                    endYearInput.value = startYear + 1;
+                    return false;
+                }
+            });
+        }
+    });
     
     // Auto-dismiss success messages after 3 seconds
     const successAlerts = document.querySelectorAll('.alert-success');

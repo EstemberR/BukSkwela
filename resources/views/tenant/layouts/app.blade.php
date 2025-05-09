@@ -3591,11 +3591,31 @@
             color: #111827 !important;
         }
         @endif
+
+        /* Hide Premium/Ultimate badges on student enrollment page */
+        body.enrollment-page .premium-badge,
+        .tenant-student-enrollment .premium-badge {
+            display: none !important;
+        }
+        
+        /* Hide Premium/Ultimate badges when student is logged in and on enrollment page */
+        body:has(.tenant-student-enrollment) .premium-badge {
+            display: none !important;
+        }
     </style>
     @stack('styles')
 </head>
-<body class="{{ (isset($settings) && $settings->dark_mode && !(Auth::guard('staff')->check() && Auth::guard('staff')->user()->role === 'instructor')) ? 'dark-mode' : '' }} {{ request()->routeIs('tenant.reports.*') ? 'reports-page' : '' }}" 
+<body class="{{ (isset($settings) && $settings->dark_mode && !(Auth::guard('staff')->check() && Auth::guard('staff')->user()->role === 'instructor')) ? 'dark-mode' : '' }} {{ request()->routeIs('tenant.reports.*') ? 'reports-page' : '' }} {{ request()->routeIs('tenant.student.enrollment') ? 'enrollment-page' : '' }}{{ request()->is('*/instructor/*') ? ' instructor-page' : '' }}" 
       data-card-style="{{ isset($settings) && $settings->card_style ? $settings->card_style : 'square' }}">
+    
+    <!-- Hide premium badges on instructor pages -->
+    @if(Auth::guard('staff')->check() && Auth::guard('staff')->user()->role === 'instructor' || request()->is('*/instructor/*'))
+    <style>
+        .premium-badge {
+            display: none !important;
+        }
+    </style>
+    @endif
     
     @if(Auth::guard('staff')->check() && Auth::guard('staff')->user()->role === 'instructor')
     <script>
@@ -3717,19 +3737,19 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {{ request()->routeIs('tenant.reports.*') ? 'active' : '' }}" 
                            href="#"
-                           data-bs-toggle="{{ $isPremium || $isUltimate ? 'dropdown' : 'modal' }}" 
-                           data-bs-target="{{ $isPremium || $isUltimate ? '' : '#premiumFeaturesModal' }}"
+                           data-bs-toggle="{{ $isUltimate ? 'dropdown' : 'modal' }}" 
+                           data-bs-target="{{ $isUltimate ? '' : '#premiumFeaturesModal' }}"
                            aria-expanded="{{ request()->routeIs('tenant.reports.*') ? 'true' : 'false' }}">
                             <div class="nav-content">
                                 <i class="fas fa-chart-bar"></i>
                                 <span>Reports</span>
-                                @if(!$isPremium && !$isUltimate)
-                                    <i class="fas fa-crown text-warning ms-2" style="font-size: 0.75rem;"></i>
+                                @if(!$isUltimate)
+                                    <i class="fas fa-star text-warning ms-2" style="font-size: 0.75rem;"></i>
                                 @endif
                             </div>
                             <i class="fas fa-chevron-down dropdown-icon"></i>
                         </a>
-                        @if($isPremium || $isUltimate)
+                        @if($isUltimate)
                         <div class="dropdown-menu {{ request()->routeIs('tenant.reports.*') ? 'show' : '' }}">
                             <a class="dropdown-item {{ request()->routeIs('tenant.reports.students') || request()->routeIs('tenant.reports.students.*') ? 'active' : '' }}" 
                                href="{{ route('tenant.reports.students', ['tenant' => tenant('id')]) }}">
@@ -3757,22 +3777,26 @@
                             <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#premiumFeaturesModal">
                                 <i class="fas fa-user-graduate"></i>
                                 <span>Student Reports</span>
-                                <i class="fas fa-crown text-warning ms-2" style="font-size: 0.75rem;"></i>
+                                <i class="fas fa-star text-primary ms-2" style="font-size: 0.75rem;"></i>
+                                <span class="ms-1 text-primary" style="font-size: 0.7rem;">Ultimate Only</span>
                             </a>
                             <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#premiumFeaturesModal">
                                 <i class="fas fa-user-tie"></i>
                                 <span>Staff Reports</span>
-                                <i class="fas fa-crown text-warning ms-2" style="font-size: 0.75rem;"></i>
+                                <i class="fas fa-star text-primary ms-2" style="font-size: 0.75rem;"></i>
+                                <span class="ms-1 text-primary" style="font-size: 0.7rem;">Ultimate Only</span>
                             </a>
                             <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#premiumFeaturesModal">
                                 <i class="fas fa-book-open"></i>
                                 <span>Course Reports</span>
-                                <i class="fas fa-crown text-warning ms-2" style="font-size: 0.75rem;"></i>
+                                <i class="fas fa-star text-primary ms-2" style="font-size: 0.75rem;"></i>
+                                <span class="ms-1 text-primary" style="font-size: 0.7rem;">Ultimate Only</span>
                             </a>
                             <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#premiumFeaturesModal">
                                 <i class="fas fa-clipboard-check"></i>
                                 <span>Requirements Reports</span>
-                                <i class="fas fa-crown text-warning ms-2" style="font-size: 0.75rem;"></i>
+                                <i class="fas fa-star text-primary ms-2" style="font-size: 0.75rem;"></i>
+                                <span class="ms-1 text-primary" style="font-size: 0.7rem;">Ultimate Only</span>
                             </a>
                         </div>
                         @endif
@@ -3806,12 +3830,12 @@
                                 <i class="fas fa-crown me-1"></i>
                                 <small>Upgrade to Premium</small>
                             </a>
-                        @elseif($isPremium)
+                        @elseif($isPremium && !(request()->routeIs('tenant.student.dashboard') && Auth::guard('student')->check()))
                             <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center">
                                 <i class="fas fa-crown text-warning me-1"></i>
                                 <small>Premium Account</small>
                             </div>
-                        @elseif($isUltimate)
+                        @elseif($isUltimate && !(request()->routeIs('tenant.student.dashboard') && Auth::guard('student')->check()))
                             <div class="premium-badge w-100 mb-2 d-flex align-items-center justify-content-center" style="background-color: #e6eaff; color: #4361ee;">
                                 <i class="fas fa-star text-primary me-1"></i>
                                 <small>Ultimate Account</small>
@@ -3854,12 +3878,12 @@
                             $isInstructor = Auth::guard('staff')->check() && Auth::guard('staff')->user()->role === 'instructor';
                         @endphp
 
-                        @if($isPremium)
+                        @if(($isPremium) && !(request()->routeIs('tenant.student.dashboard') && Auth::guard('student')->check()))
                             <div class="premium-badge me-3">
                                 <i class="fas fa-crown"></i>
                                 <span>Premium</span>
                             </div>
-                        @elseif($isUltimate)
+                        @elseif(($isUltimate) && !(request()->routeIs('tenant.student.dashboard') && Auth::guard('student')->check()))
                             <div class="premium-badge me-3" style="background-color: #e6eaff; color: #4361ee;">
                                 <i class="fas fa-star"></i>
                                 <span>Ultimate</span>
@@ -4328,10 +4352,9 @@
     <!-- Global card style application -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        document.addEventListener('DOMContentLoaded', function() {
-            // Handle payment method change in sidebar modal
-            document.querySelectorAll('#sidebarPremiumModal input[name="payment_method"]').forEach(input => {
-                input.addEventListener('change', function() {
+        // Handle payment method change in sidebar modal
+        document.querySelectorAll('#sidebarPremiumModal input[name="payment_method"]').forEach(input => {
+            input.addEventListener('change', function() {
                 // Hide all payment details
                 document.querySelectorAll('#sidebarPremiumModal .payment-details').forEach(el => {
                     el.classList.add('d-none');
@@ -4342,15 +4365,15 @@
                 if (method) {
                     document.getElementById('sidebar_' + method + 'Details')?.classList.remove('d-none');
                 }
-                });
-            });
-
-            // Initialize all dropdowns
-            var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
-            var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
-                return new bootstrap.Dropdown(dropdownToggleEl);
             });
         });
+
+        // Initialize all dropdowns
+        var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
+        var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+            return new bootstrap.Dropdown(dropdownToggleEl);
+        });
+    });
     </script>
 
     <!-- Sidebar Premium Modal Script -->

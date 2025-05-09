@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use App\Traits\HasTenantConnection;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class StudentApplication extends Model
 {
@@ -92,6 +93,30 @@ class StudentApplication extends Model
     public function getConnectionName()
     {
         return 'tenant';
+    }
+
+    /**
+     * Override save method to ensure connection is properly set
+     */
+    public function save(array $options = [])
+    {
+        // Ensure connection is set to tenant
+        $this->setConnection('tenant');
+        
+        // Log save operation
+        Log::info('Saving StudentApplication', [
+            'connection' => $this->getConnectionName(),
+            'database' => DB::connection('tenant')->getDatabaseName(),
+            'id' => $this->id,
+            'tenant_id' => $this->tenant_id ?? tenant('id')
+        ]);
+        
+        // Make sure tenant_id is set
+        if (tenant() && !$this->tenant_id) {
+            $this->tenant_id = tenant('id');
+        }
+        
+        return parent::save($options);
     }
 
     /**

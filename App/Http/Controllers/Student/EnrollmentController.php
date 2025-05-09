@@ -409,11 +409,22 @@ class EnrollmentController extends Controller
             
             // Set the database name for the tenant connection
             config(['database.connections.tenant.database' => $dbName]);
-            DB::connection('tenant')->reconnect();
+            
+            // Log current configuration
+            Log::info('Tenant database configuration', [
+                'connection' => config('database.connections.tenant'),
+                'tenant_id' => $tenantId
+            ]);
+            
+            // Purge and reconnect to ensure clean connection
+            DB::purge('tenant');
+            DB::reconnect('tenant');
             
             // Verify connection is working and using correct database
             try {
                 $currentDb = DB::connection('tenant')->getDatabaseName();
+                Log::info('Current database name', ['db_name' => $currentDb]);
+                
                 if ($currentDb !== $dbName) {
                     throw new \Exception("Database mismatch: Connected to {$currentDb} instead of {$dbName}");
                 }
@@ -424,49 +435,37 @@ class EnrollmentController extends Controller
                     throw new \Exception("student_applications table does not exist in tenant database");
                 }
                 
+                // Check if we can run a simple query to verify connection
+                $testQuery = DB::connection('tenant')->select('SELECT 1 as test');
+                Log::info('Test query result', ['result' => $testQuery]);
+                
+                // Get list of tables for debugging
+                $tables = DB::connection('tenant')->select('SHOW TABLES');
+                Log::info('Tables in tenant database', ['tables' => $tables]);
+                
                 Log::info('Tenant database connection established and verified', [
-                'tenant_id' => $tenantId,
+                    'tenant_id' => $tenantId,
                     'db_name' => $dbName,
                     'student_applications_table_exists' => $tableExists
                 ]);
-            } catch (\Exception $dbCheckException) {
-                Log::error('Database verification failed', [
-                    'error' => $dbCheckException->getMessage(),
-                    'trace' => $dbCheckException->getTraceAsString()
+            } catch (\Exception $e) {
+                Log::error('Error verifying tenant database connection', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
                 ]);
-                throw $dbCheckException;
+                throw new \Exception('Error connecting to tenant database: ' . $e->getMessage());
             }
             
-            // Get available requirement folders for the selected student status
-            $requirementFolders = $this->getRequirementFolders($studentStatus);
-            $folderIds = array_column($requirementFolders, 'id');
-            
-            // If no requirement folders found, return an error
-            if (count($folderIds) === 0) {
-                Log::error('No requirement folders found for enrollment', [
-                    'student_status' => $studentStatus
-                ]);
-                
-                return redirect()->route('tenant.student.enrollment', ['tenant' => tenant('id')])
-                    ->with('error', 'No document requirement folders found. Please contact your administrator to set up the document requirements first.');
-            }
-            
-            // Build validation rules based on requirement folders
+            // Define validation rules
             $rules = [
-                'program_id' => 'required|exists:tenant.courses,id',
-                'year_level' => 'required|in:1,2,3,4',
-                'student_status' => 'required|in:Regular,Probation,Irregular',
+                'program_id' => 'required|integer|exists:tenant.courses,id',
+                'year_level' => 'required|integer|min:1|max:4',
+                'student_status' => 'required|string|in:Regular,Irregular,Probation',
                 'notes' => 'nullable|string|max:1000',
-                'school_year_start' => 'required|numeric|min:2000|max:2100',
-                'school_year_end' => 'required|numeric|min:2000|max:2100|gte:school_year_start',
+                'school_year_start' => 'required|integer',
+                'school_year_end' => 'required|integer|gte:school_year_start'
             ];
             
-            // Add validation rules for each folder's file upload
-                foreach ($folderIds as $folderId) {
-                    $rules["folder_file_" . $folderId] = 'required|file|mimes:pdf,jpg,jpeg,png|max:5120';
-            }
-            
-            // Validate the request
             $validated = $request->validate($rules);
             
             // Create a new application
@@ -501,7 +500,29 @@ class EnrollmentController extends Controller
                 ]);
                 
                 // Save to get an ID before uploading files
-                $application->save();
+                try {
+                    $saved = $application->save();
+                    Log::info('Save result', ['saved' => $saved]);
+                    
+                    // Verify the save worked by querying the database directly
+                    $check = DB::connection('tenant')->table('student_applications')
+                        ->where('student_id', $application->student_id)
+                        ->where('program_id', $application->program_id)
+                        ->orderBy('id', 'desc')
+                        ->first();
+                    
+                    Log::info('Database check after save', ['check' => $check]);
+                    
+                    if (!$check) {
+                        throw new \Exception('Application was saved but not found in database');
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Error saving application', [
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    throw new \Exception('Error saving application: ' . $e->getMessage());
+                }
                 
                 // Verify application was saved with the correct ID
                 if (!$application->id) {
@@ -526,36 +547,36 @@ class EnrollmentController extends Controller
                 $uploadedFiles = [];
                 $requirementsController = app(\App\Http\Controllers\Requirements\RequirementsController::class);
                 
-                    // Handle uploads using requirement folders
-                    foreach ($requirementFolders as $folder) {
-                        $folderId = $folder['id'];
-                        $folderName = $folder['name'] ?? 'Unknown Folder';
-                        $fileInputName = "folder_file_" . $folderId;
+                // Handle uploads using requirement folders
+                foreach ($this->getRequirementFolders($studentStatus) as $folder) {
+                    $folderId = $folder['id'];
+                    $folderName = $folder['name'] ?? 'Unknown Folder';
+                    $fileInputName = "folder_file_" . $folderId;
+                
+                // Remove tenant prefix and status tag from folder name
+                $displayFolderName = preg_replace(['/^\[[^\]]+\]\s*/', '/\[(Regular|Irregular|Probation)\]\s*/'], '', $folderName);
                     
-                    // Remove tenant prefix and status tag from folder name
-                    $displayFolderName = preg_replace(['/^\[[^\]]+\]\s*/', '/\[(Regular|Irregular|Probation)\]\s*/'], '', $folderName);
-                        
-                        if ($request->hasFile($fileInputName)) {
-                            try {
-                                // Create a new request object for this file
-                                $fileRequest = new \Illuminate\Http\Request();
-                                $fileRequest->files->set('file', $request->file($fileInputName));
+                    if ($request->hasFile($fileInputName)) {
+                        try {
+                            // Create a new request object for this file
+                            $fileRequest = new \Illuminate\Http\Request();
+                            $fileRequest->files->set('file', $request->file($fileInputName));
+                            
+                        // Add application ID and tenant ID to filename for better tracking
+                            $originalFilename = $request->file($fileInputName)->getClientOriginalName();
+                        $customFilename = "[{$tenantId}]_App{$application->id}_{$studentName}_{$originalFilename}";
+                            $fileRequest->merge(['custom_filename' => $customFilename]);
+                            
+                            // Use the requirements controller to upload the file to the folder
+                            $uploadResponse = $requirementsController->uploadFile($fileRequest, $folderId);
+                            
+                            $responseData = json_decode($uploadResponse->getContent(), true);
+                            
+                            if (isset($responseData['success']) && $responseData['success']) {
+                                $fileData = $responseData['file'] ?? [];
+                                $uploadedFiles[$folderName] = $fileData;
                                 
-                            // Add application ID and tenant ID to filename for better tracking
-                                $originalFilename = $request->file($fileInputName)->getClientOriginalName();
-                            $customFilename = "[{$tenantId}]_App{$application->id}_{$studentName}_{$originalFilename}";
-                                $fileRequest->merge(['custom_filename' => $customFilename]);
-                                
-                                // Use the requirements controller to upload the file to the folder
-                                $uploadResponse = $requirementsController->uploadFile($fileRequest, $folderId);
-                                
-                                $responseData = json_decode($uploadResponse->getContent(), true);
-                                
-                                if (isset($responseData['success']) && $responseData['success']) {
-                                    $fileData = $responseData['file'] ?? [];
-                                    $uploadedFiles[$folderName] = $fileData;
-                                    
-                                // Add to document files array with more metadata
+                            // Add to document files array with more metadata
                                 $documentFiles['files'][] = [
                                         'folder_id' => $folderId,
                                     'folder_name' => $displayFolderName,
@@ -575,23 +596,23 @@ class EnrollmentController extends Controller
                                         'application_id' => $application->id,
                                         'file_data' => $fileData
                                     ]);
-                                } else {
-                                    throw new \Exception("Failed to upload file to folder {$folderName}: " . 
-                                        (isset($responseData['message']) ? $responseData['message'] : 'Unknown error'));
-                                }
-                            } catch (\Exception $e) {
-                                Log::error("Error uploading file to folder {$folderName}", [
-                                    'folder_id' => $folderId,
-                                    'application_id' => $application->id,
-                                    'error' => $e->getMessage(),
-                                    'trace' => $e->getTraceAsString()
-                                ]);
-                                throw $e;
+                            } else {
+                                throw new \Exception("Failed to upload file to folder {$folderName}: " . 
+                                    (isset($responseData['message']) ? $responseData['message'] : 'Unknown error'));
+                            }
+                        } catch (\Exception $e) {
+                            Log::error("Error uploading file to folder {$folderName}", [
+                                'folder_id' => $folderId,
+                                'application_id' => $application->id,
+                                'error' => $e->getMessage(),
+                                'trace' => $e->getTraceAsString()
+                            ]);
+                            throw $e;
                         }
                     }
                 }
                 
-                // Store document files information in JSON field
+                // Save document files JSON at the end
                 $application->document_files = $documentFiles;
                 $application->save();
                 
@@ -609,6 +630,10 @@ class EnrollmentController extends Controller
                     ->with('success', 'Your enrollment application has been submitted successfully.');
             } catch (\Exception $e) {
                 DB::connection('tenant')->rollBack();
+                Log::error('Exception in application creation transaction', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
                 throw $e;
             }
         } catch (\Exception $e) {

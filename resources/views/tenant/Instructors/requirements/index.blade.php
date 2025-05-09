@@ -172,6 +172,119 @@
         border: 1px solid #f0f0f0;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.01);
     }
+    
+    /* User info table styles from studentDashboard */
+    .user-info-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem; /* Smaller text for the entire table */
+    }
+    
+    .user-info-table tr:nth-child(odd) {
+        background-color: #f9f9f9;
+    }
+    
+    .user-info-table tr:nth-child(even) {
+        background-color: #ffffff;
+    }
+    
+    .user-info-table td {
+        padding: 10px 12px; /* Smaller padding */
+        border: none;
+        vertical-align: top;
+    }
+    
+    .user-info-table th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+        color: #495057;
+        padding: 10px 12px;
+        border: none;
+        text-align: left;
+        font-size: 0.8rem;
+    }
+    
+    .info-label {
+        font-size: 0.75rem; /* Even smaller text for labels */
+        color: #6c757d;
+        margin-bottom: 3px; /* Reduced margin */
+    }
+    
+    .info-value {
+        font-size: 0.875rem; /* Smaller text for values */
+        font-weight: 400;
+        color: #212529;
+    }
+
+    /* Pagination styling from EnrollmentApproval */
+    .pagination-item {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        margin: 0 0.2rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .pagination-item:hover {
+        background-color: #e9ecef;
+    }
+    
+    .pagination-item.active {
+        background-color: #212529;
+        color: white;
+    }
+    
+    .pagination-item.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Additional pagination styles */
+    .pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.2rem;
+    }
+
+    .page-item {
+        list-style: none;
+    }
+
+    .page-link {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        margin: 0 0.2rem;
+        font-size: 0.9rem;
+        color: #212529;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .page-link:hover {
+        background-color: #e9ecef;
+    }
+
+    .page-item.active .page-link {
+        background-color: #212529;
+        color: white;
+        border-color: #212529;
+    }
+
+    .page-item.disabled .page-link {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: transparent;
+    }
 </style>
 @endpush
 
@@ -228,8 +341,8 @@
                     <div class="row">
                         <div class="col-12 mb-4">
                             <div class="table-responsive">
-                                <table class="table table-hover" id="folderContentsTable">
-                                    <thead class="bg-primary text-white">
+                                <table class="user-info-table w-100" id="folderContentsTable">
+                                    <thead>
                                         <tr>
                                             <th class="fw-bold">Name</th>
                                             <th class="fw-bold text-center">Actions</th>

@@ -449,6 +449,12 @@
                                         <i class="fas fa-crown me-1"></i> Upgrade to Premium
                                     </a>
                                 </div>
+                            @elseif($isPremium && !$isUltimate)
+                                <div class="mt-3">
+                                    <a href="#" class="btn btn-sm btn-primary" style="background-color: #4361ee; border-color: #4361ee;" data-bs-toggle="modal" data-bs-target="#premiumFeaturesModal">
+                                        <i class="fas fa-star me-1"></i> Upgrade to Ultimate
+                                    </a>
+                                </div>
                             @endif
                         </div>
                         
@@ -898,6 +904,32 @@
         tooltipTriggerList.map(function(tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
+        
+        // Handle the Upgrade to Ultimate button click for Premium users
+        const upgradeToUltimateBtn = document.querySelector('.btn-primary[data-bs-toggle="modal"][data-bs-target="#premiumFeaturesModal"] .fa-star');
+        if (upgradeToUltimateBtn) {
+            upgradeToUltimateBtn.closest('a').addEventListener('click', function(e) {
+                // Set a flag to indicate to select Ultimate plan
+                sessionStorage.setItem('selectUltimate', 'true');
+            });
+        }
+        
+        // Handle modal shown event to select Ultimate plan
+        const premiumFeaturesModal = document.getElementById('premiumFeaturesModal');
+        if (premiumFeaturesModal) {
+            premiumFeaturesModal.addEventListener('shown.bs.modal', function() {
+                if (sessionStorage.getItem('selectUltimate') === 'true') {
+                    // Select the Ultimate plan radio
+                    const ultimateRadio = document.getElementById('plan_ultimate');
+                    if (ultimateRadio) {
+                        ultimateRadio.checked = true;
+                        ultimateRadio.dispatchEvent(new Event('change'));
+                    }
+                    // Clear the flag
+                    sessionStorage.removeItem('selectUltimate');
+                }
+            });
+        }
         
         // Add back button to payment modal
         const upgradePremiumModal = document.getElementById('upgradePremiumModal');

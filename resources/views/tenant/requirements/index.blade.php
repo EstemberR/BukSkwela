@@ -121,6 +121,44 @@
         color: rgb(6, 29, 62);
     }
     
+    /* Updated pagination styling to match EnrollmentApproval.blade.php */
+    #pagination {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .pagination-item {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        margin: 0 0.2rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: #212529;
+        text-decoration: none;
+        background: transparent;
+    }
+
+    .pagination-item:hover {
+        background-color: #e9ecef;
+    }
+
+    .pagination-item.active {
+        background-color: #212529;
+        color: white;
+    }
+
+    .pagination-item.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    
     /* Card shadows */
     .card {
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
@@ -148,6 +186,76 @@
     /* Modal content */
     .modal-content {
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+
+    /* Custom styles for user information table from studentDashboard.blade.php */
+    .user-info-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem; /* Smaller text for the entire table */
+    }
+    
+    .user-info-table tr:nth-child(odd) {
+        background-color: #f9f9f9;
+    }
+    
+    .user-info-table tr:nth-child(even) {
+        background-color: #ffffff;
+    }
+    
+    .user-info-table td {
+        padding: 10px 12px; /* Smaller padding */
+        border: none;
+        vertical-align: top;
+    }
+    
+    .user-info-table th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+        color: #495057;
+        padding: 10px 12px;
+        border: none;
+        text-align: left;
+        font-size: 0.8rem;
+    }
+    
+    .info-label {
+        font-size: 0.75rem; /* Even smaller text for labels */
+        color: #6c757d;
+        margin-bottom: 3px; /* Reduced margin */
+    }
+    
+    .info-value {
+        font-size: 0.875rem; /* Smaller text for values */
+        font-weight: 400;
+        color: #212529;
+    }
+    
+    /* School address styling */
+    .bg-light {
+        background-color: #f0f8ff !important; /* Light blue background */
+    }
+    
+    .text-primary {
+        color: #212529 !important; /* Black text instead of blue */
+    }
+    
+    /* Change spinner color from blue to black */
+    .spinner-border.text-primary {
+        color: #212529 !important;
+    }
+    
+    /* Override any Bootstrap primary buttons to be dark */
+    .btn-primary {
+        background-color: #212529;
+        border-color: #212529;
+    }
+    
+    .btn-primary:hover, 
+    .btn-primary:focus, 
+    .btn-primary:active {
+        background-color: #343a40;
+        border-color: #343a40;
     }
 </style>
 @endpush
@@ -205,8 +313,8 @@
                     <div class="row">
                         <div class="col-12 mb-4">
                             <div class="table-responsive">
-                                <table class="table table-hover" id="folderContentsTable">
-                                    <thead class="bg-primary text-white">
+                                <table class="user-info-table w-100" id="folderContentsTable">
+                                    <thead>
                                         <tr>
                                             <th class="fw-bold">Name</th>
                                             <th class="fw-bold text-center">Actions</th>
@@ -224,12 +332,9 @@
                                 </table>
 
                                 <!-- Pagination -->
-                                <div class="d-flex justify-content-between align-items-center mt-4">
-                                    <div class="text-muted pagination-info">
-                                        Showing 0 to 0 of 0 entries
-                                    </div>
-                                    <div class="pagination-container">
-                                        <!-- Pagination links will be inserted here -->
+                                <div class="card-footer bg-white py-3">
+                                    <div id="pagination" class="d-flex justify-content-center">
+                                        <!-- Pagination controls will be added here -->
                                     </div>
                                 </div>
                             </div>
@@ -1833,6 +1938,58 @@ function setupModalFileUploadHandler() {
             uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload';
         }
     }
+}
+
+function renderPagination(data) {
+    const paginationContainer = document.getElementById('pagination');
+    if (!paginationContainer) return;
+
+    let html = '';
+
+    // Previous button
+    html += `
+        <div class="pagination-item ${data.current_page === 1 ? 'disabled' : ''}" 
+            ${data.current_page !== 1 ? 'data-page="' + (data.current_page - 1) + '"' : ''}>
+            <i class="fas fa-chevron-left"></i>
+        </div>
+    `;
+
+    // Page numbers
+    for (let i = 1; i <= data.last_page; i++) {
+        if (data.last_page <= 5 || 
+            i === 1 || 
+            i === data.last_page || 
+            (i >= data.current_page - 1 && i <= data.current_page + 1)) {
+            html += `
+                <div class="pagination-item ${i === data.current_page ? 'active' : ''}" data-page="${i}">
+                    ${i}
+                </div>
+            `;
+        } else if (i === data.current_page - 2 || i === data.current_page + 2) {
+            html += `<div class="px-1">...</div>`;
+        }
+    }
+
+    // Next button
+    html += `
+        <div class="pagination-item ${data.current_page === data.last_page ? 'disabled' : ''}"
+            ${data.current_page !== data.last_page ? 'data-page="' + (data.current_page + 1) + '"' : ''}>
+            <i class="fas fa-chevron-right"></i>
+        </div>
+    `;
+
+    paginationContainer.innerHTML = html;
+
+    // Add event listeners to pagination items
+    const paginationItems = paginationContainer.querySelectorAll('.pagination-item:not(.disabled)');
+    paginationItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const page = this.dataset.page;
+            if (page) {
+                loadFolderContents(parseInt(page));
+            }
+        });
+    });
 }
 </script>
 @endpush

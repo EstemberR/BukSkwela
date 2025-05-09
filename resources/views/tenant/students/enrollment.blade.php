@@ -202,16 +202,6 @@
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle me-2"></i> You haven't submitted any applications yet.
                         </div>
-                        
-                        <!-- Debug button to check applications data - hidden in production -->
-                        <div class="text-center mt-3">
-                            <button id="debugApplicationsBtn" class="btn btn-sm btn-outline-secondary">
-                                <i class="fas fa-bug me-1"></i> Debug Applications
-                            </button>
-                            <div id="debugResults" class="mt-3 p-3 border rounded bg-light d-none">
-                                <pre class="mb-0 text-start" style="max-height:400px;overflow:auto;"></pre>
-                            </div>
-                        </div>
                     @endif
                 </div>
             </div>
@@ -227,7 +217,9 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="applyModalLabel">Apply for Program</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
             </div>
             <form action="{{ route('tenant.student.enrollment.apply', ['tenant' => tenant('id')]) }}" method="POST" enctype="multipart/form-data" id="applicationForm">
                 @csrf
@@ -799,29 +791,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Debug applications button
-    const debugBtn = document.getElementById('debugApplicationsBtn');
-    if (debugBtn) {
-        debugBtn.addEventListener('click', function() {
-            const resultsContainer = document.getElementById('debugResults');
-            const preElement = resultsContainer.querySelector('pre');
-            
-            resultsContainer.classList.remove('d-none');
-            preElement.textContent = 'Loading application data...';
-            
-            // Call the debug endpoint
-            fetch('{{ route("tenant.student.enrollment.debug-applications", ["tenant" => tenant("id")]) }}')
-                .then(response => response.json())
-                .then(data => {
-                    // Format the JSON response
-                    preElement.textContent = JSON.stringify(data, null, 2);
-                })
-                .catch(error => {
-                    preElement.textContent = 'Error fetching application data: ' + error.message;
-                });
-        });
-    }
-    
     // Tab management - Switch to applications tab on submission or if there's a success message
     const urlParams = new URLSearchParams(window.location.search);
     const successParam = urlParams.get('success');
@@ -1331,7 +1300,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (preview) {
                             const successIndicator = document.createElement('div');
                             successIndicator.className = 'text-success mt-1';
-                            successIndicator.innerHTML = '<i class="fas fa-check-circle"></i> Successfully uploaded to Google Drive';
+                            successIndicator.innerHTML = '<i class="fas fa-check-circle"></i> Successfully Ready To Upload!';
                             
                             // Check if success indicator already exists
                             const existingIndicator = preview.querySelector('.text-success');
@@ -1396,6 +1365,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Open and send the request
         xhr.open('POST', "{{ route('tenant.enrollment.uploads', ['tenant' => tenant('id'), 'folderId' => '__FOLDER_ID__']) }}".replace('__FOLDER_ID__', folderId), true);
+        
+        // Log the upload URL for debugging
+        console.log('Upload URL:', "{{ route('tenant.enrollment.uploads', ['tenant' => tenant('id'), 'folderId' => '__FOLDER_ID__']) }}".replace('__FOLDER_ID__', folderId));
+        
+        // Set up proper headers for multipart form data (don't need Content-Type as the browser sets it with boundary)
+        // xhr.setRequestHeader('X-CSRF-TOKEN', '{{ csrf_token() }}');
+        
         xhr.send(formData);
         
         console.log('Started upload for file:', fileInput.files[0].name, 'to folder:', folderId);
@@ -1408,67 +1384,80 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!form) return;
 
-        // Hide the submit button if no folders
-        if (!hasRequirementFolders || !folders || folders.length === 0) {
-            if (submitBtn) {
-                submitBtn.style.display = 'none';
-            }
-            return; // Don't set up the handler if no folders
-        }
+        // Adjust this part to not hide the submit button if no folders
+        // Just set a flag to indicate we don't need document verification
+        const skipDocumentCheck = !hasRequirementFolders || !folders || folders.length === 0;
         
         form.addEventListener('submit', function(e) {
+            // Log submission attempt
+            console.log('Form submit event triggered');
             e.preventDefault();
+            
+            // Regular form submission with validation
+            console.log('Regular submission with validation');
             
             // Check if status and year level are selected
             const status = document.getElementById('student_status').value;
             const yearLevel = document.getElementById('year_level').value;
+            
+            console.log('Form values:', {
+                program_id: document.getElementById('program_id').value,
+                student_status: status,
+                year_level: yearLevel,
+                school_year_start: document.getElementById('school_year_start').value,
+                school_year_end: document.getElementById('school_year_end').value,
+                notes: document.getElementById('notes').value
+            });
             
             if (!status || !yearLevel) {
                 alert('Please select your Student Status and Year Level.');
                 return;
             }
             
-            // Check if the confirmation checkbox is checked
-            const confirmCheckbox = document.getElementById('confirmRequirements');
-            if (confirmCheckbox && !confirmCheckbox.checked) {
-                alert('Please confirm that your documents are authentic and accurate.');
-                return;
-            }
-            
-            // Verify all required files are uploaded
-            let missingFiles = false;
-            let notUploadedFiles = [];
-            
-            // Check if all folder files are uploaded
-            folders.forEach(folder => {
-                const folderId = folder.id;
-                const fileInput = document.getElementById(`folder_file_${folderId}`);
-                
-                if (fileInput) {
-                    if (!fileInput.files || fileInput.files.length === 0) {
-                        missingFiles = true;
-                        const dragDrop = document.getElementById(`drag_drop_${folderId}`);
-                        if (dragDrop) {
-                            dragDrop.classList.add('border-danger');
-                        }
-                        
-                        notUploadedFiles.push(folder.name);
-                    } else if (fileInput.dataset.uploaded !== 'true') {
-                        // File selected but not uploaded
-                        const progressBar = document.getElementById(`upload_progress_${folderId}`);
-                        if (progressBar) {
-                            progressBar.className = 'progress-bar bg-warning';
-                            progressBar.textContent = 'Not uploaded';
-                        }
-                        
-                        notUploadedFiles.push(folder.name);
-                    }
+            // Only check documents if requirement folders exist
+            if (!skipDocumentCheck) {
+                // Check if the confirmation checkbox is checked
+                const confirmCheckbox = document.getElementById('confirmRequirements');
+                if (confirmCheckbox && !confirmCheckbox.checked) {
+                    alert('Please confirm that your documents are authentic and accurate.');
+                    return;
                 }
-            });
-            
-            if (missingFiles || notUploadedFiles.length > 0) {
-                alert('Please upload all required documents: ' + notUploadedFiles.join(', '));
-                return;
+                
+                // Verify all required files are uploaded
+                let missingFiles = false;
+                let notUploadedFiles = [];
+                
+                // Check if all folder files are uploaded
+                folders.forEach(folder => {
+                    const folderId = folder.id;
+                    const fileInput = document.getElementById(`folder_file_${folderId}`);
+                    
+                    if (fileInput) {
+                        if (!fileInput.files || fileInput.files.length === 0) {
+                            missingFiles = true;
+                            const dragDrop = document.getElementById(`drag_drop_${folderId}`);
+                            if (dragDrop) {
+                                dragDrop.classList.add('border-danger');
+                            }
+                            
+                            notUploadedFiles.push(folder.name);
+                        } else if (fileInput.dataset.uploaded !== 'true') {
+                            // File selected but not uploaded
+                            const progressBar = document.getElementById(`upload_progress_${folderId}`);
+                            if (progressBar) {
+                                progressBar.className = 'progress-bar bg-warning';
+                                progressBar.textContent = 'Not uploaded';
+                            }
+                            
+                            notUploadedFiles.push(folder.name);
+                        }
+                    }
+                });
+                
+                if (missingFiles || notUploadedFiles.length > 0) {
+                    alert('Please upload all required documents: ' + notUploadedFiles.join(', '));
+                    return;
+                }
             }
             
             // If all checks pass, submit the form
@@ -1477,7 +1466,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Submitting...';
             }
             
-            form.submit();
+            // Log submission attempt to console for debugging
+            console.log('Form submission initiated', {
+                program_id: document.getElementById('program_id').value,
+                student_status: document.getElementById('student_status').value,
+                year_level: document.getElementById('year_level').value,
+                school_year_start: document.getElementById('school_year_start').value,
+                school_year_end: document.getElementById('school_year_end').value,
+                notes: document.getElementById('notes').value
+            });
+            
+            // Add form submission event tracking
+            const formData = new FormData(form);
+            const formDataObj = {};
+            formData.forEach((value, key) => {
+                if (key !== 'file') { // Skip file inputs
+                    formDataObj[key] = value;
+                }
+            });
+            
+            // Log form data without files
+            console.log('Form data being submitted:', formDataObj);
+            
+            // Submit the form with a small delay to allow console logs to appear
+            setTimeout(() => {
+                form.submit();
+                console.log('Form submitted via setTimeout');
+            }, 500);
         });
     }
     

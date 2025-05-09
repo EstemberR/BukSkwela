@@ -25,6 +25,7 @@ use App\Http\Controllers\Report\ReportController;
 use App\Http\Controllers\Profile\ProfileController;
 use Illuminate\Support\Facades\Route;
 
+
 Route::middleware(['web'])
     ->group(function () {
         Route::get('/login', [LoginController::class, 'showLoginForm'])
